@@ -47,11 +47,24 @@ explain in plain words, never ask them to run commands.
   Places from before the switch have no `gid` and are left alone. The name is kept as the user's own label.
 - Google's logo and credit line must stay visible and unaltered: `css/app.css` moves the logo to the right of the left
   panel while it is open. The routes are not Google's, so their credit (Geoapify, OpenStreetMap) is a separate line.
-- Data lives in `localStorage` (`plan-a-trip:v1`) and attached files in IndexedDB (`plan-a-trip-files`).
+- Data lives in `localStorage` (`plan-a-trip:v1`) and attached files in IndexedDB (`plan-a-trip-files`). The saved
+  object is `{v:2, current, trips:[{id,title,places,days,legs}]}`; `db` in `js/main.js` is the trip on screen and
+  `switchTrip()` points it at another. Saves from before there were several trips were one bare trip object; `load()`
+  wraps it as the first trip. A place may carry `gid` (Places API ID, from the search) or `fid` (Google Maps' own
+  identifier, from the extension) — neither, for places from before either existed.
+- `extension/` is a Chrome extension (Manifest V3, no build step) that saves the place open on the Google Maps website
+  into the trip on screen. `maps.js` reads the place from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…
+  !3d<lat>!4d<lng>`, checked against the real site on 2026-10-09) and shows the site's own save card in the top-right
+  corner; `site.js` hands saved places to the page. Page and extension talk through `window.postMessage`
+  (see "browser extension" in `js/main.js`). It is installed by hand in developer mode, not published. It reads only
+  the page being viewed, uses none of the Google quota, and is not an official Google integration.
 - The repository is public: never commit secrets. Browser-side keys (Geoapify, Supabase anon key) are public by
   design and must be restricted to the site's domain in their own dashboards.
 
 ## Testing
+
+`tests/extension.py` loads the real extension into Chromium and stands in for the two sites, so the whole path
+(card on Google Maps → extension storage → place in the trip) is checked offline. Run both tests before pushing.
 
 The cloud sandbox has no internet, so the real map cannot load there. `tests/smoke.py` swaps the Google Maps library
 for `tests/mock-googlemaps.js` (real Web-Mercator camera maths, no rendering), answers the Places and Geoapify calls
@@ -79,4 +92,8 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Next, in order: Supabase with Google sign-in for accounts and cloud data → several trips, delete confirmation, a phone layout.
+Also done (2026-10-09): several trips with a trip menu; the Chrome extension, as a first version for Chewei to try.
+
+Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
+For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone
+editing layout (see the Handoff document, 延後與未決事項).

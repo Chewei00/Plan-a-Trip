@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Plan a Trip：從 Google 地圖加入",
+  "short_name": "Plan a Trip",
+  "version": "0.1.0",
+  "description": "在 Google 地圖上點開一個地點，就能把它存進 Plan a Trip 的「想去的地方」，不用重新搜尋。",
+  "icons": { "16": "icon-16.png", "48": "icon-48.png", "128": "icon-128.png" },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.google.com/maps/*", "https://www.google.com.tw/maps/*"],
+      "js": ["maps.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chewei00.github.io/Plan-a-Trip/*"],
+      "js": ["site.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

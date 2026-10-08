@@ -127,7 +127,7 @@ with sync_playwright() as p:
     page.click(".savebtn")
     page.wait_for_timeout(300)
     assert page.locator(".card.focus .cname").inner_text() == "ほうとう不動"
-    saved = [x for x in json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))["places"] if x["name"] == "ほうとう不動"][0]
+    saved = [x for x in json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))["trips"][0]["places"] if x["name"] == "ほうとう不動"][0]
     assert saved["gid"] == "gid-hoto" and saved["lat"] == 35.499 and saved["at"] > 0, "the saved place keeps Google's ID and when its position was fetched"
 
     # searching again marks it as saved (by ID), with a new session
@@ -142,16 +142,112 @@ with sync_playwright() as p:
     before = len(calls)
     old = int(time.time() * 1000) - 26 * 24 * 3600 * 1000
     page.evaluate("""old => { const d = JSON.parse(localStorage.getItem('plan-a-trip:v1'));
-        const p = d.places.find(x => x.gid === 'gid-hoto'); p.at = old; p.lat = 35.1; localStorage.setItem('plan-a-trip:v1', JSON.stringify(d)); }""", old)
+        const p = d.trips[0].places.find(x => x.gid === 'gid-hoto'); p.at = old; p.lat = 35.1; localStorage.setItem('plan-a-trip:v1', JSON.stringify(d)); }""", old)
     page.reload()
     page.wait_for_timeout(900)
     fresh = [u for u in calls[before:] if "/places/gid-hoto" in u]
     assert len(fresh) == 1 and "sessionToken" not in fresh[0], "one refresh request, outside any search session"
     data = json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))
+    assert data["v"] == 2 and len(data["trips"]) == 1 and data["current"] == data["trips"][0]["id"]
+    data = data["trips"][0]
     again = [x for x in data["places"] if x.get("gid") == "gid-hoto"][0]
     assert again["lat"] == 35.499 and again["at"] > old, "position and date are refreshed"
     assert len(data["places"]) == 14 and len(data["days"]) == 2, "the saved trip is kept"
     assert count("/routing") == 4, "kept routes are not asked again after a reload"
+
+    # ---------------------------------------------------------------- several trips
+    def stored():
+        return json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))
+    def css(sel, prop):
+        return page.evaluate("([s,p]) => getComputedStyle(document.querySelector(s))[p]", [sel, prop])
+    def open_trips():
+        page.hover(".title")
+        page.wait_for_timeout(600)
+        page.click(".tripbtn")
+        page.wait_for_timeout(200)
+
+    # a save from before there were several trips was one trip object: it becomes the first trip, nothing lost
+    page.evaluate("() => { const d = JSON.parse(localStorage.getItem('plan-a-trip:v1')); const t = d.trips[0]; delete t.id; localStorage.setItem('plan-a-trip:v1', JSON.stringify(t)); }")
+    page.reload()
+    page.wait_for_timeout(800)
+    assert page.locator(".title").inner_text() == "富士山 5 日" and page.locator(".day").count() == 2
+    assert page.locator(".card").count() == 7 and page.evaluate("__map.lines.length") == 8, "its places and routes are all there"
+
+    # the arrow is not there until the pointer is on the trip's name; then it pushes the name right and the collapse icon steps aside
+    page.mouse.move(700, 600)
+    page.wait_for_timeout(700)
+    x0 = page.locator(".title").bounding_box()["x"]
+    assert css(".tripbtn", "opacity") == "0" and css(".sidebtn", "opacity") == "1"
+    page.hover(".title")
+    page.wait_for_timeout(700)
+    assert css(".tripbtn", "opacity") == "1" and css(".sidebtn", "opacity") == "0"
+    assert abs(page.locator(".title").bounding_box()["x"] - x0 - 30) < 0.5, "the name moves 30 to the right"
+
+    # the list of trips; a new one starts empty, named New trip and ready to be renamed, and the map stays put
+    page.click(".tripbtn")
+    page.wait_for_timeout(200)
+    assert page.locator("#menu button").all_inner_texts() == ["富士山 5 日", "New trip", "Delete trip"]
+    moves = page.evaluate("__map.moves.length")
+    page.click("#menu button:has-text('New trip')")
+    page.wait_for_timeout(300)
+    assert page.evaluate("document.activeElement.className") == "edit title" and page.input_value("input.edit.title") == "New trip"
+    page.keyboard.type("東京 3 日")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(300)
+    assert page.locator(".title").inner_text() == "東京 3 日"
+    assert page.locator(".day").count() == 1 and page.locator(".stop").count() == 0 and page.locator(".card").count() == 0
+    assert page.locator(".mk").count() == 0, "an empty trip has nothing on the map"
+    assert page.evaluate("__map.moves.length") == moves, "and the map has not moved"
+    d = stored()
+    assert [t["title"] for t in d["trips"]] == ["富士山 5 日", "東京 3 日"] and d["current"] == d["trips"][1]["id"]
+    tokyo, fuji = d["trips"][1]["id"], d["trips"][0]["id"]
+
+    # the extension's hand-over: places arrive in a message, go to the trip they were saved for, and are acknowledged
+    page.evaluate("() => { window.__took = []; window.__state = []; window.addEventListener('message', e => { const m = e.data; if (m && m.from === 'plan-a-trip') (m.type === 'took' ? window.__took : window.__state).push(m); }); }")
+    inbox = [{"id": "a1", "tripId": tokyo, "name": "淺草寺", "lat": 35.714765, "lng": 139.796655, "cat": "sight", "fid": "0x60188ec1a4463df1:0x6c0d289a8292810d"},
+             {"id": "a2", "tripId": fuji, "name": "大石公園", "lat": 35.5229, "lng": 138.7457, "cat": "sight", "fid": "0x6019600000000001:0x1"},
+             {"id": "a3", "tripId": tokyo, "name": "<b>壞資料</b>", "lat": "x", "lng": 1, "cat": "sight", "fid": ""}]
+    page.evaluate("items => window.postMessage({from:'plan-a-trip-ext', type:'inbox', items}, location.origin)", inbox)
+    page.wait_for_timeout(400)
+    assert page.locator(".card.focus .cname").inner_text() == "淺草寺", "a place for the trip on screen is shown and selected"
+    assert page.evaluate("__took[0].ids") == ["a1", "a2", "a3"], "everything received is acknowledged, usable or not"
+    d = stored()
+    assert [x["name"] for x in d["trips"][1]["places"]] == ["淺草寺"] and d["trips"][1]["places"][0]["fid"].startswith("0x60188e")
+    assert d["trips"][0]["places"][-1]["name"] == "大石公園", "a place saved for another trip goes to that trip"
+    assert page.evaluate("__state[__state.length-1]") == {"from": "plan-a-trip", "type": "state", "trip": {"id": tokyo, "title": "東京 3 日"}, "fids": ["0x60188ec1a4463df1:0x6c0d289a8292810d"]}
+    page.evaluate("items => window.postMessage({from:'plan-a-trip-ext', type:'inbox', items}, location.origin)", inbox[:1] + [dict(inbox[0], id="a9")])
+    page.wait_for_timeout(300)
+    assert len(stored()["trips"][1]["places"]) == 1, "the same place is not added twice"
+    page.keyboard.press("Escape")
+
+    # going back to the other trip shows it as it was left and moves the map to it
+    moves = page.evaluate("__map.moves.length")
+    open_trips()
+    assert page.locator("#menu button >> nth=1 >> .ck").count() == 1, "the trip on screen is ticked"
+    page.click("#menu button:has-text('富士山 5 日')")
+    page.wait_for_timeout(1300)
+    assert page.locator(".title").inner_text() == "富士山 5 日" and page.locator(".day").count() == 2 and page.locator(".day.sel").count() == 0
+    assert page.evaluate("__map.moves.length") > moves + 20, "the map glides to the trip"
+
+    # deleting a trip asks once more; deleting the last one leaves an empty trip
+    open_trips()
+    page.click("#menu button:has-text('東京 3 日')")
+    page.wait_for_timeout(300)
+    open_trips()
+    page.click("#menu button:has-text('Delete trip')")
+    page.wait_for_timeout(200)
+    assert page.locator("#menu").is_visible() and len(stored()["trips"]) == 2, "the first press only asks"
+    assert page.locator("#menu button >> nth=-1").inner_text() == "Delete “東京 3 日”?"
+    page.click("#menu button >> nth=-1")
+    page.wait_for_timeout(300)
+    assert [t["title"] for t in stored()["trips"]] == ["富士山 5 日"] and page.locator(".title").inner_text() == "富士山 5 日"
+    open_trips()
+    page.click("#menu button:has-text('Delete trip')")
+    page.wait_for_timeout(200)
+    page.click("#menu button >> nth=-1")
+    page.wait_for_timeout(300)
+    d = stored()
+    assert len(d["trips"]) == 1 and d["trips"][0]["title"] == "New trip" and d["trips"][0]["places"] == [] and len(d["trips"][0]["days"]) == 1
 
     assert not errors, errors
     browser.close()

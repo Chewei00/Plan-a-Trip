@@ -1,9 +1,9 @@
 /* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=7';
-import {fetchRoute} from './geoapify.js?v=7';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=7';
-import {createMap} from './mapview.js?v=7';
+import {ICON,CATICON,catSvg} from './icons.js?v=8';
+import {fetchRoute} from './geoapify.js?v=8';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=8';
+import {createMap} from './mapview.js?v=8';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -26,8 +26,9 @@ function newPlace(c){var p={id:uid(),name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,n
 /* a stop is one visit: the same place can be visited on several days (or twice in a day), each visit with its own notes and checklist */
 function newStop(pid,plan){return {id:uid(),place:pid,plan:plan||[]};}
 function place0(d,id){for(var i=0;i<d.places.length;i++)if(d.places[i].id===id)return d.places[i];return null;}
+function newTrip(title){return {id:uid(),title:title,places:[],days:[{id:uid(),stops:[]}],legs:{}};}
 function sample(){
-  var d={title:'富士山 5 日',places:[],days:[],legs:{}};
+  var d={id:uid(),title:'富士山 5 日',places:[],days:[],legs:{}};
   function P(name,cat,lat,lng,note){var p=newPlace({name:name,cat:cat,lat:lat,lng:lng});p.note=note||'';d.places.push(p);return p.id;}
   var kubota=P('久保田一竹美術館','sight',35.5252,138.7715,'非常喜歡');
   P('河口湖音樂森林美術館','sight',35.5222,138.7790);
@@ -51,23 +52,42 @@ function sample(){
   d.legs[kubota+'>'+kma]='walk';d.legs[kma+'>'+udon]='walk';d.legs[udon+'>'+inn]='walk';
   return d;
 }
-var db,memOnly=false;
+/* Everything saved is one object: {v:2, current: trip id, trips:[trip, ...]}. db is the trip being shown; the rest of
+   the app only ever reads and writes db, so switching trips is pointing db at another one.
+   Saves from before there were several trips were a single trip object: load() turns that into the first trip. */
+var store,db,memOnly=false;
+/* older saves: notes were plain strings, and they belonged to the place; a day listed place ids */
+function fixTrip(d){
+  if(!d.id)d.id=uid();
+  if(typeof d.title!=='string'||!d.title)d.title='New trip';
+  if(!d.legs||typeof d.legs!=='object')d.legs={};
+  d.places.forEach(function(p){if(p.plan)p.plan=p.plan.map(function(x){return typeof x==='string'?{k:'n',text:x}:x;});});
+  d.days.forEach(function(day){day.stops=(day.stops||[]).map(function(x){
+    if(typeof x!=='string'){x.plan=x.plan||[];return x;}
+    var p=place0(d,x),st=newStop(x,p&&p.plan?p.plan:[]);if(p)delete p.plan;return st;
+  }).filter(function(x){return !!place0(d,x.place);});});
+  d.places.forEach(function(p){delete p.plan;});
+  return d;
+}
+function isTrip(d){return !!d&&Array.isArray(d.places)&&Array.isArray(d.days);}
 function load(){
-  try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&Array.isArray(d.places)&&Array.isArray(d.days)){
-    /* older saves: notes were plain strings, and they belonged to the place; a day listed place ids */
-    d.places.forEach(function(p){if(p.plan)p.plan=p.plan.map(function(x){return typeof x==='string'?{k:'n',text:x}:x;});});
-    d.days.forEach(function(day){day.stops=(day.stops||[]).map(function(x){
-      if(typeof x!=='string'){x.plan=x.plan||[];return x;}
-      var p=place0(d,x),st=newStop(x,p&&p.plan?p.plan:[]);if(p)delete p.plan;return st;
-    }).filter(function(x){return !!place0(d,x.place);});});
-    d.places.forEach(function(p){delete p.plan;});
-    return d;}}}catch(e){}
-  return sample();
+  try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r),t;
+    if(d&&Array.isArray(d.trips)){
+      t=d.trips.filter(isTrip).map(fixTrip);
+      if(t.length)return {v:2,current:t.some(function(x){return x.id===d.current;})?d.current:t[0].id,trips:t};
+    }else if(isTrip(d)){t=fixTrip(d);return {v:2,current:t.id,trips:[t]};}
+  }}catch(e){}
+  var s=sample();
+  return {v:2,current:s.id,trips:[s]};
 }
 function save(){
-  try{localStorage.setItem(KEY,JSON.stringify(db));return true;}catch(e){memOnly=true;return false;}
+  var ok=true;
+  try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){memOnly=true;ok=false;}
+  announce();
+  return ok;
 }
-db=load();
+function tripOf(id){for(var i=0;i<store.trips.length;i++)if(store.trips[i].id===id)return store.trips[i];return null;}
+store=load();db=tripOf(store.current);
 function place(id){for(var i=0;i<db.places.length;i++)if(db.places[i].id===id)return db.places[i];return null;}
 function getDay(id){for(var i=0;i<db.days.length;i++)if(db.days[i].id===id)return db.days[i];return null;}
 function stopOf(sid){for(var i=0;i<db.days.length;i++)for(var j=0;j<db.days[i].stops.length;j++)if(db.days[i].stops[j].id===sid)return {day:db.days[i],idx:j,stop:db.days[i].stops[j]};return null;}
@@ -169,7 +189,8 @@ function entryHTML(sid,en,k){
 function renderLeft(){
   titleWrap.innerHTML=isEditing('title','left','')
     ?'<input class="edit title" value="'+esc(db.title)+'" maxlength="30" aria-label="旅行名稱">'
-    :'<h1 class="title" data-edit="title" title="點兩下修改">'+esc(db.title)+'</h1>';
+    :'<div class="tzone'+(ui.menu&&ui.menu.type==='trips'?' on':'')+'"><button class="tripbtn" data-act="menu" data-menu="trips" data-id="trips" title="切換旅行" aria-label="切換旅行" aria-haspopup="menu">'+ICON.tripChev+'</button>'+
+      '<h1 class="title" data-edit="title" title="點兩下修改">'+esc(db.title)+'</h1></div>';
   var keep=lpScroll.scrollTop,h='';
   db.days.forEach(function(d,i){
     /* drawn in the state last shown; syncOpen() then switches classes so the change animates */
@@ -242,8 +263,9 @@ function mi(act,id,icon,label,checked,val){
   return '<button role="menuitem" data-act="'+act+'" data-id="'+esc(id)+'"'+(val?' data-val="'+val+'"':'')+'>'+(icon||'')+'<span>'+label+'</span>'+(checked?'<span class="ck">'+ICON.check+'</span>':'')+'</button>';
 }
 function renderMenu(){
-  var m=ui.menu,open=document.querySelectorAll('.more.open'),i;
+  var m=ui.menu,open=document.querySelectorAll('.more.open'),i,tz=titleWrap.querySelector('.tzone');
   for(i=0;i<open.length;i++)open[i].classList.remove('open');
+  if(tz)tz.classList.toggle('on',!!m&&m.type==='trips');
   if(!m){menuEl.hidden=true;menuEl.innerHTML='';return;}
   var h='',p;
   var SEP='<div class="sep"></div>';
@@ -266,6 +288,12 @@ function renderMenu(){
   }else if(m.type==='mode'){
     var cur=db.legs[m.id]||'car';
     h=MODES.map(function(o){return mi('m-mode',m.id,ICON[o.id],o.name,cur===o.id,o.id);}).join('');
+  }else if(m.type==='trips'){
+    /* every trip, the one being shown ticked; then a new one; then deleting this one, which asks once more */
+    var short=db.title.length>12?db.title.slice(0,12)+'…':db.title;
+    h=store.trips.map(function(t){return mi('m-trip',t.id,'',esc(t.title),t.id===store.current);}).join('')+SEP+
+      mi('m-trip-new','trips','','New trip')+SEP+
+      (m.confirm?mi('m-trip-del2','trips','','Delete “'+esc(short)+'”?'):mi('m-trip-del','trips','','Delete trip'));
   }
   menuEl.innerHTML=h;menuEl.hidden=false;
   var w=menuEl.offsetWidth,hh=menuEl.offsetHeight;
@@ -278,7 +306,7 @@ function closeMenu(){
   if(!ui.menu)return;
   /* opened with the mouse: do not leave focus on the button, or it would stay visible after Esc */
   var kb=ui.menu.kb,ae=document.activeElement;ui.menu=null;renderMenu();
-  if(!kb&&ae&&ae.classList&&ae.classList.contains('more'))ae.blur();
+  if(!kb&&ae&&ae.classList&&(ae.classList.contains('more')||ae.classList.contains('tripbtn')))ae.blur();
 }
 
 /* ================= search ================= */
@@ -344,7 +372,8 @@ function currentFrame(){
   if(!pts.length)pts=[[138.40,35.70],[139.16,35.08]];
   return {pts:pts,maxZoom:12};
 }
-function fitCurrent(){if(!mapView)return;var f=currentFrame();mapView.fit(f.pts,fitPadding(),f.maxZoom);}
+/* a trip with no places yet has nothing to frame: the map stays where it is */
+function fitCurrent(){if(!mapView||!db.places.length)return;var f=currentFrame();mapView.fit(f.pts,fitPadding(),f.maxZoom);}
 function ensureVisible(lat,lng){if(mapView)mapView.ensureVisible([lng,lat],safeArea());}
 function renderMap(){
   if(!mapView)return;
@@ -399,12 +428,13 @@ function initMap(){
    keeps the position it has and is tried again next time: a saved trip is never emptied */
 var FRESH=25*24*3600*1000;
 function refreshPoints(){
-  var due=db.places.filter(function(p){return p.gid&&!(Date.now()-p.at<FRESH);}).slice(0,40),changed=false;
+  var due=[],changed=false;
+  store.trips.forEach(function(t){t.places.forEach(function(p){if(p.gid&&!(Date.now()-p.at<FRESH))due.push(p);});});
+  due=due.slice(0,40);
   (function next(){
     var p=due.shift();
     if(!p){if(changed){save();renderMap();}return;}
     placePoint(p.gid,false).then(function(pt){
-      if(!place(p.id))return;
       if(pt.lat.toFixed(5)!==p.lat.toFixed(5)||pt.lng.toFixed(5)!==p.lng.toFixed(5)){p.lat=pt.lat;p.lng=pt.lng;}
       p.at=Date.now();changed=true;
     },function(){due=[];}).then(next);
@@ -460,6 +490,69 @@ function focusPlace(id){
   var p=place(id);if(!p)return;
   ui.focus=id;ui.pending=null;ui.cat=p.cat;render();ensureVisible(p.lat,p.lng);revealCard(id);
 }
+
+/* ================= trips ================= */
+/* Show another trip. Nothing carries over from the one before: no open day, no selection, no half-finished edit.
+   The map goes to the trip's places; an empty trip leaves it where it is */
+function switchTrip(id){
+  var t=tripOf(id);if(!t)return;
+  store.current=id;db=t;
+  ui.day=null;ui.open=[];ui.focus=null;ui.pending=null;ui.menu=null;ui.editing=null;ui.cat='sight';
+  shownFocus=null;shownOpen=[];   /* so the new trip is drawn as it is, not animated from the old one's state */
+  clearSearch();save();render();
+  lpScroll.scrollTop=0;cardsEl.scrollLeft=0;
+  fitCurrent();
+}
+/* Deleting takes the trip's attached files with it. There is always a trip to show: deleting the last one leaves an empty one */
+function deleteTrip(id){
+  var t=tripOf(id),i=store.trips.indexOf(t);if(!t)return;
+  t.days.forEach(function(d){d.stops.forEach(dropFilesOf);});
+  store.trips.splice(i,1);
+  if(!store.trips.length)store.trips.push(newTrip('New trip'));
+  switchTrip(store.trips[Math.max(0,i-1)].id);
+}
+
+/* ================= browser extension ================= */
+/* The Chrome extension (extension/ in the repository) lets a place be saved from the Google Maps website. It cannot
+   reach this page's data, so the two talk through messages on this window:
+     page -> extension   {from:'plan-a-trip', type:'state', trip:{id,title}, fids:[...]}   which trip is showing, and
+                                                                    which Google places it already has
+     extension -> page   {from:'plan-a-trip-ext', type:'inbox', items:[{id,tripId,name,lat,lng,cat,fid}]}
+     page -> extension   {from:'plan-a-trip', type:'took', ids:[...]}                  so the extension can forget them
+   fid is Google Maps' own identifier for a place, taken from the address of its page; it tells the extension and
+   this page that a place is already saved. Without the extension these messages go nowhere. */
+var seenInbox={};
+function announce(){
+  try{window.postMessage({from:'plan-a-trip',type:'state',trip:{id:db.id,title:db.title},
+    fids:db.places.map(function(p){return p.fid;}).filter(Boolean)},location.origin);}catch(e){}
+}
+function takeInbox(items){
+  var took=[],added=0,last=null;
+  items.slice(0,200).forEach(function(it){
+    if(!it||typeof it.id!=='string')return;
+    took.push(it.id);
+    if(seenInbox[it.id])return;seenInbox[it.id]=1;
+    var name=String(it.name==null?'':it.name).replace(/\s+/g,' ').trim().slice(0,40),lat=+it.lat,lng=+it.lng;
+    if(!name||!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>85||Math.abs(lng)>180)return;
+    var cat=catName(it.cat)?it.cat:'sight',fid=typeof it.fid==='string'&&/^0x[0-9a-f]+:0x[0-9a-f]+$/.test(it.fid)?it.fid:'';
+    var t=tripOf(it.tripId)||db;
+    if(t.places.some(function(p){return fid?p.fid===fid:p.name===name&&Math.abs(p.lat-lat)<1e-5&&Math.abs(p.lng-lng)<1e-5;}))return;
+    var p=newPlace({name:name,cat:cat,lat:+lat.toFixed(6),lng:+lng.toFixed(6)});if(fid)p.fid=fid;
+    t.places.push(p);added++;if(t===db)last=p;
+  });
+  try{window.postMessage({from:'plan-a-trip',type:'took',ids:took},location.origin);}catch(e){}
+  if(!added)return;
+  save();
+  /* something being typed is left alone; the new place shows at the next redraw */
+  if(last&&!ui.editing){if(!ui.topOpen){ui.topOpen=true;applyPanels();}focusPlace(last.id);}
+  toast('從 Google 地圖加入了 '+added+' 個地點');
+}
+window.addEventListener('message',function(e){
+  if(e.source!==window||e.origin!==location.origin)return;
+  var m=e.data;if(!m||m.from!=='plan-a-trip-ext')return;
+  if(m.type==='hello')announce();
+  else if(m.type==='inbox'&&Array.isArray(m.items))takeInbox(m.items);
+});
 
 /* ================= inline editing ================= */
 function startEdit(kind,where,pid,i){closeMenu();ui.editing={kind:kind,where:where,place:pid||'',i:i==null?'':i};render();}
@@ -709,6 +802,10 @@ var ACT={
   'm-cat':function(el){var p=place(el.dataset.id);if(p){p.cat=el.dataset.val;ui.cat=p.cat;save();}ui.menu=null;render();revealCard(el.dataset.id);},
   'm-clear':function(el){var p=place(el.dataset.id);if(p){p.img='';save();}ui.menu=null;render();},
   'm-mode':function(el){db.legs[el.dataset.id]=el.dataset.val;ui.menu=null;save();render();},
+  'm-trip':function(el){if(el.dataset.id===store.current){closeMenu();return;}switchTrip(el.dataset.id);},
+  'm-trip-new':function(){var t=newTrip('New trip');store.trips.push(t);switchTrip(t.id);startEdit('title','left','');},
+  'm-trip-del':function(){if(ui.menu){ui.menu.confirm=true;renderMenu();}},
+  'm-trip-del2':function(){deleteTrip(store.current);},
   'chip':function(el){var c=el.dataset.cat;if(c===ui.cat)return;   /* one category at a time, never none */
     ui.cat=c;cardsEl.scrollLeft=0;renderTop();},
   'toggle-left':function(){ui.leftOpen=!ui.leftOpen;applyPanels();},
@@ -776,4 +873,4 @@ cardsEl.addEventListener('wheel',function(e){if(Math.abs(e.deltaY)>Math.abs(e.de
 window.addEventListener('resize',function(){closeMenu();});
 
 /* ================= start ================= */
-applyPanels();initMap();render();refreshPoints();
+applyPanels();initMap();render();refreshPoints();announce();

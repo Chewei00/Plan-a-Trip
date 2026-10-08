@@ -30,6 +30,7 @@ export var ICON={
      because an SVG rect can only have circular corners */
   side:'<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M14.25 .75L15.12 .79L15.7 .92L16.17 1.14L16.56 1.44L16.86 1.83L17.08 2.3L17.21 2.88L17.25 3.75L17.25 8.25L17.21 9.12L17.08 9.7L16.86 10.17L16.56 10.56L16.17 10.86L15.7 11.08L15.12 11.21L14.25 11.25L3.75 11.25L2.88 11.21L2.3 11.08L1.83 10.86L1.44 10.56L1.14 10.17L.92 9.7L.79 9.12L.75 8.25L.75 3.75L.79 2.88L.92 2.3L1.14 1.83L1.44 1.44L1.83 1.14L2.3 .92L2.88 .79L3.75 .75Z"/><path d="M5.75 .75v10.5"/></svg>',
   chevUp:'<svg viewBox="0 0 14 8" aria-hidden="true"><path d="M1 7 7 1l6 6"/></svg>',
+  tripChev:'<svg viewBox="0 0 8 13" aria-hidden="true"><path d="M1 1l6 5.5L1 12"/></svg>',
   chevDown:'<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1.5 1.5 6 6.5l4.5-5"/></svg>',
   walk:svg('<circle cx="8.6" cy="2.9" r="1.35" '+F+'/><path d="M8.4 5.8 7.6 9.6 5.4 13.8M7.6 9.6l3 4M5.6 8l2.8-2.2L11 7.6"/>'),
   bike:svg('<circle cx="3.7" cy="10.5" r="2.7"/><circle cx="12.3" cy="10.5" r="2.7"/><path d="M3.7 10.5 6.6 5.8h3.2l2.5 4.7M9.8 5.8 9.3 4h1.6"/>'),
