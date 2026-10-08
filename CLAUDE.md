@@ -52,4 +52,17 @@ at on the live site (the built-in browser can open it and call the APIs from the
 Done: ported from the prototype; real map (MapLibre + OpenFreeMap); place search and routing (Geoapify).
 Known limit: search matches Japanese and English names well, Chinese translations of names often fail (OpenStreetMap
 data). The fallback discussed with Chewei is switching everything to Google Maps.
-Next, in order: Supabase with Google sign-in for accounts and cloud data → several trips, delete confirmation, a phone layout.
+Decided 2026-10-08: switch the map and place search to Google (Maps JavaScript API + Places API (New)); routing stays
+on Geoapify (Google has no bicycle routing in Japan). Not built yet — waiting for Chewei's「做原型」.
+
+Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
+- Only Maps JavaScript API and Places API (New) are enabled; the key is restricted to `https://chewei00.github.io/*`
+  and to those two APIs.
+- It is a **free-trial billing account**: nothing can be charged, but quotas cannot be edited. The trial ends around
+  **2027-01-06** (90 days) or when the US$300 credit is used; after that the map and search stop until Chewei upgrades.
+- **When Chewei upgrades, set the daily caps in the same sitting** (Google Maps Platform → Quotas): Map loads per day
+  300, AutocompletePlacesRequest per day 300, GetPlaceRequest per day 150, and 1 for 3D Map loads, SearchTextRequest,
+  SearchNearbyRequest and GetPhotoMediaRequest per day. Then a US$1 budget alert. These keep a month under the free
+  usage of each item (10,000; request only Essentials fields from Place Details).
+
+Next, in order: the Google switch above → Supabase with Google sign-in for accounts and cloud data → several trips, delete confirmation, a phone layout.
