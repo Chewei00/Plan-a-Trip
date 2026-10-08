@@ -163,7 +163,7 @@ textarea.edit.nbedit::placeholder{color:var(--text-ph);opacity:1}
 .modebtn:hover{color:var(--ink)}
 .modebtn:hover svg{opacity:1}
 .day.over .modebtn{background:color-mix(in srgb,#000 4%,var(--surface))}
-.addday{display:flex;align-items:center;gap:10px;height:16px;margin-top:24px;padding:0 0 0 2px;border:0;background:none;color:var(--text-2);font:500 11px/16px var(--ui)}
+.addday{display:flex;align-items:center;gap:10px;height:16px;margin-top:24px;padding:0 0 0 2px;border:0;background:none;color:var(--text-3);font:500 12px/16px var(--ui)}
 .addday svg{display:block;flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1}
 .addday:hover{color:var(--ink)}
 .ck{display:flex;align-items:flex-start;gap:8px;min-height:16px;padding-right:2px;font:400 12px/16px var(--ui);letter-spacing:.04em;color:var(--text-2)}
