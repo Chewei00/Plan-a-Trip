@@ -1,40 +1,13 @@
-/* Place search and routing, from Geoapify (OpenStreetMap data). Nothing else in the app calls Geoapify, so changing
-   the provider means changing this file.
+/* Routing, from Geoapify (OpenStreetMap data): the road a leg follows and how long it takes on foot, by bicycle or by
+   car. Nothing else in the app calls Geoapify, so changing the routing provider means changing this file. Place search
+   and the map are Google's (google.js, mapview.js); routing stayed here because Google has no bicycle routes in Japan.
 
    The key below is meant to be public: every browser-side key is visible to whoever opens the site. It is protected
    by restricting it to this site's address in the Geoapify dashboard, not by hiding it. Free plan: 3,000 credits a
-   day, one credit per search or route. */
+   day, one credit per route. */
 
 var KEY='1787ed0d07774e1a8ae3bd00d083a917';
 var API='https://api.geoapify.com/v1/';
-
-/* Geoapify category -> the app's four categories; anything else counts as a sight */
-function catOf(c){
-  c=c||'';
-  if(c.indexOf('catering')===0)return 'food';
-  if(c.indexOf('accommodation')===0)return 'stay';
-  if(c.indexOf('public_transport')===0||c.indexOf('railway')===0||c.indexOf('airport')===0)return 'transit';
-  return 'sight';
-}
-
-/* Search as you type. near is [lng,lat] and only nudges the ranking toward what the map is showing.
-   lang=ja on purpose: with lang=zh Geoapify returns Simplified Chinese for region names, and place names stay in
-   the local language either way.
-   Resolves to [{name, sub, lat, lng, cat}]; sub is the town, to tell same-named places apart. */
-export function searchPlaces(text,near){
-  var u=API+'geocode/autocomplete?text='+encodeURIComponent(text)+'&lang=ja&limit=8&format=json'+
-    (near?'&bias=proximity:'+near[0].toFixed(4)+','+near[1].toFixed(4):'')+'&apiKey='+KEY;
-  return fetch(u).then(function(r){if(!r.ok)throw new Error('search '+r.status);return r.json();}).then(function(j){
-    var seen={};
-    return (j.results||[]).map(function(x){
-      return {name:x.name||x.address_line1||'',sub:x.city||x.county||x.state||x.country||'',lat:x.lat,lng:x.lon,cat:catOf(x.category)};
-    }).filter(function(o){
-      var k=o.name+'|'+o.sub;
-      if(!o.name||seen[k])return false;
-      seen[k]=1;return true;
-    });
-  });
-}
 
 /* Routes are requested a few at a time so a long trip does not trip the per-second limit */
 var MODE={walk:'walk',bike:'bicycle',car:'drive'},queue=[],running=0,MAX=3;

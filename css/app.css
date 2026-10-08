@@ -37,14 +37,17 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 
 /* ---------- map (not in the design file) ---------- */
 .map{position:absolute;inset:0;overflow:hidden;background:var(--land)}
-.mapgl{position:absolute;inset:0}
+/* Google's map: it sets position:relative on its own container, hence the !important; isolation keeps Google's
+   layers (which use very high z-indexes) underneath the panels */
+.mapgl{position:absolute!important;inset:0;isolation:isolate}
+.mapgl .gm-style{font:inherit}
 .maperr{position:absolute;left:calc(var(--gap)*2 + var(--lw));right:var(--gap);bottom:72px;margin:0;font:400 12px/20px var(--ui);letter-spacing:.04em;color:var(--maptext);text-align:center}
-/* MapLibre: keep its credit line where the old map note sat, left of the zoom buttons, in the app's own type */
-.maplibregl-map{font:inherit}
-.maplibregl-ctrl-bottom-right{right:152px;bottom:18px}
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl{margin:0}
-.maplibregl-ctrl-attrib.maplibregl-ctrl{padding:0 4px;background:color-mix(in srgb,var(--surface) 70%,transparent);border-radius:var(--r4);font:400 11px/18px var(--ui);color:var(--maptext)}
-.maplibregl-ctrl-attrib a{color:inherit}
+/* Google's logo sits in the bottom-left corner, which the left panel covers. It has to stay readable, so while the
+   panel is open it stands just to the right of it */
+.app:not(.lc) .mapgl div:has(>a[href^="https://maps.google.com/maps"]){left:calc(var(--gap)*2 + var(--lw))!important}
+/* the routes drawn on the map are not Google's; their credit sits left of the zoom buttons, above Google's own line */
+.routeby{position:absolute;right:152px;bottom:18px;z-index:3;margin:0;padding:0 4px;background:color-mix(in srgb,var(--surface) 70%,transparent);border-radius:var(--r4);font:400 11px/18px var(--ui);color:var(--maptext)}
+.routeby a{color:inherit}
 .mk{position:absolute;left:0;top:0;width:0;height:0;cursor:default}
 .mk>*{pointer-events:auto}
 .dot{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border:0;border-radius:50%;padding:0;background:var(--ink);box-shadow:0 0 0 2px var(--surface)}

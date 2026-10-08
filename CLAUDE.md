@@ -24,36 +24,49 @@ explain in plain words, never ask them to run commands.
 ## The code
 
 - Static site, **no build step and no npm**. GitHub Pages serves `main` as is at https://chewei00.github.io/Plan-a-Trip/.
-  Libraries come from a CDN with pinned versions (MapLibre GL JS 4.7.1 in `index.html`; pdf.js 4.10.38 legacy build,
-  lazy-loaded in `js/main.js`). Do not add tooling without discussing it first.
+  Libraries are loaded at run time: the Google Maps JavaScript API by `js/google.js` (`v=quarterly`, Google's stable
+  channel — a fixed version number cannot be pinned for long), pdf.js 4.10.38 legacy build from a CDN, lazy-loaded in
+  `js/main.js`. Do not add tooling without discussing it first.
 - **Before every push that changes `js/` or `css/`, run `python3 tools/release.py`.** It bumps the `?v=N` tag on every
   script and stylesheet address. GitHub Pages lets browsers cache files for ten minutes; without the tag a browser can
   mix new and old files and the page breaks. A visitor may still see the previous version for up to ten minutes.
 - `js/main.js` holds state (`db`, `ui`), rendering and interactions. It re-renders whole panels on every action;
   animations work by drawing the previous state and then switching classes (`syncFocus`, `syncOpen`).
-- `js/mapview.js` is the only file that touches MapLibre. The app passes it plain data (markers as HTML, routes as
-  coordinate lists) and asks for camera moves.
-- `js/geoapify.js` is the only file that calls Geoapify (place search, routing). Search uses `lang=ja` on purpose:
-  `lang=zh` returns Simplified Chinese region names, which Chewei does not want. Routes are cached in IndexedDB under
+- `js/mapview.js` is the only file that touches the map library (Google Maps). The app passes it plain data (markers
+  as HTML, routes as coordinate lists) and asks for camera moves. Google's own camera moves cannot be given a duration,
+  so the one-second glide is done there frame by frame with `moveCamera`, with its own Web-Mercator maths. Google
+  reports a map click for clicks on the app's markers too, with no target; `onMark` in that file tells them apart.
+- `js/google.js` loads the map library and is the only file that calls the Places API (New): suggestions while typing
+  (`languageCode` zh-TW) and, when one is picked, its position (field mask `location` only, the cheapest class).
+  A suggestion has no coordinates until it is picked.
+- `js/geoapify.js` is the only file that calls Geoapify, now for routing only. Routes are cached in IndexedDB under
   `route:<mode>|<from>|<to>` so each leg is requested once.
+- **What Google allows to be kept**: a place ID indefinitely, latitude/longitude for 30 days. A place saved from the
+  search has `gid` (place ID) and `at` (when its position was fetched); `refreshPoints()` in `js/main.js` re-fetches
+  positions older than 25 days when the app opens, and keeps the old position if that fails (never empty a trip).
+  Places from before the switch have no `gid` and are left alone. The name is kept as the user's own label.
+- Google's logo and credit line must stay visible and unaltered: `css/app.css` moves the logo to the right of the left
+  panel while it is open. The routes are not Google's, so their credit (Geoapify, OpenStreetMap) is a separate line.
 - Data lives in `localStorage` (`plan-a-trip:v1`) and attached files in IndexedDB (`plan-a-trip-files`).
 - The repository is public: never commit secrets. Browser-side keys (Geoapify, Supabase anon key) are public by
   design and must be restricted to the site's domain in their own dashboards.
 
 ## Testing
 
-The cloud sandbox has no internet, so the real map cannot load there. `tests/smoke.py` swaps MapLibre for
-`tests/mock-maplibre.js` (real Web-Mercator camera maths, no rendering), answers Geoapify calls with canned data, and
-checks the main flows. What it cannot check — tiles, real rendering, fonts, real search results — has to be looked
-at on the live site (the built-in browser can open it and call the APIs from the page).
+The cloud sandbox has no internet, so the real map cannot load there. `tests/smoke.py` swaps the Google Maps library
+for `tests/mock-googlemaps.js` (real Web-Mercator camera maths, no rendering), answers the Places and Geoapify calls
+with canned data, and checks the main flows. What it cannot check — tiles, real rendering, fonts, real search
+results — has to be looked at on the live site with the built-in browser. The Google key only works from
+`https://chewei00.github.io/*`, so a risky change can be pushed to a `preview/` folder first, checked at
+`/Plan-a-Trip/preview/`, then moved to the root (remove the folder afterwards). Google's map only draws while the
+browser pane is actually visible on Chewei's screen; if `document.visibilityState` is `hidden`, ask them to keep the
+window in view.
 
 ## Where things stand (2026-10-08)
 
-Done: ported from the prototype; real map (MapLibre + OpenFreeMap); place search and routing (Geoapify).
-Known limit: search matches Japanese and English names well, Chinese translations of names often fail (OpenStreetMap
-data). The fallback discussed with Chewei is switching everything to Google Maps.
-Decided 2026-10-08: switch the map and place search to Google (Maps JavaScript API + Places API (New)); routing stays
-on Geoapify (Google has no bicycle routing in Japan). Not built yet — waiting for Chewei's「做原型」.
+Done: ported from the prototype; Google map and place search (2026-10-08, replacing MapLibre/OpenFreeMap and the
+Geoapify search, which could not find Chinese names of places in Japan); routing by Geoapify (Google has no bicycle
+routes in Japan).
 
 Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
 - Only Maps JavaScript API and Places API (New) are enabled; the key is restricted to `https://chewei00.github.io/*`
@@ -64,5 +77,6 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   300, AutocompletePlacesRequest per day 300, GetPlaceRequest per day 150, and 1 for 3D Map loads, SearchTextRequest,
   SearchNearbyRequest and GetPhotoMediaRequest per day. Then a US$1 budget alert. These keep a month under the free
   usage of each item (10,000; request only Essentials fields from Place Details).
+- A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Next, in order: the Google switch above → Supabase with Google sign-in for accounts and cloud data → several trips, delete confirmation, a phone layout.
+Next, in order: Supabase with Google sign-in for accounts and cloud data → several trips, delete confirmation, a phone layout.

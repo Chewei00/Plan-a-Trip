@@ -1,8 +1,9 @@
 /* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=4';
-import {searchPlaces,fetchRoute} from './geoapify.js?v=4';
-import {createMap} from './mapview.js?v=4';
+import {ICON,CATICON,catSvg} from './icons.js?v=5';
+import {fetchRoute} from './geoapify.js?v=5';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=5';
+import {createMap} from './mapview.js?v=5';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -20,7 +21,8 @@ function catName(id){for(var i=0;i<CATS.length;i++)if(CATS[i].id===id)return CAT
 function modeOf(id){for(var i=0;i<MODES.length;i++)if(MODES[i].id===id)return MODES[i];return MODES[1];}
 
 /* ================= data ================= */
-function newPlace(c){return {id:uid(),name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,note:'',img:''};}
+/* a place picked from the search also keeps Google's ID for it (gid) and when its position was last fetched (at) */
+function newPlace(c){var p={id:uid(),name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,note:'',img:''};if(c.gid){p.gid=c.gid;p.at=Date.now();}return p;}
 /* a stop is one visit: the same place can be visited on several days (or twice in a day), each visit with its own notes and checklist */
 function newStop(pid,plan){return {id:uid(),place:pid,plan:plan||[]};}
 function place0(d,id){for(var i=0;i<d.places.length;i++)if(d.places[i].id===id)return d.places[i];return null;}
@@ -282,8 +284,9 @@ function closeMenu(){
 /* ================= search ================= */
 /* Search looks only at the map: places come from the place search after a short pause in typing. A result that is
    already saved is still listed, marked as saved, and picking it selects the saved place instead of adding a copy.
+   A saved place is recognised by Google's ID; places saved before the search was Google's have none and go by name.
    found holds the latest answer and searchNote says why there is nothing to show */
-var found=[],foundFor='',searchTm=null,searchSeq=0,searchNote='';
+var found=[],foundFor='',searchTm=null,searchSeq=0,searchNote='',pickSeq=0;
 function queueSearch(){
   clearTimeout(searchTm);
   var q=ui.q.trim();
@@ -303,10 +306,10 @@ function queueSearch(){
 function clearSearch(){clearTimeout(searchTm);searchSeq++;found=[];foundFor='';searchNote='';ui.searchOpen=false;ui.q='';qEl.value='';qEl.blur();renderResults();}
 function renderResults(){
   if(!ui.searchOpen){resultsEl.hidden=true;resultsEl.innerHTML='';return;}
-  var h='',byName={};
-  db.places.forEach(function(p){byName[p.name]=p.id;});
+  var h='',byGid={},byName={};
+  db.places.forEach(function(p){if(p.gid)byGid[p.gid]=p.id;else byName[p.name]=p.id;});
   found.forEach(function(c,i){
-    var id=byName[c.name];
+    var id=byGid[c.gid]||byName[c.name];
     h+=id?'<button data-act="pick-saved" data-id="'+id+'"><span>'+esc(c.name)+'</span><span class="tag">已儲存</span></button>'
          :'<button data-act="pick-new" data-i="'+i+'"><span>'+esc(c.name)+'</span><span class="tag">'+esc(c.sub)+'</span></button>';
   });
@@ -377,16 +380,35 @@ function renderMap(){
   mapView.setRoutes(legs);
   mapView.setMarkers(marks);
 }
-/* The app still works without the map (no WebGL, or the map library did not load): the panels stay usable and a note says why */
+/* The map library loads in the background, so the panels are usable straight away and the map appears when it is
+   ready. The app still works without it (no connection, or Google refuses the key): a note says why */
+function mapNote(){
+  if(mapEl.querySelector('.maperr'))return;
+  var n=document.createElement('p');n.className='maperr';n.textContent='地圖載入不了。請確認網路連線後重新整理；行程仍然可以編輯。';mapEl.appendChild(n);
+}
 function initMap(){
-  var f=currentFrame();
-  try{
+  loadMaps(mapNote).then(function(){
+    var f=currentFrame();
     mapView=createMap($('mapgl'),{points:f.pts,padding:fitPadding(),maxZoom:f.maxZoom,
       onBackgroundClick:function(){if(ui.focus||ui.pending){ui.focus=null;ui.pending=null;render();}}});
-  }catch(e){
-    mapView=null;
-    var n=document.createElement('p');n.className='maperr';n.textContent='地圖載入不了。請確認網路連線後重新整理；行程仍然可以編輯。';mapEl.appendChild(n);
-  }
+    renderMap();
+  }).catch(function(){mapView=null;mapNote();});
+}
+/* Google lets a place's position be kept for 30 days. A little before that, places that came from the search are
+   asked for again, one after another, when the app is opened. If that fails (offline, daily cap reached) the place
+   keeps the position it has and is tried again next time: a saved trip is never emptied */
+var FRESH=25*24*3600*1000;
+function refreshPoints(){
+  var due=db.places.filter(function(p){return p.gid&&!(Date.now()-p.at<FRESH);}).slice(0,40),changed=false;
+  (function next(){
+    var p=due.shift();
+    if(!p){if(changed){save();renderMap();}return;}
+    placePoint(p.gid,false).then(function(pt){
+      if(!place(p.id))return;
+      if(pt.lat.toFixed(5)!==p.lat.toFixed(5)||pt.lng.toFixed(5)!==p.lng.toFixed(5)){p.lat=pt.lat;p.lng=pt.lng;}
+      p.at=Date.now();changed=true;
+    },function(){due=[];}).then(next);
+  })();
 }
 
 /* ================= render ================= */
@@ -694,12 +716,17 @@ var ACT={
   'focus':function(el){focusPlace(el.dataset.place);},
   'pick-saved':function(el){var p=place(el.dataset.id);if(!p)return;
     clearSearch();focusPlace(p.id);},
+  /* a suggestion has no position yet: it is asked for now, and the map goes there when it arrives */
   'pick-new':function(el){var c=found[+el.dataset.i];if(!c)return;
-    ui.pending={name:c.name,lat:c.lat,lng:c.lng,cat:c.cat};ui.focus=null;clearSearch();render();
-    if(mapView)mapView.showPoint([c.lng,c.lat],15,safeArea());},
+    var seq=++pickSeq;ui.pending=null;ui.focus=null;clearSearch();render();
+    placePoint(c.gid,true).then(function(pt){
+      if(seq!==pickSeq)return;
+      ui.pending={name:c.name,lat:pt.lat,lng:pt.lng,cat:c.cat,gid:c.gid};ui.focus=null;render();
+      if(mapView)mapView.showPoint([pt.lng,pt.lat],15,safeArea());
+    },function(){if(seq===pickSeq)toast('取不到這個地點的位置，請稍後再試');});},
   'pend-cat':function(el){if(ui.pending){ui.pending.cat=el.dataset.cat;renderMap();}},
   'pend-close':function(){ui.pending=null;renderMap();},
-  'pend-save':function(){if(!ui.pending)return;var c=ui.pending,p=newPlace({name:c.name,cat:c.cat,lat:c.lat,lng:c.lng});
+  'pend-save':function(){if(!ui.pending)return;var c=ui.pending,p=newPlace({name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,gid:c.gid});
     db.places.push(p);ui.cat=p.cat;ui.pending=null;ui.focus=p.id;save();render();
     if(!ui.topOpen){ui.topOpen=true;applyPanels();}
     revealCard(p.id);toast('已存到想去的地方');},
@@ -749,4 +776,4 @@ cardsEl.addEventListener('wheel',function(e){if(Math.abs(e.deltaY)>Math.abs(e.de
 window.addEventListener('resize',function(){closeMenu();});
 
 /* ================= start ================= */
-applyPanels();initMap();render();
+applyPanels();initMap();render();refreshPoints();
