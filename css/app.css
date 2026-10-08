@@ -11,6 +11,7 @@
   --fill-note:rgba(0,0,0,.04); --fill-note-solid:#f4f4f4; --fill-selected:#cdccca;
   --cat-sight:#86d7bb; --cat-food:#e3be80; --cat-stay:#9dc7fe; --cat-transit:#deb2e9;
   --shadow-card:0 4px 14px rgba(0,0,0,.08); --shadow-card-active:0 8px 14px rgba(0,0,0,.1);
+  --shadow-panel:4px 4px 12px rgba(0,0,0,.08);   /* the two panels: Figma drop shadow x 4, y 4, blur 12, 8% */
   --r4:4px; --r6:6px; --r8:8px; --r16:16px;
   --ui:"Noto Sans","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
   --lw:258px; --gap:16px;
@@ -89,7 +90,7 @@ body.dragging .ckmove{transform:none!important}
 .edit::placeholder{color:var(--text-ph);opacity:1}
 
 /* ---------- left panel ---------- */
-.lp{position:absolute;left:var(--gap);top:var(--gap);bottom:var(--gap);width:var(--lw);display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r16);z-index:10}
+.lp{position:absolute;left:var(--gap);top:var(--gap);bottom:var(--gap);width:var(--lw);display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r16);z-index:10;box-shadow:var(--shadow-panel)}
 .app.lc .lp{bottom:auto}
 .app.lc .lp .search,.app.lc .lp-scroll{display:none}
 .lp-head{flex:none;padding:20px 20px 0}
@@ -199,12 +200,13 @@ input.edit.lkedit{height:26px;margin-top:6px;font:400 12px/16px var(--ui);color:
 .dropline.sub{left:46px}
 
 /* ---------- top panel ---------- */
-.tp{position:absolute;top:var(--gap);left:calc(var(--gap)*2 + var(--lw));right:var(--gap);background:var(--surface);border-radius:var(--r16);z-index:9;transition:transform .28s ease}
-.app.tc .tp{transform:translateY(calc(-100% - var(--gap)))}
+.tp{position:absolute;top:var(--gap);left:calc(var(--gap)*2 + var(--lw));right:var(--gap);background:var(--surface);border-radius:var(--r16);z-index:9;box-shadow:var(--shadow-panel);transition:transform .28s ease,box-shadow .28s ease}
+/* put away, the panel sits just above the top edge: its shadow would show as a band along the top, so the tab that hangs down carries it instead */
+.app.tc .tp{transform:translateY(calc(-100% - var(--gap)));box-shadow:none}
 .tclose{position:absolute;top:2px;left:50%;transform:translateX(-50%);width:40px;height:26px;border:0;background:none;color:var(--ink);display:grid;place-items:center;padding:0}
 .tclose svg,.tabdown svg{display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tclose svg{width:14px;height:8px;stroke-width:1.5}
-.tabdown{position:absolute;top:100%;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;height:32px;padding:0 16px 2px 20px;border:0;border-radius:0 0 var(--r16) var(--r16);background:var(--surface);color:var(--ink);font:400 14px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s}
+.tabdown{position:absolute;top:100%;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;height:32px;padding:0 16px 2px 20px;border:0;border-radius:0 0 var(--r16) var(--r16);background:var(--surface);color:var(--ink);font:400 14px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;box-shadow:var(--shadow-panel);opacity:0;pointer-events:none;transition:opacity .2s}
 .tabdown svg{width:12px;height:8px}
 .app.tc .tabdown{opacity:1;pointer-events:auto}
 .tp-head{display:flex;align-items:center;gap:24px;height:42px;padding:16px 20px 0}
