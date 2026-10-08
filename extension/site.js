@@ -1,8 +1,11 @@
 /* Runs on the Plan a Trip site. It carries two things between the page and the extension's own storage:
-     - from the page: which trip is being shown and which Google places it already holds (so the card on Google Maps
-       can say where a place will go and whether it is already saved)
+     - from the page: the trips there are, which one is on screen, and which Google places each already holds (so
+       the bar on Google Maps can list the trips and the card can say whether a place is already saved)
      - to the page: the places saved on Google Maps since the site was last open (the "inbox")
-   The page and this script can only talk through window messages; see "browser extension" in js/main.js. */
+   The page and this script can only talk through window messages; see "browser extension" in js/main.js.
+
+   Which trip a place is saved to (pat_target) is whichever was chosen last: picked in the bar on Google Maps, or
+   switched to on the site. So it follows the site only when the trip on screen there actually changes. */
 (function () {
   'use strict';
   var S = chrome.storage.local;
@@ -14,13 +17,22 @@
       if (items.length) window.postMessage({ from: 'plan-a-trip-ext', type: 'inbox', items: items }, location.origin);
     });
   }
+  function clean(t) { return t && typeof t.id === 'string' ? { id: t.id, title: String(t.title || '').slice(0, 60) } : null; }
   window.addEventListener('message', function (e) {
     if (e.source !== window || e.origin !== location.origin || !alive()) return;
     var m = e.data;
     if (!m || m.from !== 'plan-a-trip') return;
     if (m.type === 'state') {
-      var trip = m.trip && typeof m.trip.id === 'string' ? { id: m.trip.id, title: String(m.trip.title || '').slice(0, 60) } : null;
-      S.set({ pat_trip: trip, pat_fids: Array.isArray(m.fids) ? m.fids.slice(0, 5000) : [] }, deliver);
+      var trip = clean(m.trip), trips = (Array.isArray(m.trips) ? m.trips : []).map(clean).filter(Boolean).slice(0, 200);
+      var saved = {};
+      if (m.saved && typeof m.saved === 'object') trips.forEach(function (t) { if (Array.isArray(m.saved[t.id])) saved[t.id] = m.saved[t.id].slice(0, 5000); });
+      S.get(['pat_site_trip', 'pat_target'], function (r) {
+        r = r || {};
+        var set = { pat_trips: trips, pat_saved: saved, pat_site_trip: trip ? trip.id : null };
+        var known = trips.some(function (t) { return t.id === r.pat_target; });
+        if (trip && (!known || trip.id !== r.pat_site_trip)) set.pat_target = trip.id;
+        S.set(set, deliver);
+      });
     } else if (m.type === 'took' && Array.isArray(m.ids)) {
       S.get(['pat_inbox'], function (r) {
         var left = ((r && r.pat_inbox) || []).filter(function (it) { return m.ids.indexOf(it.id) < 0; });

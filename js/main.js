@@ -1,9 +1,9 @@
 /* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=8';
-import {fetchRoute} from './geoapify.js?v=8';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=8';
-import {createMap} from './mapview.js?v=8';
+import {ICON,CATICON,catSvg} from './icons.js?v=9';
+import {fetchRoute} from './geoapify.js?v=9';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=9';
+import {createMap} from './mapview.js?v=9';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -515,16 +515,18 @@ function deleteTrip(id){
 /* ================= browser extension ================= */
 /* The Chrome extension (extension/ in the repository) lets a place be saved from the Google Maps website. It cannot
    reach this page's data, so the two talk through messages on this window:
-     page -> extension   {from:'plan-a-trip', type:'state', trip:{id,title}, fids:[...]}   which trip is showing, and
-                                                                    which Google places it already has
+     page -> extension   {from:'plan-a-trip', type:'state', trip:{id,title}, trips:[{id,title}], saved:{tripId:[fid]}}
+                                      the trip on screen, every trip, and the Google places each already has
      extension -> page   {from:'plan-a-trip-ext', type:'inbox', items:[{id,tripId,name,lat,lng,cat,fid}]}
      page -> extension   {from:'plan-a-trip', type:'took', ids:[...]}                  so the extension can forget them
    fid is Google Maps' own identifier for a place, taken from the address of its page; it tells the extension and
    this page that a place is already saved. Without the extension these messages go nowhere. */
 var seenInbox={};
 function announce(){
+  var saved={};
+  store.trips.forEach(function(t){saved[t.id]=t.places.map(function(p){return p.fid;}).filter(Boolean);});
   try{window.postMessage({from:'plan-a-trip',type:'state',trip:{id:db.id,title:db.title},
-    fids:db.places.map(function(p){return p.fid;}).filter(Boolean)},location.origin);}catch(e){}
+    trips:store.trips.map(function(t){return {id:t.id,title:t.title};}),saved:saved},location.origin);}catch(e){}
 }
 function takeInbox(items){
   var took=[],added=0,last=null;

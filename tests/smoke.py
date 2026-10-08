@@ -214,7 +214,9 @@ with sync_playwright() as p:
     d = stored()
     assert [x["name"] for x in d["trips"][1]["places"]] == ["淺草寺"] and d["trips"][1]["places"][0]["fid"].startswith("0x60188e")
     assert d["trips"][0]["places"][-1]["name"] == "大石公園", "a place saved for another trip goes to that trip"
-    assert page.evaluate("__state[__state.length-1]") == {"from": "plan-a-trip", "type": "state", "trip": {"id": tokyo, "title": "東京 3 日"}, "fids": ["0x60188ec1a4463df1:0x6c0d289a8292810d"]}
+    assert page.evaluate("__state[__state.length-1]") == {"from": "plan-a-trip", "type": "state", "trip": {"id": tokyo, "title": "東京 3 日"},
+        "trips": [{"id": fuji, "title": "富士山 5 日"}, {"id": tokyo, "title": "東京 3 日"}],
+        "saved": {fuji: ["0x6019600000000001:0x1"], tokyo: ["0x60188ec1a4463df1:0x6c0d289a8292810d"]}}, "the page tells the extension about every trip"
     page.evaluate("items => window.postMessage({from:'plan-a-trip-ext', type:'inbox', items}, location.origin)", inbox[:1] + [dict(inbox[0], id="a9")])
     page.wait_for_timeout(300)
     assert len(stored()["trips"][1]["places"]) == 1, "the same place is not added twice"

@@ -53,11 +53,15 @@ explain in plain words, never ask them to run commands.
   wraps it as the first trip. A place may carry `gid` (Places API ID, from the search) or `fid` (Google Maps' own
   identifier, from the extension) — neither, for places from before either existed.
 - `extension/` is a Chrome extension (Manifest V3, no build step) that saves the place open on the Google Maps website
-  into the trip on screen. `maps.js` reads the place from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…
-  !3d<lat>!4d<lng>`, checked against the real site on 2026-10-09) and shows the site's own save card in the top-right
-  corner; `site.js` hands saved places to the page. Page and extension talk through `window.postMessage`
-  (see "browser extension" in `js/main.js`). It is installed by hand in developer mode, not published. It reads only
-  the page being viewed, uses none of the Google quota, and is not an official Google integration.
+  into a trip. The toolbar button is its only switch (`background.js`; `pat_on` in the extension's storage, remembered,
+  grey icon off / coloured icon on, clicks on other sites ignored via `activeTab`). While on, `maps.js` shows a bar
+  (the trip to save to; its menu lists the trips and opens the site) and, on a place's page, the site's own save card.
+  The place is read from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…!3d<lat>!4d<lng>`, checked against the
+  real site on 2026-10-09). `site.js` hands saved places to the page and learns the trips from it; page and extension
+  talk through `window.postMessage` (see "browser extension" in `js/main.js`). The trip saved to is whichever was
+  chosen last, in the bar or by switching trips on the site. Installed by hand in developer mode, not published.
+  It reads only the page being viewed, uses none of the Google quota, and is not an official Google integration.
+  Chewei decided against copying Google's photos (not allowed beyond private use).
 - The repository is public: never commit secrets. Browser-side keys (Geoapify, Supabase anon key) are public by
   design and must be restricted to the site's domain in their own dashboards.
 
