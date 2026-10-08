@@ -8,7 +8,8 @@
 
 - 畫面和互動照原型 v1.0.8。
 - 地圖是真的（MapLibre 加 OpenFreeMap）。
-- 地點搜尋還是內建的範例地點；路線先畫直線，時間用直線距離估算。
+- 地點搜尋和路線來自 Geoapify：步行、自行車、汽車沿道路畫並顯示實際時間；電車、船、飛機畫直線、不顯示時間。
+- 搜尋用日文或英文名稱最準；中文譯名（例如把「駅」寫成「站」）不一定找得到。
 - 資料存在各自的瀏覽器裡，還沒有登入和雲端同步。
 
 ## 檔案
@@ -20,7 +21,7 @@
 | `js/main.js` | 狀態、畫面、互動 |
 | `js/mapview.js` | 地圖。只有這個檔案會碰到地圖元件 |
 | `js/icons.js` | 所有圖示 |
-| `js/catalog.js` | 暫時的範例搜尋清單 |
+| `js/geoapify.js` | 地點搜尋和路線。只有這個檔案會呼叫 Geoapify |
 | `tests/` | 不需要網路的基本測試 |
 
 沒有建置步驟：檔案改了、推上 `main`，GitHub Pages 就會更新。
@@ -33,4 +34,4 @@
 
 ## 地圖資料
 
-地圖圖磚來自 [OpenFreeMap](https://openfreemap.org/)，資料 © [OpenMapTiles](https://www.openmaptiles.org/) 與 [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者。
+地圖圖磚來自 [OpenFreeMap](https://openfreemap.org/)，資料 © [OpenMapTiles](https://www.openmaptiles.org/) 與 [OpenStreetMap](https://www.openstreetmap.org/copyright) 貢獻者。地點搜尋和路線由 [Geoapify](https://www.geoapify.com/) 提供。

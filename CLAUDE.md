@@ -30,6 +30,9 @@ explain in plain words, never ask them to run commands.
   animations work by drawing the previous state and then switching classes (`syncFocus`, `syncOpen`).
 - `js/mapview.js` is the only file that touches MapLibre. The app passes it plain data (markers as HTML, routes as
   coordinate lists) and asks for camera moves.
+- `js/geoapify.js` is the only file that calls Geoapify (place search, routing). Search uses `lang=ja` on purpose:
+  `lang=zh` returns Simplified Chinese region names, which Chewei does not want. Routes are cached in IndexedDB under
+  `route:<mode>|<from>|<to>` so each leg is requested once.
 - Data lives in `localStorage` (`plan-a-trip:v1`) and attached files in IndexedDB (`plan-a-trip-files`).
 - The repository is public: never commit secrets. Browser-side keys (Geoapify, Supabase anon key) are public by
   design and must be restricted to the site's domain in their own dashboards.
@@ -37,11 +40,13 @@ explain in plain words, never ask them to run commands.
 ## Testing
 
 The cloud sandbox has no internet, so the real map cannot load there. `tests/smoke.py` swaps MapLibre for
-`tests/mock-maplibre.js` (real Web-Mercator camera maths, no rendering) and checks the main flows. What it cannot
-check — tiles, real rendering, fonts — has to be looked at on the live site.
+`tests/mock-maplibre.js` (real Web-Mercator camera maths, no rendering), answers Geoapify calls with canned data, and
+checks the main flows. What it cannot check — tiles, real rendering, fonts, real search results — has to be looked
+at on the live site (the built-in browser can open it and call the APIs from the page).
 
 ## Where things stand (2026-10-08)
 
-Done: ported from the prototype; real map (MapLibre + OpenFreeMap).
-Next, in order: Geoapify for place search and routing (routes are straight lines and times are distance estimates
-until then) → Supabase with Google sign-in for accounts and cloud data → several trips, delete confirmation, a phone layout.
+Done: ported from the prototype; real map (MapLibre + OpenFreeMap); place search and routing (Geoapify).
+Known limit: search matches Japanese and English names well, Chinese translations of names often fail (OpenStreetMap
+data). The fallback discussed with Chewei is switching everything to Google Maps.
+Next, in order: Supabase with Google sign-in for accounts and cloud data → several trips, delete confirmation, a phone layout.

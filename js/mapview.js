@@ -82,6 +82,8 @@ export function createMap(container,opts){
       o.offset=[(rect.l+rect.r)/2-rect.W/2,(rect.t+rect.b)/2-rect.H/2];
       map.easeTo(o);
     },
+    /* where the map is looking, as [lng,lat] */
+    center:function(){var c=map.getCenter();return [c.lng,c.lat];},
     zoomIn:function(){map.zoomIn();},
     zoomOut:function(){map.zoomOut();}
   };

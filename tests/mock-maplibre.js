@@ -31,7 +31,7 @@ window.maplibregl=(function(){
     panBy:function(off,o){this.log.push({fn:'panBy',off:off,duration:o&&o.duration});var s=this._scale();this._go({center:[ilng(mx(this.center[0])+off[0]/s),ilat(my(this.center[1])+off[1]/s)],zoom:this.zoom},o&&o.duration);},
     easeTo:function(o){this.log.push({fn:'easeTo',center:o.center,zoom:o.zoom,offset:o.offset,duration:o.duration});var z=o.zoom==null?this.zoom:o.zoom,s=this._scale(z),off=o.offset||[0,0];
       this._go({center:[ilng(mx(o.center[0])-off[0]/s),ilat(my(o.center[1])-off[1]/s)],zoom:z},o.duration);},
-    isMoving:function(){return !!this._moving;},getZoom:function(){return this.zoom;},
+    isMoving:function(){return !!this._moving;},getZoom:function(){return this.zoom;},getCenter:function(){return {lng:this.center[0],lat:this.center[1]};},
     zoomIn:function(){this.log.push({fn:'zoomIn'});this.zoom+=1;this._upd();},zoomOut:function(){this.log.push({fn:'zoomOut'});this.zoom-=1;this._upd();},
     addControl:function(c,pos){this.log.push({fn:'addControl',pos:pos});},
     addSource:function(id,s){var o={data:s.data};o.setData=function(d){o.data=d;};this._src[id]=o;},getSource:function(id){return this._src[id];},

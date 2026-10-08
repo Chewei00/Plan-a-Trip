@@ -1,7 +1,7 @@
 /* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
 import {ICON,CATICON,catSvg} from './icons.js';
-import {CATALOG} from './catalog.js';
+import {searchPlaces,fetchRoute} from './geoapify.js';
 import {createMap} from './mapview.js';
 
 /* ================= constants ================= */
@@ -72,11 +72,36 @@ function stopOf(sid){for(var i=0;i<db.days.length;i++)for(var j=0;j<db.days[i].s
 /* 1-based numbers of the days a place is in, ascending, each day once */
 function daysOf(pid){var a=[];db.days.forEach(function(d,i){if(d.stops.some(function(x){return x.place===pid;}))a.push(i+1);});return a;}
 function legMode(a,b){return db.legs[a+'>'+b]||'car';}
-/* rough travel time for modes that follow roads; null for the others */
+/* Real routes for the modes that follow roads. A route is looked up in memory, then in the browser's database, then
+   asked from the routing service once and kept, so reopening the trip costs nothing. Until it arrives (or if it
+   fails) the leg is drawn as a straight line with an estimated time */
+var routeCache={},routeAsked={},routeTm=null;
+function routeKey(m,a,b){return m+'|'+a.lat.toFixed(5)+','+a.lng.toFixed(5)+'|'+b.lat.toFixed(5)+','+b.lng.toFixed(5);}
+function legRoute(p,nx){
+  var m=legMode(p.id,nx.id);if(!modeOf(m).road)return null;
+  var k=routeKey(m,p,nx),r=routeCache[k];
+  if(r)return r.c?r:null;
+  if(!routeAsked[k]){routeAsked[k]=1;
+    fileGet('route:'+k).then(function(kept){
+      if(kept&&kept.c)return kept;
+      return fetchRoute(m,p,nx).then(function(got){filePut('route:'+k,got);return got;});
+    }).then(function(got){routeCache[k]=got;clearTimeout(routeTm);routeTm=setTimeout(routesArrived,60);},function(){routeCache[k]={failed:true};});
+  }
+  return null;
+}
+/* redraw only what a route changes: the lines on the map and the times in the list. The panels are left alone so
+   something being typed is not disturbed */
+function routesArrived(){
+  renderMap();
+  var els=lpScroll.querySelectorAll('.legtime[data-leg]'),i,ids,a,b;
+  for(i=0;i<els.length;i++){ids=els[i].dataset.leg.split('>');a=place(ids[0]);b=place(ids[1]);if(a&&b)els[i].textContent=fmtMin(legMinutes(a,b));}
+}
+/* travel time in minutes for modes that follow roads; null for the others */
 function legMinutes(p,nx){
   var m=legMode(p.id,nx.id);if(!modeOf(m).road)return null;
-  var km=hav(p,nx)*1.3;   /* straight-line distance plus a detour allowance, until a routing service is connected */
-  var min=m==='walk'?km/4.5*60:m==='bike'?km/14*60:4+km/(km<10?28:45)*60;
+  var r=legRoute(p,nx),min;
+  if(r)min=r.t/60;
+  else{var km=hav(p,nx)*1.3;min=m==='walk'?km/4.5*60:m==='bike'?km/14*60:4+km/(km<10?28:45)*60;}   /* estimate from straight-line distance */
   return min<10?Math.max(1,Math.round(min)):Math.round(min/5)*5;
 }
 function fmtSize(n){return n<1024*1024?Math.max(1,Math.round(n/1024))+' KB':(n/1024/1024).toFixed(1)+' MB';}
@@ -162,7 +187,7 @@ function renderLeft(){
       }
       h+='</div></div></div>';
       if(nx){var m=legMode(pid,nx),np=place(nx),mins=np?legMinutes(p,np):null;
-        h+=(mins!=null?'<span class="legtime">'+fmtMin(mins)+'</span>':'')+
+        h+=(mins!=null?'<span class="legtime" data-leg="'+pid+'>'+nx+'">'+fmtMin(mins)+'</span>':'')+
           '<button class="modebtn" data-act="menu" data-menu="mode" data-id="'+pid+'>'+nx+'" title="移動方式：'+modeOf(m).name+'" aria-label="移動方式：'+modeOf(m).name+'">'+ICON[m]+'</button>';}
       h+='</li>';
     });
@@ -254,16 +279,37 @@ function closeMenu(){
 }
 
 /* ================= search ================= */
+/* Saved places match as you type. New places come from the place search after a short pause in typing;
+   found holds the latest answer and searchNote says why there is nothing to show */
+var found=[],foundFor='',searchTm=null,searchSeq=0,searchNote='';
+function queueSearch(){
+  clearTimeout(searchTm);
+  var q=ui.q.trim();
+  if(q.length<2){found=[];foundFor='';searchNote='';searchSeq++;return;}
+  if(q===foundFor)return;
+  searchTm=setTimeout(function(){
+    var seq=++searchSeq;
+    searchPlaces(q,mapView?mapView.center():null).then(function(list){
+      if(seq!==searchSeq)return;
+      found=list;foundFor=q;searchNote=list.length?'':'none';renderResults();
+    },function(){
+      if(seq!==searchSeq)return;
+      found=[];foundFor='';searchNote='fail';renderResults();
+    });
+  },350);
+}
+function clearSearch(){clearTimeout(searchTm);searchSeq++;found=[];foundFor='';searchNote='';ui.searchOpen=false;ui.q='';qEl.value='';qEl.blur();renderResults();}
 function renderResults(){
   if(!ui.searchOpen){resultsEl.hidden=true;resultsEl.innerHTML='';return;}
   var q=ui.q.trim().toLowerCase(),h='';
   var saved=db.places.filter(function(p){return q&&p.name.toLowerCase().indexOf(q)>=0;}).slice(0,6);
   var names={};db.places.forEach(function(p){names[p.name]=1;});
-  var fresh=CATALOG.map(function(c,i){return {c:c,i:i};}).filter(function(o){return !names[o.c.name]&&(!q||o.c.name.toLowerCase().indexOf(q)>=0);}).slice(0,q?8:6);
+  var fresh=found.map(function(c,i){return {c:c,i:i};}).filter(function(o){return !names[o.c.name];});
   saved.forEach(function(p){h+='<button data-act="pick-saved" data-id="'+p.id+'"><span>'+esc(p.name)+'</span><span class="tag">已儲存</span></button>';});
-  fresh.forEach(function(o){h+='<button data-act="pick-new" data-i="'+o.i+'"><span>'+esc(o.c.name)+'</span><span class="tag">'+catName(o.c.cat)+'</span></button>';});
-  if(!saved.length&&!fresh.length)h='<p>找不到「'+esc(ui.q)+'」。</p>';
-  h+='<p>目前只找得到內建的範例地點，真的地點搜尋還沒接上。</p>';
+  fresh.forEach(function(o){h+='<button data-act="pick-new" data-i="'+o.i+'"><span>'+esc(o.c.name)+'</span><span class="tag">'+esc(o.c.sub)+'</span></button>';});
+  if(!h&&searchNote==='none')h='<p>找不到「'+esc(ui.q.trim())+'」。</p>';
+  if(!h&&searchNote==='fail')h='<p>搜尋暫時無法使用，請稍後再試。</p>';
+  if(!h){resultsEl.hidden=true;resultsEl.innerHTML='';return;}
   resultsEl.innerHTML=h;resultsEl.hidden=false;
 }
 
@@ -282,7 +328,10 @@ function fitPadding(){var s=safeArea();return {left:s.l+30,top:s.t+30,right:s.W-
 function currentFrame(){
   var d=ui.day&&getDay(ui.day),pts=[];
   if(d&&d.stops.length){
-    d.stops.forEach(function(st){var p=place(st.place);if(p)pts.push([p.lng,p.lat]);});
+    d.stops.forEach(function(st,n){var p=place(st.place);if(!p)return;pts.push([p.lng,p.lat]);
+      /* a route can bulge outside its two ends, so a few of its points count too */
+      var nx=d.stops[n+1]&&place(d.stops[n+1].place),r=nx&&legRoute(p,nx),i;
+      if(r)for(i=0;i<r.c.length;i+=Math.max(1,Math.floor(r.c.length/40)))pts.push(r.c[i]);});
     return {pts:pts,maxZoom:d.stops.length===1?13.5:14};
   }
   db.places.forEach(function(p){pts.push([p.lng,p.lat]);});
@@ -297,11 +346,12 @@ function renderMap(){
   function mk(lat,lng,inner){marks.push({lat:lat,lng:lng,html:inner});}
   db.places.forEach(function(p){if(daysOf(p.id).length)return;
     mk(p.lat,p.lng,'<button class="dot un" data-act="focus" data-place="'+p.id+'" title="'+esc(p.name)+'" aria-label="'+esc(p.name)+'"></button>');});
-  /* routes are straight lines between stops until a routing service is connected */
+  /* a leg follows the road once its route is known; train, boat and plane legs are always straight lines */
   (d?[d]:db.days).forEach(function(day){
     day.stops.forEach(function(st,n){
       var p=place(st.place),nx=day.stops[n+1]&&place(day.stops[n+1].place);if(!p||!nx)return;
-      legs.push({coords:[[p.lng,p.lat],[nx.lng,nx.lat]],w:d?4:3});
+      var r=legRoute(p,nx);
+      legs.push({coords:r?r.c:[[p.lng,p.lat],[nx.lng,nx.lat]],w:d?4:3});
     });
   });
   if(d){
@@ -316,7 +366,7 @@ function renderMap(){
   }
   var fp=ui.focus&&place(ui.focus);
   if(fp&&!(d&&d.stops.some(function(x){return x.place===fp.id;})))mk(fp.lat,fp.lng,'<span class="fpin"></span><span class="flabel">'+esc(fp.name)+'</span>');
-  if(ui.pending){var c=CATALOG[ui.pending.i];
+  if(ui.pending){var c=ui.pending;
     mk(c.lat,c.lng,'<span class="fpin"></span><div class="pend" role="group" aria-label="儲存地點"><div class="pend-top"><span class="pend-name">'+esc(c.name)+'</span>'+
       '<button class="xbtn" data-act="pend-close" aria-label="關閉">'+ICON.x+'</button></div><div class="chips">'+
       CATS.map(function(k){return '<button class="chip'+(ui.pending.cat===k.id?' on':'')+'" data-act="pend-cat" data-cat="'+k.id+'" aria-pressed="'+(ui.pending.cat===k.id)+'">'+catSvg(k.id,1)+k.name+'</button>';}).join('')+
@@ -640,13 +690,13 @@ var ACT={
   'toggle-top':function(){ui.topOpen=!ui.topOpen;applyPanels();},
   'focus':function(el){focusPlace(el.dataset.place);},
   'pick-saved':function(el){var p=place(el.dataset.id);if(!p)return;
-    ui.searchOpen=false;ui.q='';qEl.value='';qEl.blur();renderResults();focusPlace(p.id);},
-  'pick-new':function(el){var i=+el.dataset.i,c=CATALOG[i];if(!c)return;
-    ui.pending={i:i,cat:c.cat};ui.focus=null;ui.searchOpen=false;ui.q='';qEl.value='';qEl.blur();renderResults();render();
-    if(mapView)mapView.showPoint([c.lng,c.lat],13,safeArea());},
+    clearSearch();focusPlace(p.id);},
+  'pick-new':function(el){var c=found[+el.dataset.i];if(!c)return;
+    ui.pending={name:c.name,lat:c.lat,lng:c.lng,cat:c.cat};ui.focus=null;clearSearch();render();
+    if(mapView)mapView.showPoint([c.lng,c.lat],15,safeArea());},
   'pend-cat':function(el){if(ui.pending){ui.pending.cat=el.dataset.cat;renderMap();}},
   'pend-close':function(){ui.pending=null;renderMap();},
-  'pend-save':function(){if(!ui.pending)return;var c=CATALOG[ui.pending.i],p=newPlace({name:c.name,cat:ui.pending.cat,lat:c.lat,lng:c.lng});
+  'pend-save':function(){if(!ui.pending)return;var c=ui.pending,p=newPlace({name:c.name,cat:c.cat,lat:c.lat,lng:c.lng});
     db.places.push(p);ui.cat=p.cat;ui.pending=null;ui.focus=p.id;save();render();
     if(!ui.topOpen){ui.topOpen=true;applyPanels();}
     revealCard(p.id);toast('已存到想去的地方');},
@@ -690,7 +740,7 @@ document.addEventListener('keydown',function(e){
 });
 document.addEventListener('focusout',function(e){if(e.target.classList&&e.target.classList.contains('edit')&&ui.editing)commitEdit(false);});
 document.addEventListener('input',function(e){var c=e.target.classList;if(c&&(c.contains('nbedit')||c.contains('ckedit')))autosize(e.target);});
-qEl.addEventListener('input',function(){ui.q=qEl.value;ui.searchOpen=true;renderResults();});
+qEl.addEventListener('input',function(){ui.q=qEl.value;ui.searchOpen=true;queueSearch();renderResults();});
 qEl.addEventListener('focus',function(){if(!ui.searchOpen){ui.searchOpen=true;renderResults();}});
 cardsEl.addEventListener('wheel',function(e){if(Math.abs(e.deltaY)>Math.abs(e.deltaX)&&cardsEl.scrollWidth>cardsEl.clientWidth){cardsEl.scrollLeft+=e.deltaY;e.preventDefault();}},{passive:false});
 window.addEventListener('resize',function(){closeMenu();});
