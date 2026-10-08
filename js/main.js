@@ -1,8 +1,8 @@
 /* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=3';
-import {searchPlaces,fetchRoute} from './geoapify.js?v=3';
-import {createMap} from './mapview.js?v=3';
+import {ICON,CATICON,catSvg} from './icons.js?v=4';
+import {searchPlaces,fetchRoute} from './geoapify.js?v=4';
+import {createMap} from './mapview.js?v=4';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -123,7 +123,8 @@ function filePut(id,blob){MEMF[id]=blob;return fileOp('readwrite',function(s){re
 function fileGet(id){if(MEMF[id])return Promise.resolve(MEMF[id]);return fileOp('readonly',function(s){return s.get(id);}).catch(function(){return null;});}
 function fileDel(id){delete MEMF[id];fileOp('readwrite',function(s){return s.delete(id);}).catch(function(){});}
 function dropFilesOf(st){(st.plan||[]).forEach(function(en){if(en.file)fileDel(en.file.id);});}
-function fmtMin(m){if(m<60)return m+' min';var h=Math.floor(m/60),r=m%60;return h+' hr'+(r?' '+r+' min':'');}
+/* "25 m", "2 h", "1 h  55 m": a space inside each part and a double space between the parts (non-breaking, so the gap survives in HTML) */
+function fmtMin(m){if(m<60)return m+'\u00a0m';var h=Math.floor(m/60),r=m%60;return h+'\u00a0h'+(r?'\u00a0\u00a0'+r+'\u00a0m':'');}
 
 /* open: the expanded days, oldest first; day: the one the map shows (the last one opened or clicked) */
 var ui={day:null,open:[],focus:null,cat:'sight',leftOpen:true,topOpen:true,menu:null,editing:null,q:'',searchOpen:false,pending:null,};
@@ -279,7 +280,8 @@ function closeMenu(){
 }
 
 /* ================= search ================= */
-/* Saved places match as you type. New places come from the place search after a short pause in typing;
+/* Search looks only at the map: places come from the place search after a short pause in typing. A result that is
+   already saved is still listed, marked as saved, and picking it selects the saved place instead of adding a copy.
    found holds the latest answer and searchNote says why there is nothing to show */
 var found=[],foundFor='',searchTm=null,searchSeq=0,searchNote='';
 function queueSearch(){
@@ -301,12 +303,13 @@ function queueSearch(){
 function clearSearch(){clearTimeout(searchTm);searchSeq++;found=[];foundFor='';searchNote='';ui.searchOpen=false;ui.q='';qEl.value='';qEl.blur();renderResults();}
 function renderResults(){
   if(!ui.searchOpen){resultsEl.hidden=true;resultsEl.innerHTML='';return;}
-  var q=ui.q.trim().toLowerCase(),h='';
-  var saved=db.places.filter(function(p){return q&&p.name.toLowerCase().indexOf(q)>=0;}).slice(0,6);
-  var names={};db.places.forEach(function(p){names[p.name]=1;});
-  var fresh=found.map(function(c,i){return {c:c,i:i};}).filter(function(o){return !names[o.c.name];});
-  saved.forEach(function(p){h+='<button data-act="pick-saved" data-id="'+p.id+'"><span>'+esc(p.name)+'</span><span class="tag">已儲存</span></button>';});
-  fresh.forEach(function(o){h+='<button data-act="pick-new" data-i="'+o.i+'"><span>'+esc(o.c.name)+'</span><span class="tag">'+esc(o.c.sub)+'</span></button>';});
+  var h='',byName={};
+  db.places.forEach(function(p){byName[p.name]=p.id;});
+  found.forEach(function(c,i){
+    var id=byName[c.name];
+    h+=id?'<button data-act="pick-saved" data-id="'+id+'"><span>'+esc(c.name)+'</span><span class="tag">已儲存</span></button>'
+         :'<button data-act="pick-new" data-i="'+i+'"><span>'+esc(c.name)+'</span><span class="tag">'+esc(c.sub)+'</span></button>';
+  });
   if(!h&&searchNote==='none')h='<p>找不到「'+esc(ui.q.trim())+'」。</p>';
   if(!h&&searchNote==='fail')h='<p>搜尋暫時無法使用，請稍後再試。</p>';
   if(!h){resultsEl.hidden=true;resultsEl.innerHTML='';return;}

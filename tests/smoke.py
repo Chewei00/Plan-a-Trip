@@ -62,13 +62,17 @@ with sync_playwright() as p:
     routes = [u for u in calls if "/routing" in u]
     assert len(routes) == 4 and len(set(routes)) == 4, "one request per road leg, no repeats"
     assert page.evaluate("__map.getSource('routes').data.features[0].geometry.coordinates.length") == 3, "leg follows the returned route"
-    assert page.locator(".day.sel .legtime").all_inner_texts() == ["20 min", "20 min", "20 min"]
+    assert page.locator(".day.sel .legtime").all_inner_texts() == ["20\u00a0m", "20\u00a0m", "20\u00a0m"]
 
     # search: typing asks the place search once after a pause; picking a result offers to save it, with a guessed category
     page.fill("#q", "ほうとう")
     page.wait_for_timeout(700)
     assert len([u for u in calls if "/geocode/autocomplete" in u]) == 1
     assert "ほうとう不動" in page.locator("#results").inner_text()
+    assert page.locator("#results button").count() == 2, "only places from the map search are listed"
+    page.fill("#q", "富士")   # matches several saved places by name, but the stand-in search still answers with its two
+    page.wait_for_timeout(700)
+    assert page.locator("#results .tag:has-text('已儲存')").count() == 0, "saved places are not mixed in on their own"
     page.click("#results button:has-text('ほうとう不動')")
     page.wait_for_timeout(300)
     assert page.locator(".pend .pend-name").inner_text() == "ほうとう不動"
