@@ -8,6 +8,7 @@
 
    Only the place being looked at is read, and only from the address of the page:
      https://www.google.com/maps/place/<name>/@<view>/data=...!1s<place id>...!3d<lat>!4d<lng>...
+   (the address can describe two places at once; see parse)
    Nothing is read from Google's lists of saved places, and nothing is sent anywhere: a saved place is kept in the
    extension's own storage (the "inbox") until the Plan a Trip site is open in this browser, which then takes it
    (site.js). */
@@ -54,7 +55,8 @@
     '.menu button:hover,.menu button:focus-visible{background:var(--fill-note)}',
     '.tick,.out{width:16px;height:16px;stroke-width:1.4;margin-left:auto}',
     '.sep{height:1px;margin:6px 8px;background:var(--line)}',
-    '.pend{padding:10px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
+    '.pend{padding:10px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float);transition:opacity .2s ease}',
+    '.pend.out{opacity:0}',
     '.pend-name{font:500 13px/20px var(--ui);letter-spacing:.04em;padding:2px 2px 0;overflow-wrap:anywhere}',
     '.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px}',
     '.chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;white-space:nowrap}',
@@ -64,29 +66,86 @@
     '.savebtn{display:block;width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}',
     '.savebtn[disabled]{background:var(--fill-selected);color:var(--ink);cursor:default}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
-    '@media (prefers-reduced-motion:reduce){.wrap,.down{transition:none}}'
+    '@media (prefers-reduced-motion:reduce){.wrap,.down,.pend{transition:none}}'
   ].join('\n');
 
-  /* ---- reading the place from the page address ---- */
+  /* ---- reading the place from the page address ----
+     The data part of the address is a tree written out flat: pieces "!<field><type><value>", where type m means
+     "a group made of the next <value> pieces". The place that is open is the group 3 directly inside group 4; in it,
+     piece 1 is the place's identifier and group 8 holds its latitude (3) and longitude (4):
+       !3m1!4b1 !4m6 !3m5 !1s<id> !8m2 !3d<lat> !4d<lng> !16s...
+     After a search, or with one place open and another clicked on the map, group 4 also carries a group 1 in front,
+     describing what was searched for or the place that was open first, with an identifier and a position of its own:
+       !4m14 !1m7 !3m6 !1s<first id> !2z<its name> !8m2 !3d.. !4d.. !16z..  !3m5 !1s<id> !8m2 !3d<lat> !4d<lng> !16s..
+     so the pieces have to be read by where they sit, not by which comes first. */
+  function tree(data) {
+    var toks = data.split('!').filter(Boolean), i = 0, ok = true;
+    function nodes(end) {
+      var out = [];
+      while (ok && i < end) {
+        var m = /^(\d+)([a-z])(.*)$/.exec(toks[i++]);
+        if (!m) { ok = false; break; }
+        var n = { f: +m[1], t: m[2], v: m[3] };
+        if (n.t === 'm') {
+          var c = +n.v;
+          if (!(c >= 0) || i + c > end) { ok = false; break; }
+          n.kids = nodes(i + c);
+        }
+        out.push(n);
+      }
+      return out;
+    }
+    var top = nodes(toks.length);
+    return ok ? top : null;
+  }
+  function pick(list, f, t) {   /* the last piece with this field and type */
+    for (var i = (list || []).length - 1; i >= 0; i--) if (list[i].f === f && list[i].t === t) return list[i];
+    return null;
+  }
+  var FID = /^0x[0-9a-f]+:0x[0-9a-f]+$/i;
+  function placeIn(data) {
+    var top = tree(data), g = top && pick(top, 4, 'm'), pl = g && pick(g.kids, 3, 'm'), pos = pl && pick(pl.kids, 8, 'm');
+    var lat = pos && pick(pos.kids, 3, 'd'), lng = pos && pick(pos.kids, 4, 'd'), id = pl && pick(pl.kids, 1, 's');
+    if (lat && lng) return { lat: lat.v, lng: lng.v, fid: id && FID.test(id.v) ? id.v : '' };
+    /* not the shape described above: take the last position in the address, and the identifier just before it */
+    var re = /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/g, m, last = null;
+    while ((m = re.exec(data))) last = m;
+    if (!last) return null;
+    var ids = data.slice(0, last.index).match(/!1s0x[0-9a-f]+:0x[0-9a-f]+/gi);
+    return { lat: last[1], lng: last[2], fid: ids ? ids[ids.length - 1].slice(3) : '' };
+  }
   function parse(href) {
     var m = /\/maps\/place\/([^\/]+)\/(?:[^\/]*\/)?data=([^?#]*)/.exec(href);
     if (!m) return null;
     var name;
     try { name = decodeURIComponent(m[1].replace(/\+/g, ' ')); } catch (e) { return null; }
     name = name.replace(/\s+/g, ' ').trim().slice(0, 40);
-    var ll = /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/.exec(m[2]);
-    if (!name || !ll) return null;
-    var fid = ((/!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i.exec(m[2]) || [])[1] || '').toLowerCase();
-    return { key: (fid || name) + '|' + ll[1] + ',' + ll[2], name: name, lat: +ll[1], lng: +ll[2], fid: fid };
+    var o = name ? placeIn(m[2]) : null, lat = o ? +o.lat : NaN, lng = o ? +o.lng : NaN;
+    if (!o || !(Math.abs(lat) <= 90) || !(Math.abs(lng) <= 180)) return null;
+    var fid = o.fid.toLowerCase();
+    return { key: (fid || name) + '|' + o.lat + ',' + o.lng, name: name, lat: lat, lng: lng, fid: fid };
   }
-  /* a first guess at the category, from the kind of place Google shows under the name (when it can be found) and
-     from the name itself. It is only a starting point: the chips change it */
+  /* The kind of place Google shows under the name ("主題公園", "拉麵店"). The panel is drawn a moment after the address
+     changes and until then still shows the place before, so it is read only once the panel's heading is this place.
+     null: the panel is not showing this place yet. '': it is, and no kind is given. */
+  function kindOf(name) {
+    try {
+      var hs = document.querySelectorAll('h1');
+      for (var i = 0; i < hs.length; i++) {
+        if ((hs[i].textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40) !== name) continue;
+        var b = (hs[i].closest('[role="main"]') || document).querySelector('button[jsaction*="category"]');
+        return b ? (b.textContent || '').trim() : '';
+      }
+    } catch (e) {}
+    return null;
+  }
+  /* a first guess at the category, from that kind and from the name itself. It is only a starting point: the chips
+     change it */
   var STAY = /飯店|酒店|旅館|旅店|民宿|旅舍|膠囊|溫泉旅|ホテル|ゲストハウス|hotel|hostel|\binn\b|resort|ryokan|guest ?house/i;
   var TRANSIT = /車站|火車站|地鐵站|捷運站|巴士站|公車站|轉運站|機場|航廈|渡輪|碼頭|駅|バス停|station|airport|terminal|站$/i;
-  var FOOD = /餐廳|餐館|食堂|小吃|拉麵|麵店|烏龍麵|蕎麥|壽司|燒肉|居酒屋|咖啡|茶館|茶屋|甜點|甜品|糕餅|糖果|蛋糕|和菓子|冰淇淋|麵包|烘焙|スイーツ|酒吧|料理|定食|火鍋|牛排|早午餐|レストラン|ラーメン|カフェ|restaurant|caf[eé]|coffee|bakery|\bbar\b|bistro|ramen|sushi|diner|\bpub\b/i;
-  function guess(name) {
-    var kind = '';
-    try { var b = document.querySelector('button[jsaction*="category"]'); if (b) kind = b.textContent || ''; } catch (e) {}
+  var FOOD = /餐廳|餐館|食堂|小吃|拉麵|麵店|烏龍麵|蕎麥|壽司|燒肉|居酒屋|咖啡|茶館|茶屋|甜點|甜品|糕餅|糖果|蛋糕|和菓子|冰淇淋|麵包|烘焙|スイーツ|酒吧|料理|定食|火鍋|牛排|扒房|早午餐|レストラン|ラーメン|カフェ|restaurant|caf[eé]|coffee|bakery|\bbar\b|bistro|ramen|sushi|diner|\bpub\b/i;
+  function guess(name, kind) {
+    kind = kind || '';
     var t = kind + ' ' + name;
     if (STAY.test(t)) return 'stay';
     if (TRANSIT.test(kind) || TRANSIT.test(name)) return 'transit';
@@ -162,6 +221,7 @@
     else if (act === 'cat' && cur) { cur.cat = a.getAttribute('data-cat'); touched = true; menuOpen = false; draw(); }
     else if (act === 'save' && cur) {
       var t = trip();
+      if (!cur.cat) cur.cat = guess(cur.name, kindOf(cur.name));
       var item = { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), tripId: t ? t.id : null,
         name: cur.name, lat: cur.lat, lng: cur.lng, cat: cur.cat, fid: cur.fid, at: Date.now() };
       state.inbox = state.inbox.concat([item]);
@@ -175,20 +235,47 @@
     if (menuOpen && host && !(e.composedPath && e.composedPath().indexOf(host) >= 0)) { menuOpen = false; draw(); }
   }, true);
 
-  /* ---- follow the page: Google Maps changes its address without loading a new page ---- */
-  var lastHref = '';
+  /* ---- follow the page: Google Maps changes its address without loading a new page ----
+     Going from one place to the next, the address passes through forms that name no place. The card stays where it
+     is through those and only its contents change; it goes away when there has been no place for a second. */
+  var lastHref = '', goneT = 0, kindT = 0;
+  function leave() {
+    if (!cur || goneT) return;
+    goneT = setTimeout(function () {
+      var el = root && root.querySelector('.pend');
+      if (el) el.classList.add('out');
+      goneT = setTimeout(function () { goneT = 0; cur = null; draw(); }, 200);
+    }, 1000);
+  }
+  /* the category is marked once, when the page shows what kind of place this is; if it does not within a few
+     seconds, or gives no kind, the name alone decides. No chip is lit until then. */
+  function settle(p) {
+    var n = 0, shown = 0;
+    clearInterval(kindT);
+    kindT = setInterval(function () {
+      if (cur !== p || touched || p.cat) { clearInterval(kindT); return; }
+      var k = kindOf(p.name);
+      n++;
+      if (k !== null) shown++;
+      if (k || shown >= 4 || n >= 15) { clearInterval(kindT); p.cat = guess(p.name, k); draw(); }
+    }, 200);
+  }
   function look() {
     if (location.href === lastHref) return;
     lastHref = location.href;
     var p = parse(lastHref);
-    if (!p) { if (cur) { cur = null; draw(); } return; }
-    if (cur && cur.key === p.key) return;
+    if (!p) { leave(); return; }
+    var leaving = goneT;
+    clearTimeout(goneT); goneT = 0;
+    if (cur && cur.key === p.key) {
+      if (cur.name !== p.name || leaving) { cur.name = p.name; draw(); }
+      return;
+    }
     touched = false;
-    p.cat = guess(p.name);
+    p.cat = '';
     cur = p;
     draw();
-    /* the kind of place appears a moment after the address changes: guess once more unless a chip was chosen */
-    setTimeout(function () { if (cur === p && !touched) { var c = guess(p.name); if (c !== p.cat) { p.cat = c; draw(); } } }, 1500);
+    settle(p);
   }
   function refresh() {
     if (!alive()) return;

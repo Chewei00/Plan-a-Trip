@@ -23,6 +23,20 @@ def place_url(name, fid, lat, lng):
 
 FUJIQ = place_url("富士急樂園", "0x60196005c1d9f19f:0x9a5a9d0b9cbd5c0b", 35.4869467, 138.7805513)
 HOTEL = place_url("Hotel Mystays 富士山", "0x6019600000000002:0x2", 35.4901, 138.7812)
+# A real address (2026-10-09) with two places in it: MOA 美術館 had been opened first, then this one was clicked on the
+# map. The place that is open is the second; the first is still described in front of it.
+PETER = ("https://www.google.com/maps/place/Peter+Luger+%E7%89%9B%E6%8E%92%E9%A4%A8+%E6%9D%B1%E4%BA%AC/@35.8136684,139.1672478,9.17z/"
+         "data=!4m14!1m7!3m6!1s0x6019be7c174af88d:0x40dcc7041d54c2e1!2zTU9B576O6KGT6aSo!8m2!3d35.1092776!4d139.0751998!16zL20vMDVfNm5o"
+         "!3m5!1s0x60188bd28536402d:0x45eca5f988b97909!8m2!3d35.6438736!4d139.7139535!16s%2Fg%2F11pwvm79pg?entry=ttu")
+# the same shape, with a place that is already saved in front
+def after(first, name, fid, lat, lng):
+    from urllib.parse import quote
+    return (f"https://www.google.com/maps/place/{quote(name)}/@35.49,138.78,14z/data=!4m14!1m7!3m6!1s{first[0]}!2zTU9B!8m2!3d{first[1]}!4d{first[2]}"
+            f"!16zL20vMDVfNm5o!3m5!1s{fid}!8m2!3d{lat}!4d{lng}!16s%2Fg%2F11abc?entry=ttu")
+HOTO = after(("0x60196005c1d9f19f:0x9a5a9d0b9cbd5c0b", 35.4869467, 138.7805513), "ほうとう不動", "0x6019600000000003:0x3", 35.499, 138.769)
+# the stand-in for Google's panel: a heading with the place's name and, under it, the kind of place
+PANEL = """<!doctype html><meta charset="utf-8"><title>Google 地圖</title><div role="main"><h1></h1><button jsaction="pane.category">主題樂園</button></div>
+<script>var m=/\\/maps\\/place\\/([^\\/]+)/.exec(location.pathname);if(m)document.querySelector('h1').textContent=decodeURIComponent(m[1].replace(/\\+/g,' '));</script>"""
 
 with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     ctx = p.chromium.launch_persistent_context(profile, channel="chromium", headless=True, viewport={"width": 1440, "height": 800},
@@ -36,8 +50,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
             return route.fulfill(status=404, body="")
         route.fulfill(status=200, content_type=TYPES.get(f.suffix, "application/octet-stream"), body=f.read_bytes())
     ctx.route(SITE + "**", site)
-    ctx.route("https://www.google.com/maps/**", lambda r: r.fulfill(status=200, content_type="text/html",
-              body='<!doctype html><meta charset="utf-8"><title>Google 地圖</title><h1>stand-in</h1><button jsaction="pane.category">主題樂園</button>'))
+    ctx.route("https://www.google.com/maps/**", lambda r: r.fulfill(status=200, content_type="text/html", body=PANEL))
     ctx.route("https://maps.googleapis.com/maps/api/js*", lambda r: r.fulfill(status=200, content_type="text/javascript", body=MOCK))
     for u in ["https://fonts.googleapis.com/**", "https://places.googleapis.com/**", "https://api.geoapify.com/**"]:
         ctx.route(u, lambda r: r.abort())
@@ -122,15 +135,48 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     maps.wait_for_timeout(300)
     assert card.locator(".trip span").inner_text() == "東京 3 日"
 
-    # Google Maps moves between places without loading a page: the card follows and guesses the category
-    maps.evaluate("u => history.pushState({}, '', u)", HOTEL)
+    # Google Maps moves between places without loading a page. Its panel is drawn a moment after the address changes:
+    # the card shows the new name at once, in the same spot, and marks the category once, when the panel has caught up
+    def go(url):
+        maps.evaluate("u => history.pushState({}, '', u)", url)
+    def panel(name, kind):
+        maps.evaluate("([n, k]) => { document.querySelector('h1').textContent = n; document.querySelector('button[jsaction]').textContent = k; }", [name, kind])
+    spot = card.locator(".pend").bounding_box()
+    maps.evaluate("""() => { window.__gone = 0; const box = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.wrap');
+        new MutationObserver(() => { if (!box.querySelector('.pend')) window.__gone++; }).observe(box, {childList: true, subtree: true}); }""")
+    go(HOTEL)
+    maps.wait_for_timeout(700)
+    assert card.locator(".pend-name").inner_text() == "Hotel Mystays 富士山" and card.locator(".chip.on").count() == 0, "the panel still shows the place before"
+    panel("Hotel Mystays 富士山", "飯店")
+    maps.wait_for_timeout(400)
+    assert card.locator(".chip.on").inner_text() == "住宿"
+    # between two places the address names no place for a moment: the card does not go away and come back
+    go("https://www.google.com/maps/@35.49,138.78,14z")
+    maps.wait_for_timeout(700)
+    assert card.locator(".pend").count() == 1
+    # one place open and another clicked on the map: the address describes both, and the one in front is already saved.
+    # The card is for the place that is open, which is not saved
+    go(HOTO); panel("ほうとう不動", "餺飥麵店")
+    maps.wait_for_timeout(900)
+    assert card.locator(".pend-name").inner_text() == "ほうとう不動" and card.locator(".savebtn").inner_text() == "存到想去的地方"
+    assert card.locator(".chip.on").inner_text() == "飲食"
+    go(PETER)
+    maps.wait_for_timeout(700)
+    assert card.locator(".pend-name").inner_text() == "Peter Luger 牛排館 東京" and card.locator(".chip.on").count() == 0
+    card.locator(".savebtn").click()      # pressed before the panel caught up: the name decides the category
+    app.wait_for_timeout(900)
+    got = [t for t in trips(app)["trips"] if t["title"] == "東京 3 日"][0]["places"][-1]
+    assert (got["name"], got["lat"], got["lng"], got["fid"], got["cat"]) == ("Peter Luger 牛排館 東京", 35.643874, 139.713954, "0x60188bd28536402d:0x45eca5f988b97909", "food"), got
+    assert card.locator(".savebtn").inner_text() == "已儲存"
+    after_moves = card.locator(".pend").bounding_box()
+    assert maps.evaluate("window.__gone") == 0 and (after_moves["x"], after_moves["y"]) == (spot["x"], spot["y"]), "the card stayed where it was throughout"
+    # no place open any more: after a second the card goes, the bar stays
+    go("https://www.google.com/maps/@35.49,138.78,14z")
+    maps.wait_for_timeout(1800)
+    assert card.locator(".pend").count() == 0 and card.locator(".bar").count() == 1, "no place open: the bar stays, the card goes"
+    go(HOTEL); panel("Hotel Mystays 富士山", "飯店")
     maps.wait_for_timeout(900)
     assert card.locator(".pend-name").inner_text() == "Hotel Mystays 富士山" and card.locator(".chip.on").inner_text() == "住宿"
-    maps.evaluate("history.pushState({}, '', 'https://www.google.com/maps/@35.49,138.78,14z')")
-    maps.wait_for_timeout(900)
-    assert card.locator(".pend").count() == 0 and card.locator(".bar").count() == 1, "no place open: the bar stays, the card goes"
-    maps.evaluate("u => history.pushState({}, '', u)", HOTEL)
-    maps.wait_for_timeout(900)
 
     # with the site closed, a saved place waits in the extension and is there the next time the site is opened
     app.close()
