@@ -23,6 +23,7 @@
 | `js/icons.js` | 所有圖示 |
 | `js/google.js` | 載入 Google 地圖元件、地點搜尋。金鑰在這裡 |
 | `js/geoapify.js` | 路線。只有這個檔案會呼叫 Geoapify |
+| `favicon.svg`、`favicon-32.png`、`apple-touch-icon.png` | 網站圖示。SVG 是 Chewei 畫的原稿，另外兩張由它轉出（分頁用的 PNG、手機主畫面用的 180 × 180 方形） |
 | `tests/` | 不需要網路的基本測試 |
 
 沒有建置步驟：檔案改了、推上 `main`，GitHub Pages 就會更新。
