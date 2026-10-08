@@ -26,6 +26,9 @@ explain in plain words, never ask them to run commands.
 - Static site, **no build step and no npm**. GitHub Pages serves `main` as is at https://chewei00.github.io/Plan-a-Trip/.
   Libraries come from a CDN with pinned versions (MapLibre GL JS 4.7.1 in `index.html`; pdf.js 4.10.38 legacy build,
   lazy-loaded in `js/main.js`). Do not add tooling without discussing it first.
+- **Before every push that changes `js/` or `css/`, run `python3 tools/release.py`.** It bumps the `?v=N` tag on every
+  script and stylesheet address. GitHub Pages lets browsers cache files for ten minutes; without the tag a browser can
+  mix new and old files and the page breaks. A visitor may still see the previous version for up to ten minutes.
 - `js/main.js` holds state (`db`, `ui`), rendering and interactions. It re-renders whole panels on every action;
   animations work by drawing the previous state and then switching classes (`syncFocus`, `syncOpen`).
 - `js/mapview.js` is the only file that touches MapLibre. The app passes it plain data (markers as HTML, routes as
