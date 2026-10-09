@@ -125,8 +125,20 @@ with sync_playwright() as p:
     assert len(details) == 1 and asked[0]["sessionToken"] in details[0], "the pick closes the search session"
     assert page.locator(".pend .pend-name").inner_text() == "ほうとう不動"
     assert page.locator(".pend .chip.on").inner_text() == "飲食"
+    # pressed, the button hops into "Added" and the card stays a moment; the place is saved at the press
     page.click(".savebtn")
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(80)
+    hop = page.evaluate("""(() => { const b = document.querySelector('.pend .savebtn'), s = getComputedStyle(b);
+        return [b.className, b.disabled, [...b.querySelectorAll('span')].map(x => x.textContent), s.animationName, s.animationDuration,
+                s.transform !== 'none' && new DOMMatrix(s.transform).m42 < 0, document.querySelectorAll('.pend [data-act]:not([disabled])').length]; })()""")
+    assert hop == ["savebtn adding", True, ["Add to Travel Collection", "Added"], "added-bg, added-hop", "0.4s, 0.4s", True, 0], hop
+    assert any(x["name"] == "ほうとう不動" for x in json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))["trips"][0]["places"]), "saved straight away"
+    page.wait_for_timeout(500)
+    held = page.evaluate("""(() => { const b = document.querySelector('.pend .savebtn'), o = x => getComputedStyle(b.querySelector(x)).opacity;
+        return [getComputedStyle(b).backgroundColor, o('.was'), o('.now'), new DOMMatrix(getComputedStyle(b).transform).m42]; })()""")
+    assert held == ["rgb(229, 229, 229)", "0", "1", 0], ("still there, landed, saying Added", held)
+    page.wait_for_timeout(600)
+    assert page.locator(".pend").count() == 0 and "show" not in (page.get_attribute("#toast", "class") or ""), "then the card closes, with no line at the foot"
     assert page.locator(".card.focus .cname").inner_text() == "ほうとう不動"
     saved = [x for x in json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))["trips"][0]["places"] if x["name"] == "ほうとう不動"][0]
     assert saved["gid"] == "gid-hoto" and saved["lat"] == 35.499 and saved["at"] > 0, "the saved place keeps Google's ID and when its position was fetched"
@@ -392,6 +404,18 @@ with sync_playwright() as p:
     page.wait_for_timeout(300)
     d = stored()
     assert len(d["trips"]) == 1 and d["trips"][0]["title"] == "New trip" and d["trips"][0]["places"] == [] and len(d["trips"][0]["days"]) == 1
+
+    # with the system's "reduce motion", there is no hop: the card closes at once and a line at the foot says so
+    page.emulate_media(reduced_motion="reduce")
+    page.fill("#q", "大石")
+    page.wait_for_timeout(700)
+    page.click("#results button:has-text('大石公園')")
+    page.wait_for_timeout(300)
+    page.click(".savebtn")
+    page.wait_for_timeout(150)
+    assert page.locator(".pend").count() == 0 and page.locator(".card.focus .cname").inner_text() == "大石公園"
+    assert "show" in page.get_attribute("#toast", "class") and page.locator("#toast").inner_text() == "Added to Travel Collection"
+    page.emulate_media(reduced_motion="no-preference")
 
     assert not errors, errors
     browser.close()

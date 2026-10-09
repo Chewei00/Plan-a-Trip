@@ -68,6 +68,17 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .xbtn:hover{background:var(--fill-note);color:var(--ink)}
 .pend .chips{margin:10px 0 12px;flex-wrap:wrap;gap:8px}
 .savebtn{width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}
+.savebtn[disabled]{background:var(--line-soft);color:var(--text-3);cursor:default}
+/* just pressed: the button hops into "Added" (values chosen by Chewei, 2026-10-09; the same as on the extension's
+   card). Up 2px in the first quarter, back down by 78% sinking half a pixel past where it rests, then settling; .4s in
+   all. The old words go while it rises, "Added" comes from the top of the hop, the colour runs across from 10% to 70% */
+@keyframes added-hop{0%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.7,.3,1)}25%{transform:translateY(-2px);animation-timing-function:cubic-bezier(.55,0,.45,1)}78%{transform:translateY(.5px);animation-timing-function:cubic-bezier(.3,0,.3,1)}100%{transform:translateY(0)}}
+@keyframes added-bg{0%,10%{background-color:var(--ink)}70%,100%{background-color:var(--line-soft)}}
+@keyframes added-out{0%{opacity:1}25%,100%{opacity:0}}
+@keyframes added-in{0%,25%{opacity:0}70%,100%{opacity:1}}
+.savebtn.adding{position:relative;animation:added-bg .4s linear both,added-hop .4s linear both}
+.savebtn.adding .was{color:var(--on-ink);animation:added-out .4s linear both}
+.savebtn.adding .now{position:absolute;left:0;right:0;top:6px;animation:added-in .4s linear both}
 .ctrl{position:absolute;right:16px;bottom:16px;display:flex;gap:6px;z-index:3}
 .ctrl button{min-width:34px;height:34px;padding:0 10px;border:0;border-radius:var(--r8);background:var(--surface);box-shadow:var(--shadow-card);font:400 13px/20px var(--ui);display:grid;place-items:center}
 .ctrl button:hover{color:#000}

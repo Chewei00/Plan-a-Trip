@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=17';
-import {fetchRoute} from './geoapify.js?v=17';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=17';
-import {createMap} from './mapview.js?v=17';
+import {ICON,CATICON,catSvg} from './icons.js?v=18';
+import {fetchRoute} from './geoapify.js?v=18';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=18';
+import {createMap} from './mapview.js?v=18';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -450,6 +450,25 @@ function currentFrame(){
 /* a trip with no places yet has nothing to frame: the map stays where it is */
 function fitCurrent(){if(!mapView||!db.places.length)return;var f=currentFrame();mapView.fit(f.pts,fitPadding(),f.maxZoom);}
 function ensureVisible(lat,lng){if(mapView)mapView.ensureVisible([lng,lat],safeArea());}
+/* "Add to Travel Collection" turning into "Added" (the same hop as on the extension's card, see .savebtn.adding in
+   app.css): the map's markers are drawn afresh each time, so a button drawn again part-way through is told how far
+   along it is, and after the hop it is the plain "Added" button. The card then stays for ADDHOLD before it closes. */
+var ADDING=400,ADDHOLD=500;
+function calm(){return !!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);}
+function addBtn(c){
+  if(!c.adding)return '<button class="savebtn" data-act="pend-save">Add to Travel Collection</button>';
+  var gone=Date.now()-c.adding,d=' style="animation-delay:-'+gone+'ms"';
+  if(gone>=ADDING)return '<button class="savebtn" disabled>Added</button>';
+  return '<button class="savebtn adding" disabled aria-label="Added"'+d+'><span class="was" aria-hidden="true"'+d+'>Add to Travel Collection</span><span class="now"'+d+'>Added</span></button>';
+}
+/* the card closes and the place is shown where it went. If the card has gone already (another search, a click on the
+   map, another trip), there is only the collection to bring up to date */
+function addDone(c,p,say){
+  if(ui.pending!==c){if(db.places.indexOf(p)>=0)renderTop();return;}
+  ui.cat=p.cat;ui.pending=null;ui.focus=p.id;render();
+  if(!ui.topOpen){ui.topOpen=true;applyPanels();}
+  revealCard(p.id);if(say)toast('Added to Travel Collection');
+}
 function renderMap(){
   if(!mapView)return;
   var d=ui.day&&getDay(ui.day),marks=[],legs=[];
@@ -477,10 +496,12 @@ function renderMap(){
   var fp=ui.focus&&place(ui.focus);
   if(fp&&!(d&&d.stops.some(function(x){return x.place===fp.id;})))mk(fp.lat,fp.lng,'<span class="fpin"></span><span class="flabel">'+esc(fp.name)+'</span>');
   if(ui.pending){var c=ui.pending;
+    /* pressed: the place is in, and the card stays for a moment to say so. Nothing on it can be pressed meanwhile */
+    var off=c.adding?' disabled':'';
     mk(c.lat,c.lng,'<span class="fpin"></span><div class="pend" role="group" aria-label="儲存地點"><div class="pend-top"><span class="pend-name">'+esc(c.name)+'</span>'+
-      '<button class="xbtn" data-act="pend-close" aria-label="關閉">'+ICON.x+'</button></div><div class="chips">'+
-      CATS.map(function(k){return '<button class="chip'+(ui.pending.cat===k.id?' on':'')+'" data-act="pend-cat" data-cat="'+k.id+'" aria-pressed="'+(ui.pending.cat===k.id)+'">'+catSvg(k.id,1)+k.name+'</button>';}).join('')+
-      '</div><button class="savebtn" data-act="pend-save">Add to Travel Collection</button></div>');}
+      '<button class="xbtn" data-act="pend-close" aria-label="關閉"'+off+'>'+ICON.x+'</button></div><div class="chips">'+
+      CATS.map(function(k){return '<button class="chip'+(ui.pending.cat===k.id?' on':'')+'" data-act="pend-cat" data-cat="'+k.id+'" aria-pressed="'+(ui.pending.cat===k.id)+'"'+off+'>'+catSvg(k.id,1)+k.name+'</button>';}).join('')+
+      '</div>'+addBtn(c)+'</div>');}
   mapView.setRoutes(legs);
   mapView.setMarkers(marks);
 }
@@ -900,12 +921,15 @@ var ACT={
       ui.pending={name:c.name,lat:pt.lat,lng:pt.lng,cat:c.cat,gid:c.gid};ui.focus=null;render();
       if(mapView)mapView.showPoint([pt.lng,pt.lat],15,safeArea());
     },function(){if(seq===pickSeq)toast('取不到這個地點的位置，請稍後再試');});},
-  'pend-cat':function(el){if(ui.pending){ui.pending.cat=el.dataset.cat;renderMap();}},
-  'pend-close':function(){ui.pending=null;renderMap();},
-  'pend-save':function(){if(!ui.pending)return;var c=ui.pending,p=newPlace({name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,gid:c.gid});
-    db.places.push(p);ui.cat=p.cat;ui.pending=null;ui.focus=p.id;save();render();
-    if(!ui.topOpen){ui.topOpen=true;applyPanels();}
-    revealCard(p.id);toast('Added to Travel Collection');},
+  'pend-cat':function(el){if(ui.pending&&!ui.pending.adding){ui.pending.cat=el.dataset.cat;renderMap();}},
+  'pend-close':function(){if(ui.pending&&ui.pending.adding)return;ui.pending=null;renderMap();},
+  /* the place is saved at the press. With motion, the button hops into "Added" and the card closes a moment later;
+     without (the system's "reduce motion"), the card closes at once and a line at the foot says it was added */
+  'pend-save':function(){if(!ui.pending||ui.pending.adding)return;var c=ui.pending,p=newPlace({name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,gid:c.gid});
+    db.places.push(p);save();
+    if(calm()){addDone(c,p,true);return;}
+    c.adding=Date.now();renderMap();
+    setTimeout(function(){addDone(c,p,false);},ADDING+ADDHOLD);},
   /* the empty Travel Collection: open Google Maps, with the extension (if it is installed) switched on */
   'collect':function(){
     try{window.postMessage({from:'plan-a-trip',type:'switch-on'},location.origin);}catch(e){}
