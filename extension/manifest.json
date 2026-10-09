@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Plan a Trip：從 Google 地圖加入",
   "short_name": "Plan a Trip",
-  "version": "0.2.1",
-  "description": "在 Google 地圖上點一下圖示開啟，之後點開地點就能把它存進 Plan a Trip 的「想去的地方」，不用重新搜尋。",
+  "version": "0.3.0",
+  "description": "在 Google 地圖上點一下圖示開啟，之後點開地點就能把它加進 Plan a Trip 的 Travel Collection，不用重新搜尋。",
   "icons": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "128": "icon-128.png" },
   "action": {
     "default_title": "Plan a Trip：點一下開啟",

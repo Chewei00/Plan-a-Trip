@@ -1,5 +1,5 @@
-/* Runs on the Google Maps website. The extension's toolbar button turns it on and off (background.js); while it is
-   on, two things sit in the top-right corner of the page:
+/* Runs on the Google Maps website. The extension's toolbar button turns it on and off (background.js), and the Plan a
+   Trip site can turn it on (site.js); while it is on, two things sit in the top-right corner of the page:
      - a bar with the name of the trip places are saved to. Clicking it lists the trips, to save to another one, and
        ends with a link that opens Plan a Trip
      - under it, whenever the page is showing one place, the same card the Plan a Trip site shows after a search:
@@ -29,15 +29,20 @@
   };
   function glyph(id) { return '<svg viewBox="3 3 12 12" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + GLYPH[id] + '</svg>'; }
   var DOWN = '<svg class="down" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>';
-  var TICK = '<svg class="tick" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.4 8.6l3 3 6.2-7.2"/></svg>';
-  var OUT = '<svg class="out" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 10.5l5-5M6.5 5.5h4v4"/></svg>';
+  /* the menu's icons, the same as the trip menu's on the site (js/icons.js): a pin in front of each trip, a round tick
+     on the one places go to, the site's P (Chewei's drawing, as given), and an arrow whose shaft grows when the row is
+     pointed at */
+  var PIN = '<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .6a3.9 3.9 0 0 1 3.9 3.9c0 2.3-2.6 5.4-3.9 6.9C4.7 9.9 2.1 6.8 2.1 4.5A3.9 3.9 0 0 1 6 .6z"/><circle cx="6" cy="4.5" r="1.55"/></svg>';
+  var TICK = '<span class="rck"><svg viewBox="0 0 13 13" aria-hidden="true"><path d="M3.63 5.95l2.05 2.87c.08.11.24.11.32.01l3.36-4.2"/></svg></span>';
+  var PMARK = '<svg class="pmark" viewBox="26 104 12 12" aria-hidden="true"><path d="M34.5 105C35.0585 105 35.338 105 35.5625 105.078C35.9646 105.219 36.2812 105.535 36.4219 105.938C36.5004 106.162 36.5 106.441 36.5 107C36.5 107.559 36.5004 107.838 36.4219 108.063L36.3604 108.209C36.2001 108.541 35.9143 108.799 35.5625 108.922L35.4756 108.947C35.3244 108.985 35.1409 108.996 34.8701 108.999L34.5 109H31.5V113C31.5 113.559 31.5004 113.838 31.4219 114.063L31.3604 114.209C31.2001 114.541 30.9143 114.799 30.5625 114.922L30.4756 114.947C30.264 115 29.9891 115 29.5 115C29.0109 115 28.736 115 28.5244 114.947L28.4375 114.922C28.0857 114.799 27.7999 114.541 27.6396 114.209L27.5781 114.063C27.5192 113.894 27.5047 113.695 27.501 113.37L27.5 113V107.24C27.5 106.554 27.5003 106.168 27.6025 105.882L27.6523 105.765C27.7698 105.534 27.9488 105.342 28.168 105.207L28.2646 105.152C28.4892 105.038 28.7659 105.009 29.2207 105.002L29.7402 105H34.5ZM29.7402 106C29.332 106 29.0856 106.001 28.9023 106.016C28.7809 106.026 28.7317 106.04 28.7188 106.044C28.6435 106.082 28.5823 106.143 28.5439 106.219C28.5395 106.232 28.5256 106.281 28.5156 106.402C28.5007 106.586 28.5 106.832 28.5 107.24V113C28.5 113.291 28.5001 113.466 28.5078 113.598C28.515 113.721 28.5265 113.744 28.5225 113.732C28.5627 113.847 28.6529 113.937 28.7676 113.978C28.756 113.974 28.7789 113.985 28.9023 113.992C29.034 114 29.2093 114 29.5 114C29.7907 114 29.966 114 30.0977 113.992C30.2211 113.985 30.244 113.974 30.2324 113.978C30.3471 113.937 30.4373 113.847 30.4775 113.732C30.4735 113.744 30.485 113.721 30.4922 113.598C30.4999 113.466 30.5 113.291 30.5 113V106H29.7402ZM31.5 108H34.5C34.7907 108 34.966 108 35.0977 107.992C35.2211 107.985 35.244 107.974 35.2324 107.978C35.3471 107.937 35.4373 107.847 35.4775 107.732C35.4735 107.744 35.485 107.721 35.4922 107.598C35.4999 107.466 35.5 107.291 35.5 107C35.5 106.709 35.4999 106.534 35.4922 106.402C35.485 106.279 35.4735 106.256 35.4775 106.268C35.4373 106.153 35.3471 106.063 35.2324 106.022C35.244 106.026 35.2211 106.015 35.0977 106.008C34.966 106 34.7907 106 34.5 106H31.5V108Z"/></svg>';
+  var ARROW = '<span class="arr" aria-hidden="true"><i></i><svg viewBox="0 0 5.3 9.3"><path d="M.65 .65l4 4-4 4"/></svg></span>';
 
   /* same values as css/app.css on the site */
   var CSS = [
     ':host{all:initial}',
-    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--line:#d2d2d2;--fill-note:rgba(0,0,0,.04);--fill-selected:#cdccca;--r6:6px;--r8:8px;',
+    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--text-3:rgba(0,0,0,.4);--line:#d2d2d2;--line-soft:#e5e5e5;--fill-note:rgba(0,0,0,.04);--fill-selected:#cdccca;--r6:6px;--r8:8px;',
     '  --float:0 4px 14px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.04);--ui:"Noto Sans","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;',
-    '  position:fixed;top:76px;right:16px;z-index:2147483646;width:236px;display:flex;flex-direction:column;gap:8px;color:var(--ink);font:400 13px/20px var(--ui);-webkit-font-smoothing:antialiased;',
+    '  position:fixed;top:64px;right:16px;z-index:2147483646;width:236px;display:flex;flex-direction:column;gap:8px;color:var(--ink);font:400 13px/20px var(--ui);-webkit-font-smoothing:antialiased;',
     '  opacity:0;transform:translateY(-6px);transition:opacity .25s ease,transform .25s ease}',
     '.wrap.in{opacity:1;transform:none}',
     '.wrap *{box-sizing:border-box}',
@@ -50,11 +55,18 @@
     '.down{width:10px;height:6px;stroke-width:1.5;transition:transform .25s ease}',
     '.bar.open .down{transform:rotate(180deg)}',
     '.menu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:2;padding:6px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
-    '.menu button{display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:var(--r6);background:none;text-align:left;font:400 13px/20px var(--ui);white-space:nowrap}',
+    '.menu button{display:flex;align-items:center;gap:9px;width:100%;height:32px;padding:0 8px;border:0;border-radius:var(--r6);background:none;text-align:left;font:400 13px/20px var(--ui);white-space:nowrap}',
     '.menu button span{min-width:0;overflow:hidden;text-overflow:ellipsis}',
     '.menu button:hover,.menu button:focus-visible{background:var(--fill-note)}',
-    '.tick,.out{width:16px;height:16px;stroke-width:1.4;margin-left:auto}',
-    '.sep{height:1px;margin:6px 8px;background:var(--line)}',
+    '.mico{width:12px;height:12px;stroke-width:1}',
+    '.pmark{width:12px;height:12px;fill:currentColor;stroke:none}',
+    '.rck{flex:none;width:12px;height:12px;margin-left:auto;border-radius:50%;background:var(--ink);color:var(--on-ink)}',
+    '.rck svg{width:12px;height:12px;stroke-width:1}',
+    '.arr{display:inline-flex;align-items:center;flex:none;width:10px;height:10px;margin-left:auto;color:var(--text-3);transition:width .45s ease}',
+    '.arr i{flex:1;height:1.3px;margin-right:-4.7px;border-radius:1px;background:currentColor}',
+    '.arr svg{width:5.3px;height:9.3px;stroke-width:1.3}',
+    '.menu button:hover .arr,.menu button:focus-visible .arr{width:17px}',
+    '.sep{height:1px;margin:6px 8px;background:var(--line-soft)}',
     '.pend{padding:10px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float);transition:opacity .2s ease}',
     '.pend.out{opacity:0}',
     '.pend-name{font:500 13px/20px var(--ui);letter-spacing:.04em;padding:2px 2px 0;overflow-wrap:anywhere}',
@@ -66,7 +78,7 @@
     '.savebtn{display:block;width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}',
     '.savebtn[disabled]{background:var(--fill-selected);color:var(--ink);cursor:default}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
-    '@media (prefers-reduced-motion:reduce){.wrap,.down,.pend{transition:none}}'
+    '@media (prefers-reduced-motion:reduce){.wrap,.down,.pend,.arr{transition:none}}'
   ].join('\n');
 
   /* ---- reading the place from the page address ----
@@ -193,18 +205,18 @@
     h += '<div class="bar' + (menuOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'Plan a Trip') + '</span>' + DOWN + '</button>';
     if (menuOpen) {
       h += '<div class="menu" role="menu">' + state.trips.map(function (x) {
-        return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '"><span>' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
+        return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '">' + PIN + '<span>' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
       }).join('') + (state.trips.length ? '<div class="sep"></div>' : '') +
-        '<button role="menuitem" data-act="open"><span>Open Plan a Trip</span>' + OUT + '</button></div>';
+        '<button role="menuitem" data-act="open">' + PMARK + '<span>Open Plan a Trip</span>' + ARROW + '</button></div>';
     }
     h += '</div>';
     if (cur) {
       var saved = isSaved(cur);
-      h += '<div class="pend" role="group" aria-label="存到 Plan a Trip"><div class="pend-name">' + esc(cur.name) + '</div>' +
+      h += '<div class="pend" role="group" aria-label="Add to Travel Collection"><div class="pend-name">' + esc(cur.name) + '</div>' +
         '<div class="chips">' + CATS.map(function (c) {
           return '<button class="chip' + (cur.cat === c[0] ? ' on' : '') + '" data-act="cat" data-cat="' + c[0] + '" aria-pressed="' + (cur.cat === c[0]) + '"' + (saved ? ' disabled' : '') + '>' + glyph(c[0]) + c[1] + '</button>';
         }).join('') + '</div>' +
-        '<button class="savebtn" data-act="save"' + (saved ? ' disabled' : '') + '>' + (saved ? '已儲存' : '存到想去的地方') + '</button></div>';
+        '<button class="savebtn" data-act="save"' + (saved ? ' disabled' : '') + '>' + (saved ? 'Added' : 'Add to Travel Collection') + '</button></div>';
     }
     box.innerHTML = h;
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);

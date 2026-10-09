@@ -1,4 +1,5 @@
-/* Runs on the Plan a Trip site. It carries two things between the page and the extension's own storage:
+/* Runs on the Plan a Trip site. It carries two things between the page and the extension's own storage (and lets the
+   page switch the extension on, see 'switch-on'):
      - from the page: the trips there are, which one is on screen, and which Google places each already holds (so
        the bar on Google Maps can list the trips and the card can say whether a place is already saved)
      - to the page: the places saved on Google Maps since the site was last open (the "inbox")
@@ -33,6 +34,9 @@
         if (trip && (!known || trip.id !== r.pat_site_trip)) set.pat_target = trip.id;
         S.set(set, deliver);
       });
+    } else if (m.type === 'switch-on') {
+      /* the empty Travel Collection on the site was clicked: it opens Google Maps, and the card should be there */
+      S.set({ pat_on: true });
     } else if (m.type === 'took' && Array.isArray(m.ids)) {
       S.get(['pat_inbox'], function (r) {
         var left = ((r && r.pat_inbox) || []).filter(function (it) { return m.ids.indexOf(it.id) < 0; });

@@ -1,9 +1,9 @@
 /* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=10';
-import {fetchRoute} from './geoapify.js?v=10';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=10';
-import {createMap} from './mapview.js?v=10';
+import {ICON,CATICON,catSvg} from './icons.js?v=11';
+import {fetchRoute} from './geoapify.js?v=11';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=11';
+import {createMap} from './mapview.js?v=11';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -240,7 +240,12 @@ function renderTop(){
     return '<button class="chip'+(on?' on':'')+'" data-act="chip" data-cat="'+c.id+'" aria-pressed="'+on+'">'+catSvg(c.id,1)+c.name+'</button>';}).join('');
   var keep=cardsEl.scrollLeft;
   var list=db.places.filter(function(p){return p.cat===ui.cat;});
-  cardsEl.innerHTML=list.length?list.map(cardHTML).join(''):'<p class="empty-cards">這個分類還沒有地點。用左邊的 Search 找地點存進來。</p>';
+  /* a trip with no places at all invites collecting some on Google Maps (see "browser extension"); a category with
+     none, in a trip that has places, just says so */
+  cardsEl.innerHTML=list.length?list.map(cardHTML).join(''):
+    !db.places.length?'<button class="collect" data-act="collect"><span class="collect-t">Your travel collection starts here</span>'+
+      '<span class="collect-s">Add your favorite spots from Google Maps here, then start planning your trip'+ICON.arrow+'</span></button>':
+    '<p class="empty-cards">這個分類還沒有地點。用左邊的 Search 找地點存進來。</p>';
   cardsEl.scrollLeft=keep;
 }
 function revealCard(pid){
@@ -254,13 +259,13 @@ function applyPanels(){
   var lh=$('lh'),th=$('th'),tt=$('ttab');
   lh.innerHTML=ICON.side;
   lh.title=ui.leftOpen?'收起行程':'展開行程';lh.setAttribute('aria-label',lh.title);lh.setAttribute('aria-expanded',ui.leftOpen);
-  th.innerHTML=ICON.chevUp;th.title='收起想去的地方';th.setAttribute('aria-label',th.title);
-  tt.innerHTML='<span>想去的地方</span>'+ICON.chevDown;tt.title='展開想去的地方';tt.tabIndex=ui.topOpen?-1:0;
+  th.innerHTML=ICON.chevUp;th.title='收起 Travel Collection';th.setAttribute('aria-label',th.title);
+  tt.innerHTML='<span>Travel Collection</span>'+ICON.chevDown;tt.title='展開 Travel Collection';tt.tabIndex=ui.topOpen?-1:0;
 }
 
 /* ================= menu ================= */
 function mi(act,id,icon,label,checked,val){
-  return '<button role="menuitem" data-act="'+act+'" data-id="'+esc(id)+'"'+(val?' data-val="'+val+'"':'')+'>'+(icon||'')+'<span>'+label+'</span>'+(checked?'<span class="ck">'+ICON.check+'</span>':'')+'</button>';
+  return '<button role="menuitem" data-act="'+act+'" data-id="'+esc(id)+'"'+(val?' data-val="'+val+'"':'')+'>'+(icon||'')+'<span>'+label+'</span>'+(checked?(checked==='round'?'<span class="rck">'+ICON.tick+'</span>':'<span class="ck">'+ICON.check+'</span>'):'')+'</button>';
 }
 function renderMenu(){
   var m=ui.menu,open=document.querySelectorAll('.more.open'),i,tz=titleWrap.querySelector('.tzone');
@@ -291,10 +296,11 @@ function renderMenu(){
   }else if(m.type==='trips'){
     /* every trip, the one being shown ticked; then a new one; then deleting this one, which asks once more */
     var short=db.title.length>12?db.title.slice(0,12)+'…':db.title;
-    h=store.trips.map(function(t){return mi('m-trip',t.id,'',esc(t.title),t.id===store.current);}).join('')+SEP+
-      mi('m-trip-new','trips','','New trip')+SEP+
-      (m.confirm?mi('m-trip-del2','trips','','Delete “'+esc(short)+'”?'):mi('m-trip-del','trips','','Delete trip'));
+    h=store.trips.map(function(t){return mi('m-trip',t.id,ICON.pin,esc(t.title),t.id===store.current&&'round');}).join('')+SEP+
+      mi('m-trip-new','trips',ICON.plusSm,'Create a new trip')+SEP+
+      (m.confirm?mi('m-trip-del2','trips',ICON.trashSm,'Delete “'+esc(short)+'”?'):mi('m-trip-del','trips',ICON.trashSm,'Delete this trip'));
   }
+  menuEl.className='menu'+(m.type==='trips'?' trips':'');
   menuEl.innerHTML=h;menuEl.hidden=false;
   var w=menuEl.offsetWidth,hh=menuEl.offsetHeight;
   menuEl.style.left=clamp(m.x,8,window.innerWidth-w-8)+'px';
@@ -338,7 +344,7 @@ function renderResults(){
   db.places.forEach(function(p){if(p.gid)byGid[p.gid]=p.id;else byName[p.name]=p.id;});
   found.forEach(function(c,i){
     var id=byGid[c.gid]||byName[c.name];
-    h+=id?'<button data-act="pick-saved" data-id="'+id+'"><span>'+esc(c.name)+'</span><span class="tag">已儲存</span></button>'
+    h+=id?'<button data-act="pick-saved" data-id="'+id+'"><span>'+esc(c.name)+'</span><span class="tag">Added</span></button>'
          :'<button data-act="pick-new" data-i="'+i+'"><span>'+esc(c.name)+'</span><span class="tag">'+esc(c.sub)+'</span></button>';
   });
   if(!h&&searchNote==='none')h='<p>找不到「'+esc(ui.q.trim())+'」。</p>';
@@ -405,7 +411,7 @@ function renderMap(){
     mk(c.lat,c.lng,'<span class="fpin"></span><div class="pend" role="group" aria-label="儲存地點"><div class="pend-top"><span class="pend-name">'+esc(c.name)+'</span>'+
       '<button class="xbtn" data-act="pend-close" aria-label="關閉">'+ICON.x+'</button></div><div class="chips">'+
       CATS.map(function(k){return '<button class="chip'+(ui.pending.cat===k.id?' on':'')+'" data-act="pend-cat" data-cat="'+k.id+'" aria-pressed="'+(ui.pending.cat===k.id)+'">'+catSvg(k.id,1)+k.name+'</button>';}).join('')+
-      '</div><button class="savebtn" data-act="pend-save">存到想去的地方</button></div>');}
+      '</div><button class="savebtn" data-act="pend-save">Add to Travel Collection</button></div>');}
   mapView.setRoutes(legs);
   mapView.setMarkers(marks);
 }
@@ -519,6 +525,7 @@ function deleteTrip(id){
                                       the trip on screen, every trip, and the Google places each already has
      extension -> page   {from:'plan-a-trip-ext', type:'inbox', items:[{id,tripId,name,lat,lng,cat,fid}]}
      page -> extension   {from:'plan-a-trip', type:'took', ids:[...]}                  so the extension can forget them
+     page -> extension   {from:'plan-a-trip', type:'switch-on'}                        turn the card on Google Maps on
    fid is Google Maps' own identifier for a place, taken from the address of its page; it tells the extension and
    this page that a place is already saved. Without the extension these messages go nowhere. */
 var seenInbox={};
@@ -828,7 +835,11 @@ var ACT={
   'pend-save':function(){if(!ui.pending)return;var c=ui.pending,p=newPlace({name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,gid:c.gid});
     db.places.push(p);ui.cat=p.cat;ui.pending=null;ui.focus=p.id;save();render();
     if(!ui.topOpen){ui.topOpen=true;applyPanels();}
-    revealCard(p.id);toast('已存到想去的地方');},
+    revealCard(p.id);toast('Added to Travel Collection');},
+  /* the empty Travel Collection: open Google Maps, with the extension (if it is installed) switched on */
+  'collect':function(){
+    try{window.postMessage({from:'plan-a-trip',type:'switch-on'},location.origin);}catch(e){}
+    window.open('https://www.google.com/maps','_blank','noopener');},
   'zoom-in':function(){if(mapView)mapView.zoomIn();},
   'zoom-out':function(){if(mapView)mapView.zoomOut();},
   'fit':function(){fitCurrent();}

@@ -53,8 +53,9 @@ explain in plain words, never ask them to run commands.
   wraps it as the first trip. A place may carry `gid` (Places API ID, from the search) or `fid` (Google Maps' own
   identifier, from the extension) — neither, for places from before either existed.
 - `extension/` is a Chrome extension (Manifest V3, no build step) that saves the place open on the Google Maps website
-  into a trip. The toolbar button is its only switch (`background.js`; `pat_on` in the extension's storage, remembered,
-  grey icon off / coloured icon on, clicks on other sites ignored via `activeTab`). While on, `maps.js` shows a bar
+  into a trip. The toolbar button is its switch (`background.js`; `pat_on` in the extension's storage, remembered,
+  grey icon off / coloured icon on, clicks on other sites ignored via `activeTab`); the site can also switch it on,
+  never off (the empty Travel Collection posts `switch-on`, then opens Google Maps). While on, `maps.js` shows a bar
   (the trip to save to; its menu lists the trips and opens the site) and, on a place's page, the site's own save card.
   The place is read from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…!3d<lat>!4d<lng>`, checked against the
   real site on 2026-10-09). The data part is a flattened tree and can describe two places (what was searched or opened
@@ -99,7 +100,9 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; the Chrome extension, as a first version for Chewei to try.
+Also done (2026-10-09): several trips with a trip menu; the Chrome extension (0.3.0); the top panel is now called
+Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
+stay "trip" for a trip (Chewei tried "plan" and went back).
 
 Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
 For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone

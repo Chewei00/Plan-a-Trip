@@ -21,6 +21,7 @@ with sync_playwright() as p:
     page.on("pageerror", lambda e: errors.append(str(e)))
     ctx.route("https://maps.googleapis.com/maps/api/js*", lambda r: r.fulfill(status=200, content_type="text/javascript", body=MOCK))
     ctx.route("https://fonts.googleapis.com/**", lambda r: r.abort())
+    ctx.route("https://www.google.com/maps**", lambda r: r.fulfill(status=200, content_type="text/html", body="<title>Google Maps</title>"))
 
     calls = []
 
@@ -114,7 +115,7 @@ with sync_playwright() as p:
     assert page.locator("#results button >> nth=0").locator(".tag").inner_text() == "山梨縣富士河口湖町", "the town tells same-named places apart"
     page.fill("#q", "富士")   # matches several saved places by name, but the stand-in search still answers with its two
     page.wait_for_timeout(700)
-    assert page.locator("#results .tag:has-text('已儲存')").count() == 0, "saved places are not mixed in on their own"
+    assert page.locator("#results .tag:has-text('Added')").count() == 0, "saved places are not mixed in on their own"
     assert asked[1]["sessionToken"] == asked[0]["sessionToken"], "one search session until a place is picked"
 
     # picking a suggestion asks for its position, then offers to save it with a guessed category
@@ -133,8 +134,8 @@ with sync_playwright() as p:
     # searching again marks it as saved (by ID), with a new session
     page.fill("#q", "ほうとう不")
     page.wait_for_timeout(700)
-    assert page.locator("#results button:has-text('ほうとう不動') .tag").inner_text() == "已儲存"
-    assert page.locator("#results button:has-text('大石公園') .tag").inner_text() != "已儲存"
+    assert page.locator("#results button:has-text('ほうとう不動') .tag").inner_text() == "Added"
+    assert page.locator("#results button:has-text('大石公園') .tag").inner_text() != "Added"
     assert asked[-1]["sessionToken"] != asked[0]["sessionToken"]
     page.keyboard.press("Escape")
 
@@ -183,12 +184,19 @@ with sync_playwright() as p:
     assert css(".tripbtn", "opacity") == "1" and css(".sidebtn", "opacity") == "0"
     assert abs(page.locator(".title").bounding_box()["x"] - x0 - 30) < 0.5, "the name moves 30 to the right"
 
-    # the list of trips; a new one starts empty, named New trip and ready to be renamed, and the map stays put
+    # the name is edited by a double click, so pointing at it does not show the text cursor
+    assert css(".title", "cursor") == "default"
+    # the list of trips: the arrow turns to point down, every row has its icon, and the trip on screen has the round tick
+    assert css(".tripbtn svg", "transform") == "none"
     page.click(".tripbtn")
-    page.wait_for_timeout(200)
-    assert page.locator("#menu button").all_inner_texts() == ["富士山 5 日", "New trip", "Delete trip"]
+    page.wait_for_timeout(400)
+    assert css(".tripbtn svg", "transform") == "matrix(0, 1, -1, 0, 0, 0)", "a quarter turn"
+    assert page.locator("#menu button").all_inner_texts() == ["富士山 5 日", "Create a new trip", "Delete this trip"]
+    assert page.locator("#menu button > svg.mico").count() == 3 and page.locator("#menu button >> nth=0 >> .rck").count() == 1
+    assert css("#menu .sep", "background-color") == "rgb(229, 229, 229)" and css("#menu .rck", "border-radius") == "50%"
+    # a new one starts empty, named New trip and ready to be renamed, and the map stays put
     moves = page.evaluate("__map.moves.length")
-    page.click("#menu button:has-text('New trip')")
+    page.click("#menu button:has-text('Create a new trip')")
     page.wait_for_timeout(300)
     assert page.evaluate("document.activeElement.className") == "edit title" and page.input_value("input.edit.title") == "New trip"
     page.keyboard.type("東京 3 日")
@@ -197,6 +205,22 @@ with sync_playwright() as p:
     assert page.locator(".title").inner_text() == "東京 3 日"
     assert page.locator(".day").count() == 1 and page.locator(".stop").count() == 0 and page.locator(".card").count() == 0
     assert page.locator(".mk").count() == 0, "an empty trip has nothing on the map"
+    # with no places at all, the card area is one button that opens Google Maps; its arrow grows when pointed at
+    assert page.locator(".tp-head h2").inner_text() == "Travel Collection"
+    assert page.locator(".collect-t").inner_text() == "Your travel collection starts here"
+    assert page.locator(".collect-s").inner_text() == "Add your favorite spots from Google Maps here, then start planning your trip"
+    page.mouse.move(700, 600); page.wait_for_timeout(600)
+    words = page.locator(".collect-s").bounding_box()
+    assert page.locator(".collect .arr").bounding_box()["width"] == 10
+    page.hover(".collect"); page.wait_for_timeout(700)
+    assert page.locator(".collect .arr").bounding_box()["width"] == 17 and page.locator(".collect-s").bounding_box() == words, "the words stay put"
+    page.evaluate("window.__said = []; window.addEventListener('message', e => { if (e.data && e.data.from === 'plan-a-trip') __said.push(e.data.type); })")
+    with ctx.expect_page() as opened:
+        page.click(".collect")
+    assert opened.value.url.startswith("https://www.google.com/maps"), opened.value.url
+    opened.value.close()
+    page.wait_for_timeout(200)
+    assert "switch-on" in page.evaluate("__said"), "the extension, if there is one, is asked to switch on"
     assert page.evaluate("__map.moves.length") == moves, "and the map has not moved"
     d = stored()
     assert [t["title"] for t in d["trips"]] == ["富士山 5 日", "東京 3 日"] and d["current"] == d["trips"][1]["id"]
@@ -225,7 +249,7 @@ with sync_playwright() as p:
     # going back to the other trip shows it as it was left and moves the map to it
     moves = page.evaluate("__map.moves.length")
     open_trips()
-    assert page.locator("#menu button >> nth=1 >> .ck").count() == 1, "the trip on screen is ticked"
+    assert page.locator("#menu button >> nth=1 >> .rck").count() == 1, "the trip on screen is ticked"
     page.click("#menu button:has-text('富士山 5 日')")
     page.wait_for_timeout(1300)
     assert page.locator(".title").inner_text() == "富士山 5 日" and page.locator(".day").count() == 2 and page.locator(".day.sel").count() == 0
@@ -236,7 +260,7 @@ with sync_playwright() as p:
     page.click("#menu button:has-text('東京 3 日')")
     page.wait_for_timeout(300)
     open_trips()
-    page.click("#menu button:has-text('Delete trip')")
+    page.click("#menu button:has-text('Delete this trip')")
     page.wait_for_timeout(200)
     assert page.locator("#menu").is_visible() and len(stored()["trips"]) == 2, "the first press only asks"
     assert page.locator("#menu button >> nth=-1").inner_text() == "Delete “東京 3 日”?"
@@ -244,7 +268,7 @@ with sync_playwright() as p:
     page.wait_for_timeout(300)
     assert [t["title"] for t in stored()["trips"]] == ["富士山 5 日"] and page.locator(".title").inner_text() == "富士山 5 日"
     open_trips()
-    page.click("#menu button:has-text('Delete trip')")
+    page.click("#menu button:has-text('Delete this trip')")
     page.wait_for_timeout(200)
     page.click("#menu button >> nth=-1")
     page.wait_for_timeout(300)

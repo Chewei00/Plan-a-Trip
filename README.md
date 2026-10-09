@@ -1,6 +1,6 @@
 # Plan a Trip
 
-規劃旅行的工具，把想去的地方搜集起來，再安排到每一天
+規劃旅行的工具，把想去的地方搜集起來（Travel Collection），再安排到每一天
 
 網站：https://chewei00.github.io/Plan-a-Trip/
 

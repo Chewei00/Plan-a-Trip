@@ -31,6 +31,12 @@ export var ICON={
   side:'<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M14.25 .75L15.12 .79L15.7 .92L16.17 1.14L16.56 1.44L16.86 1.83L17.08 2.3L17.21 2.88L17.25 3.75L17.25 8.25L17.21 9.12L17.08 9.7L16.86 10.17L16.56 10.56L16.17 10.86L15.7 11.08L15.12 11.21L14.25 11.25L3.75 11.25L2.88 11.21L2.3 11.08L1.83 10.86L1.44 10.56L1.14 10.17L.92 9.7L.79 9.12L.75 8.25L.75 3.75L.79 2.88L.92 2.3L1.14 1.83L1.44 1.44L1.83 1.14L2.3 .92L2.88 .79L3.75 .75Z"/><path d="M5.75 .75v10.5"/></svg>',
   chevUp:'<svg viewBox="0 0 14 8" aria-hidden="true"><path d="M1 7 7 1l6 6"/></svg>',
   tripChev:'<svg viewBox="0 0 8 13" aria-hidden="true"><path d="M1 1l6 5.5L1 12"/></svg>',
+  /* the trip menu's own small icons, on a 12 grid with a 1px line (class "mico") */
+  pin:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .6a3.9 3.9 0 0 1 3.9 3.9c0 2.3-2.6 5.4-3.9 6.9C4.7 9.9 2.1 6.8 2.1 4.5A3.9 3.9 0 0 1 6 .6z"/><circle cx="6" cy="4.5" r="1.55"/></svg>',
+  plusSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2v8M2 6h8"/></svg>',
+  trashSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.9 3.25h8.2M2.8 3.25v6.4a.9.9 0 0 0 .9.9h4.6a.9.9 0 0 0 .9-.9v-6.4M4.2 3.25v-.9a.9.9 0 0 1 .9-.9h1.8a.9.9 0 0 1 .9.9v.9M5.1 5.55v2.75M6.9 5.55v2.75"/></svg>',
+  /* an arrow whose shaft can be lengthened: the line stretches, the head keeps its size (class "arr") */
+  arrow:'<span class="arr" aria-hidden="true"><i></i><svg viewBox="0 0 5.3 9.3"><path d="M.65 .65l4 4-4 4"/></svg></span>',
   chevDown:'<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1.5 1.5 6 6.5l4.5-5"/></svg>',
   walk:svg('<circle cx="8.6" cy="2.9" r="1.35" '+F+'/><path d="M8.4 5.8 7.6 9.6 5.4 13.8M7.6 9.6l3 4M5.6 8l2.8-2.2L11 7.6"/>'),
   bike:svg('<circle cx="3.7" cy="10.5" r="2.7"/><circle cx="12.3" cy="10.5" r="2.7"/><path d="M3.7 10.5 6.6 5.8h3.2l2.5 4.7M9.8 5.8 9.3 4h1.6"/>'),

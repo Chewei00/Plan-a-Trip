@@ -1,6 +1,6 @@
-/* The toolbar button. It is the extension's only switch: a click while a Google Maps tab is in front turns saving on
+/* The toolbar button. It is the extension's switch: a click while a Google Maps tab is in front turns saving on
    or off, for every Google Maps tab, and the choice is remembered (pat_on in the extension's storage; maps.js watches
-   it). On: the coloured icon. Off: the grey one. A click on any other site does nothing: the "activeTab" permission
+   it). The Plan a Trip site can also turn it on (site.js), never off. On: the coloured icon. Off: the grey one. A click on any other site does nothing: the "activeTab" permission
    lets the click handler see the address of the tab that was clicked on, and only that. */
 var SITE = 'https://chewei00.github.io/Plan-a-Trip/';
 function icons(off) {
@@ -15,6 +15,8 @@ function paint(on) {
 function sync() { chrome.storage.local.get(['pat_on'], function (r) { paint(!!(r && r.pat_on)); }); }
 var MAPS = /^https:\/\/www\.google\.com(\.tw)?\/maps(\/|\?|$)/;
 chrome.runtime.onInstalled.addListener(sync);
+/* switched from somewhere else (the site): the button follows */
+chrome.storage.onChanged.addListener(function (changes, area) { if (area === 'local' && changes.pat_on) paint(!!changes.pat_on.newValue); });
 chrome.runtime.onStartup.addListener(sync);
 chrome.action.onClicked.addListener(function (tab) {
   if (!tab || !MAPS.test(tab.url || '')) return;

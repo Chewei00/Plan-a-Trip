@@ -51,6 +51,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
         route.fulfill(status=200, content_type=TYPES.get(f.suffix, "application/octet-stream"), body=f.read_bytes())
     ctx.route(SITE + "**", site)
     ctx.route("https://www.google.com/maps/**", lambda r: r.fulfill(status=200, content_type="text/html", body=PANEL))
+    ctx.route("https://www.google.com/maps", lambda r: r.fulfill(status=200, content_type="text/html", body=PANEL))
     ctx.route("https://maps.googleapis.com/maps/api/js*", lambda r: r.fulfill(status=200, content_type="text/javascript", body=MOCK))
     for u in ["https://fonts.googleapis.com/**", "https://places.googleapis.com/**", "https://api.geoapify.com/**"]:
         ctx.route(u, lambda r: r.abort())
@@ -73,7 +74,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     app.goto(SITE + "index.html")
     app.wait_for_timeout(900)
     app.hover(".title"); app.wait_for_timeout(600); app.click(".tripbtn"); app.wait_for_timeout(200)
-    app.click("#menu button:has-text('New trip')"); app.wait_for_timeout(300)
+    app.click("#menu button:has-text('Create a new trip')"); app.wait_for_timeout(300)
     app.keyboard.type("東京 3 日"); app.keyboard.press("Enter"); app.wait_for_timeout(400)
     assert app.locator(".title").inner_text() == "東京 3 日"
 
@@ -99,12 +100,12 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert card.locator(".xbtn").count() == 0 and card.locator(".dest").count() == 0, "no close button and no destination line on the card"
     box = card.locator(".wrap").bounding_box()
     bar, pend = card.locator(".bar").bounding_box(), card.locator(".pend").bounding_box()
-    assert abs(box["x"] + box["width"] - (1440 - 16)) < 1 and box["y"] == 76 and box["width"] == 236 and bar["height"] == 36 and pend["y"] == 76 + 36 + 8, (box, bar, pend)
+    assert abs(box["x"] + box["width"] - (1440 - 16)) < 1 and box["y"] == 64 and box["width"] == 236 and bar["height"] == 36 and pend["y"] == 64 + 36 + 8, (box, bar, pend)
 
     # saving: the button says so, and the place arrives in that trip on the site, which is open in another tab
     card.locator(".savebtn").click()
     maps.wait_for_timeout(300)
-    assert card.locator(".savebtn").inner_text() == "已儲存" and card.locator(".savebtn").is_disabled()
+    assert card.locator(".savebtn").inner_text() == "Added" and card.locator(".savebtn").is_disabled()
     app.wait_for_timeout(800)
     assert app.locator(".card.focus .cname").inner_text() == "富士急樂園"
     saved = [t for t in trips(app)["trips"] if t["title"] == "東京 3 日"][0]["places"][-1]
@@ -115,11 +116,19 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     card.locator(".trip").click()
     maps.wait_for_timeout(200)
     assert card.locator(".menu button").all_inner_texts() == ["富士山 5 日", "東京 3 日", "Open Plan a Trip"]
-    assert card.locator(".menu button >> nth=1 >> .tick").count() == 1
+    assert card.locator(".menu button >> nth=1 >> .rck").count() == 1 and card.locator(".menu button >> nth=0 >> .rck").count() == 0
+    assert card.locator(".menu .mico").count() == 2 and card.locator(".menu button >> nth=2 >> .pmark").count() == 1, "a pin for each trip, the P for the site"
+    menu = card.locator(".menu").bounding_box()
+    assert menu["width"] == 236 and maps.evaluate("getComputedStyle(document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.sep')).backgroundColor") == "rgb(229, 229, 229)"
+    # the arrow on the last row grows when the row is pointed at
+    arrow = card.locator(".menu .arr")
+    assert arrow.bounding_box()["width"] == 10
+    card.locator(".menu button >> nth=2").hover(); maps.wait_for_timeout(700)
+    assert arrow.bounding_box()["width"] == 17
     card.locator(".menu button:has-text('富士山 5 日')").click()
     maps.wait_for_timeout(300)
     assert card.locator(".menu").count() == 0 and card.locator(".trip span").inner_text() == "富士山 5 日"
-    assert card.locator(".savebtn").inner_text() == "存到想去的地方", "not saved in this trip yet"
+    assert card.locator(".savebtn").inner_text() == "Add to Travel Collection", "not saved in this trip yet"
     card.locator(".savebtn").click()
     app.wait_for_timeout(900)
     assert places(app, "富士山 5 日")[-1] == "富士急樂園" and app.locator(".title").inner_text() == "東京 3 日", "it goes to the chosen trip; the site stays on its own"
@@ -158,7 +167,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     # The card is for the place that is open, which is not saved
     go(HOTO); panel("ほうとう不動", "餺飥麵店")
     maps.wait_for_timeout(900)
-    assert card.locator(".pend-name").inner_text() == "ほうとう不動" and card.locator(".savebtn").inner_text() == "存到想去的地方"
+    assert card.locator(".pend-name").inner_text() == "ほうとう不動" and card.locator(".savebtn").inner_text() == "Add to Travel Collection"
     assert card.locator(".chip.on").inner_text() == "飲食"
     go(PETER)
     maps.wait_for_timeout(700)
@@ -167,7 +176,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     app.wait_for_timeout(900)
     got = [t for t in trips(app)["trips"] if t["title"] == "東京 3 日"][0]["places"][-1]
     assert (got["name"], got["lat"], got["lng"], got["fid"], got["cat"]) == ("Peter Luger 牛排館 東京", 35.643874, 139.713954, "0x60188bd28536402d:0x45eca5f988b97909", "food"), got
-    assert card.locator(".savebtn").inner_text() == "已儲存"
+    assert card.locator(".savebtn").inner_text() == "Added"
     after_moves = card.locator(".pend").bounding_box()
     assert maps.evaluate("window.__gone") == 0 and (after_moves["x"], after_moves["y"]) == (spot["x"], spot["y"]), "the card stayed where it was throughout"
     # no place open any more: after a second the card goes, the bar stays
@@ -182,7 +191,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     app.close()
     card.locator(".savebtn").click()
     maps.wait_for_timeout(300)
-    assert card.locator(".savebtn").inner_text() == "已儲存" and len(kept("pat_inbox")) == 1
+    assert card.locator(".savebtn").inner_text() == "Added" and len(kept("pat_inbox")) == 1
     # "Open Plan a Trip" opens the site when it is not open...
     before = len(ctx.pages)
     card.locator(".trip").click(); maps.wait_for_timeout(200)
@@ -217,6 +226,18 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     maps.reload()
     maps.wait_for_timeout(1200)
     assert maps.locator("#plan-a-trip-card").count() == 0
+
+    # the empty Travel Collection on the site opens Google Maps and switches the extension on (it was off just now)
+    app.bring_to_front()
+    app.hover(".title"); app.wait_for_timeout(600); app.click(".tripbtn"); app.wait_for_timeout(200)
+    app.click("#menu button:has-text('Create a new trip')"); app.wait_for_timeout(300)
+    app.keyboard.type("空的"); app.keyboard.press("Enter"); app.wait_for_timeout(400)
+    with ctx.expect_page() as opened:
+        app.click(".collect")
+    fresh = opened.value
+    fresh.wait_for_timeout(1200)
+    assert fresh.url.startswith("https://www.google.com/maps") and kept("pat_on") is True and "開啟中" in sw.evaluate("() => chrome.action.getTitle({})")
+    assert fresh.locator("#plan-a-trip-card .trip span").inner_text() == "空的", "the bar is there, on the trip that was on screen"
 
     assert not errors, errors
     ctx.close()
