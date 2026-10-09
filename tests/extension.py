@@ -94,7 +94,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     # pressing the toolbar button turns it on: the bar names the trip to save to, and the card for the place is there
     press_icon()
     maps.wait_for_timeout(600)
-    assert kept("pat_on") is True and "開啟中" in sw.evaluate("() => chrome.action.getTitle({})")
+    assert kept("pat_on") is True and "turn off" in sw.evaluate("() => chrome.action.getTitle({})")
     assert card.locator(".trip span").inner_text() == "東京 3 日"
     assert card.locator(".pend-name").inner_text() == "富士急樂園" and card.locator(".chip.on").inner_text() == "景點"
     assert card.locator(".xbtn").count() == 0 and card.locator(".dest").count() == 0, "no close button and no destination line on the card"
@@ -246,7 +246,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert card.locator(".bar").count() == 1 and card.locator(".pend-name").inner_text() == "Hotel Mystays 富士山"
     press_icon()
     maps.wait_for_timeout(500)
-    assert maps.locator("#plan-a-trip-card").count() == 0 and kept("pat_on") is False and "點一下開啟" in sw.evaluate("() => chrome.action.getTitle({})")
+    assert maps.locator("#plan-a-trip-card").count() == 0 and kept("pat_on") is False and "turn on" in sw.evaluate("() => chrome.action.getTitle({})")
     maps.reload()
     maps.wait_for_timeout(1200)
     assert maps.locator("#plan-a-trip-card").count() == 0
@@ -260,7 +260,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
         app.click(".collect")
     fresh = opened.value
     fresh.wait_for_timeout(1200)
-    assert fresh.url.startswith("https://www.google.com/maps") and kept("pat_on") is True and "開啟中" in sw.evaluate("() => chrome.action.getTitle({})")
+    assert fresh.url.startswith("https://www.google.com/maps") and kept("pat_on") is True and "turn off" in sw.evaluate("() => chrome.action.getTitle({})")
     assert fresh.locator("#plan-a-trip-card .trip span").inner_text() == "空的", "the bar is there, on the trip that was on screen"
 
     assert not errors, errors

@@ -10,7 +10,7 @@ function icons(on) {
 }
 function paint(on) {
   chrome.action.setIcon({ path: icons(on) });
-  chrome.action.setTitle({ title: on ? 'SomeDay：開啟中，點一下關閉' : 'SomeDay：點一下開啟' });
+  chrome.action.setTitle({ title: on ? 'SomeDay: click to turn off' : 'SomeDay: click to turn on' });
 }
 function sync() { chrome.storage.local.get(['pat_on'], function (r) { paint(!!(r && r.pat_on)); }); }
 var MAPS = /^https:\/\/www\.google\.com(\.tw)?\/maps(\/|\?|$)/;
