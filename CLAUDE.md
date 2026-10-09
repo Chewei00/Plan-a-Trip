@@ -18,6 +18,9 @@ explain in plain words, never ask them to run commands.
 - **Discuss first.** For any change to how the app looks or behaves: confirm your understanding, point out what was not
   considered, give a recommendation for each open point. Only change files after Chewei says「做原型」— even for a
   one-number change. Answering questions, updating documents and setup steps they explicitly asked for are not gated.
+- **The extension's name and description are Chewei's words** (what `chrome://extensions` and the store listing
+  show, i.e. `name` and `description` in `extension/manifest.json`, and any store text). Propose wording and discuss
+  it; do not write, reword or carry it forward on your own, even as part of another change (asked 2026-10-09).
 - Start simple, add step by step, no unrequested features. Chewei's Figma mockups are the source of truth; when their
   text and mockup disagree, follow the mockup and confirm.
 - After each change report four things: what changed, what differs from what was asked, what you decided yourself,
