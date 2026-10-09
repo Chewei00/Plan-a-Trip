@@ -4,7 +4,9 @@ A trip planner for Chewei and friends (not a public product). **The product is c
 person reads (page title, extension name, menus, guides) since 2026-10-09. The old name stays in what a person does
 not read and must not be renamed casually: the repository and site address (`Plan-a-Trip`), the saved-data keys
 (`plan-a-trip:v1`, `plan-a-trip-files`), the message names between page and extension, the element id and the zip of
-the extension. The logo and favicon (a P) are to be replaced when the product is published, not before. Chewei is an industrial designer, not an engineer:
+the extension. The logo is Chewei's D on a disc (2026-10-09): earth-coloured (#F1EFE9 / #8A8579) everywhere, and blue
+(#CCEDF0 / #458186) only in the toolbar while the extension is on. The small sizes are Chewei's own exports from Figma:
+replace them with new exports, do not scale them. Chewei is an industrial designer, not an engineer:
 explain in plain words, never ask them to run commands.
 
 ## How to work with Chewei

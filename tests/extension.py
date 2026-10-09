@@ -130,7 +130,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert turn() == "matrix(0, 1, -1, 0, 0, 0)"
     assert card.locator(".menu button").all_inner_texts() == ["富士山 5 日", "東京 3 日", "Open Someday"]
     assert card.locator(".menu button >> nth=1 >> .rck").count() == 1 and card.locator(".menu button >> nth=0 >> .rck").count() == 0
-    assert card.locator(".menu .mico").count() == 2 and card.locator(".menu button >> nth=2 >> .pmark").count() == 1, "a pin for each trip, the P for the site"
+    assert card.locator(".menu .mico").count() == 2 and card.locator(".menu button >> nth=2 >> .dmark").count() == 1, "a pin for each trip, the site's icon for the site"
     menu = card.locator(".menu").bounding_box()
     assert menu["width"] == 236 and maps.evaluate("getComputedStyle(document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.sep')).backgroundColor") == "rgb(229, 229, 229)"
     # the arrow on the last row grows when the row is pointed at

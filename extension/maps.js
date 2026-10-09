@@ -31,11 +31,12 @@
   /* points right; turns a quarter, to point down, while the list of trips is open (like a day's arrow on the site) */
   var CHEV = '<svg class="chev" viewBox="0 0 6 10" aria-hidden="true"><path d="M1 1l4 4-4 4"/></svg>';
   /* the menu's icons, the same as the trip menu's on the site (js/icons.js): a pin in front of each trip, a round tick
-     on the one places go to, the site's P (Chewei's drawing, as given), and an arrow whose shaft grows when the row is
+     on the one places go to, the site's own icon (the D on its disc, 16 across: at 12 its lines would be under a pixel; it
+     sits in the same 12 as the pins, overhanging by 2 each way), and an arrow whose shaft grows when the row is
      pointed at */
   var PIN = '<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .6a3.9 3.9 0 0 1 3.9 3.9c0 2.3-2.6 5.4-3.9 6.9C4.7 9.9 2.1 6.8 2.1 4.5A3.9 3.9 0 0 1 6 .6z"/><circle cx="6" cy="4.5" r="1.55"/></svg>';
   var TICK = '<span class="rck"><svg viewBox="0 0 13 13" aria-hidden="true"><path d="M3.63 5.95l2.05 2.87c.08.11.24.11.32.01l3.36-4.2"/></svg></span>';
-  var PMARK = '<svg class="pmark" viewBox="26 104 12 12" aria-hidden="true"><path d="M34.5 105C35.0585 105 35.338 105 35.5625 105.078C35.9646 105.219 36.2812 105.535 36.4219 105.938C36.5004 106.162 36.5 106.441 36.5 107C36.5 107.559 36.5004 107.838 36.4219 108.063L36.3604 108.209C36.2001 108.541 35.9143 108.799 35.5625 108.922L35.4756 108.947C35.3244 108.985 35.1409 108.996 34.8701 108.999L34.5 109H31.5V113C31.5 113.559 31.5004 113.838 31.4219 114.063L31.3604 114.209C31.2001 114.541 30.9143 114.799 30.5625 114.922L30.4756 114.947C30.264 115 29.9891 115 29.5 115C29.0109 115 28.736 115 28.5244 114.947L28.4375 114.922C28.0857 114.799 27.7999 114.541 27.6396 114.209L27.5781 114.063C27.5192 113.894 27.5047 113.695 27.501 113.37L27.5 113V107.24C27.5 106.554 27.5003 106.168 27.6025 105.882L27.6523 105.765C27.7698 105.534 27.9488 105.342 28.168 105.207L28.2646 105.152C28.4892 105.038 28.7659 105.009 29.2207 105.002L29.7402 105H34.5ZM29.7402 106C29.332 106 29.0856 106.001 28.9023 106.016C28.7809 106.026 28.7317 106.04 28.7188 106.044C28.6435 106.082 28.5823 106.143 28.5439 106.219C28.5395 106.232 28.5256 106.281 28.5156 106.402C28.5007 106.586 28.5 106.832 28.5 107.24V113C28.5 113.291 28.5001 113.466 28.5078 113.598C28.515 113.721 28.5265 113.744 28.5225 113.732C28.5627 113.847 28.6529 113.937 28.7676 113.978C28.756 113.974 28.7789 113.985 28.9023 113.992C29.034 114 29.2093 114 29.5 114C29.7907 114 29.966 114 30.0977 113.992C30.2211 113.985 30.244 113.974 30.2324 113.978C30.3471 113.937 30.4373 113.847 30.4775 113.732C30.4735 113.744 30.485 113.721 30.4922 113.598C30.4999 113.466 30.5 113.291 30.5 113V106H29.7402ZM31.5 108H34.5C34.7907 108 34.966 108 35.0977 107.992C35.2211 107.985 35.244 107.974 35.2324 107.978C35.3471 107.937 35.4373 107.847 35.4775 107.732C35.4735 107.744 35.485 107.721 35.4922 107.598C35.4999 107.466 35.5 107.291 35.5 107C35.5 106.709 35.4999 106.534 35.4922 106.402C35.485 106.279 35.4735 106.256 35.4775 106.268C35.4373 106.153 35.3471 106.063 35.2324 106.022C35.244 106.026 35.2211 106.015 35.0977 106.008C34.966 106 34.7907 106 34.5 106H31.5V108Z"/></svg>';
+  var DMARK = '<svg class="dmark" viewBox="16 16 96 96" aria-hidden="true"><rect x="16" y="16" width="96" height="96" rx="48" fill="#F1EFE9"/><path d="M82 64C82 61.3186 81.5757 58.2477 79.041 55.5625C76.2225 52.5782 73.0916 52 68.4707 52H52V76H68.4707C73.0916 76 76.2225 75.4218 79.041 72.4375C81.5757 69.7523 82 66.6814 82 64ZM88 64C88 67.3179 87.4749 72.2483 83.4004 76.5625C78.8569 81.372 73.6158 82 68.4707 82H46V46H68.4707C73.6158 46 78.8569 46.628 83.4004 51.4375C87.4749 55.7517 88 60.6821 88 64Z" fill="#8A8579"/></svg>';
   var ARROW = '<span class="arr" aria-hidden="true"><i></i><svg viewBox="4.5 0 6 9.5"><path d="M5.2 .5 9.45 4.75 5.2 9"/></svg></span>';
 
   /* same values as css/app.css on the site */
@@ -60,7 +61,7 @@
     '.menu button span{min-width:0;overflow:hidden;text-overflow:ellipsis}',
     '.menu button:hover,.menu button:focus-visible{background:var(--fill-note)}',
     '.mico{width:12px;height:12px;stroke-width:1}',
-    '.pmark{width:12px;height:12px;fill:currentColor;stroke:none}',
+    '.dmark{width:16px;height:16px;margin:-2px;stroke:none}',
     '.rck{flex:none;width:12px;height:12px;margin-left:auto;border-radius:50%;background:var(--ink);color:var(--on-ink)}',
     '.rck svg{width:12px;height:12px;stroke-width:1}',
     /* shaft and head overlap: both solid, and the whole arrow made 40% at once (see .arr in css/app.css). The 2px on
@@ -236,7 +237,7 @@
       h += '<div class="menu' + (menuOpen ? (popMenu ? ' pop' : '') : ' out') + '" role="menu">' + state.trips.map(function (x) {
         return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '">' + PIN + '<span>' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
       }).join('') + (state.trips.length ? '<div class="sep"></div>' : '') +
-        '<button role="menuitem" data-act="open">' + PMARK + '<span>Open Someday</span>' + ARROW + '</button></div>';
+        '<button role="menuitem" data-act="open">' + DMARK + '<span>Open Someday</span>' + ARROW + '</button></div>';
     }
     h += '</div>';
     if (cur) {
