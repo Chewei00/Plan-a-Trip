@@ -125,7 +125,8 @@ with sync_playwright() as p:
     assert len(details) == 1 and asked[0]["sessionToken"] in details[0], "the pick closes the search session"
     assert page.locator(".pend .pend-name").inner_text() == "ほうとう不動"
     assert page.locator(".pend .chip.on").inner_text() == "飲食"
-    # pressed, the button hops into "Added" and the card stays a moment; the place is saved at the press
+    # pressed, the place is saved and its card is there at once; meanwhile the button hops into "Added", and the save
+    # card closes a moment later, leaving the place's pin and name
     page.click(".savebtn")
     page.wait_for_timeout(80)
     hop = page.evaluate("""(() => { const b = document.querySelector('.pend .savebtn'), s = getComputedStyle(b);
@@ -133,12 +134,13 @@ with sync_playwright() as p:
                 s.transform !== 'none' && new DOMMatrix(s.transform).m42 < 0, document.querySelectorAll('.pend [data-act]:not([disabled])').length]; })()""")
     assert hop == ["savebtn adding", True, ["Add to Travel Collection", "Added"], "added-bg, added-hop", "0.4s, 0.4s", True, 0], hop
     assert any(x["name"] == "ほうとう不動" for x in json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))["trips"][0]["places"]), "saved straight away"
-    page.wait_for_timeout(500)
-    held = page.evaluate("""(() => { const b = document.querySelector('.pend .savebtn'), o = x => getComputedStyle(b.querySelector(x)).opacity;
-        return [getComputedStyle(b).backgroundColor, o('.was'), o('.now'), new DOMMatrix(getComputedStyle(b).transform).m42]; })()""")
-    assert held == ["rgb(229, 229, 229)", "0", "1", 0], ("still there, landed, saying Added", held)
+    assert page.locator(".card.focus .cname").inner_text() == "ほうとう不動", "and shown in the collection straight away"
+    assert page.locator(".pend").count() == 1 and page.locator(".flabel").count() == 0 and page.locator(".fpin").count() == 1, "one pin, the save card's"
+    page.wait_for_timeout(250)
+    assert page.locator(".pend").count() == 1, "the card is still up while the button lands"
     page.wait_for_timeout(600)
-    assert page.locator(".pend").count() == 0 and "show" not in (page.get_attribute("#toast", "class") or ""), "then the card closes, with no line at the foot"
+    assert page.locator(".pend").count() == 0 and page.locator(".flabel").inner_text() == "ほうとう不動", "then it closes, leaving the pin and the name"
+    assert "show" not in (page.get_attribute("#toast", "class") or ""), "with no line at the foot"
     assert page.locator(".card.focus .cname").inner_text() == "ほうとう不動"
     saved = [x for x in json.loads(page.evaluate("localStorage.getItem('plan-a-trip:v1')"))["trips"][0]["places"] if x["name"] == "ほうとう不動"][0]
     assert saved["gid"] == "gid-hoto" and saved["lat"] == 35.499 and saved["at"] > 0, "the saved place keeps Google's ID and when its position was fetched"

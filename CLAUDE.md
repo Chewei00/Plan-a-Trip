@@ -125,10 +125,11 @@ Also done (2026-10-09): several trips with a trip menu; trip notes at the foot o
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
-On the site the same button hops too (2026-10-10): the place is saved at the press, the save card stays for .9s (the hop,
-then half a second saying "Added") and then closes; with the system's "reduce motion" it closes at once and the line at the
-foot says "Added to Travel Collection" as before. The hop's numbers live in two places, `css/app.css` and `extension/maps.js`:
-change both.
+On the site the same button hops too (2026-10-10): at the press the place is saved and its card appears, selected, in
+the Travel Collection; the button hops meanwhile and the save card closes .6s after the press, leaving the pin and the
+name (Chewei chose "shown at the press" out of four timings on a preview page). With the system's "reduce motion" there
+is no hop: the card closes at once and the line at the foot says "Added to Travel Collection". The hop's numbers live in
+two places, `css/app.css` and `extension/maps.js`: change both.
 
 The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
 
