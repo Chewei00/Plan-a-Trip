@@ -39,6 +39,8 @@ export var ICON={
      drawing: a 1.5 line with square ends and a sharp point, 10.5 long at rest and 16.6 stretched */
   arrow:'<span class="arr" aria-hidden="true"><i></i><svg viewBox="4.5 0 6 9.5"><path d="M5.2 .5 9.45 4.75 5.2 9"/></svg></span>',
   chevDown:'<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1.5 1.5 6 6.5l4.5-5"/></svg>',
+  /* the handle of the trip notes at the foot of the left panel: points up; turned over while they are open */
+  memoChev:'<svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1.5 4.6 5 1.4l3.5 3.2"/></svg>',
   walk:svg('<circle cx="8.6" cy="2.9" r="1.35" '+F+'/><path d="M8.4 5.8 7.6 9.6 5.4 13.8M7.6 9.6l3 4M5.6 8l2.8-2.2L11 7.6"/>'),
   bike:svg('<circle cx="3.7" cy="10.5" r="2.7"/><circle cx="12.3" cy="10.5" r="2.7"/><path d="M3.7 10.5 6.6 5.8h3.2l2.5 4.7M9.8 5.8 9.3 4h1.6"/>'),
   car:svg('<path d="M2.3 10.6V8.7l1.4-3.4a1 1 0 0 1 .9-.6h6.8a1 1 0 0 1 .9.6l1.4 3.4v1.9M6.4 10.6h3.2"/><circle cx="4.9" cy="10.9" r="1.5"/><circle cx="11.1" cy="10.9" r="1.5"/>'),

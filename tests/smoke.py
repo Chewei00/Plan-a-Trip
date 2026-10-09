@@ -174,6 +174,86 @@ with sync_playwright() as p:
     assert page.locator(".title").inner_text() == "富士山 5 日" and page.locator(".day").count() == 2
     assert page.locator(".card").count() == 7 and page.evaluate("__map.lines.length") == 8, "its places and routes are all there"
 
+    # ---- the trip's own notes, at the foot of the left panel ----
+    def memo():
+        return page.evaluate("""(() => { const lp = document.getElementById('lp').getBoundingClientRect(), m = document.getElementById('memo').getBoundingClientRect();
+            const top = s => [...document.querySelectorAll(s)].map(x => { const r = x.getBoundingClientRect(); return [r.top - lp.top, r.height]; });
+            return { line: m.top - lp.top, foot: lp.bottom - m.bottom, ents: top('#memoents > .ent'), adds: top('.memoadd'), list: document.getElementById('lpscroll').getBoundingClientRect().height }; })()""")
+    # closed: only the handle, a line 24 above the panel's foot with the arrow under it
+    shut = memo()
+    def cur():
+        d = stored()
+        return [t for t in d["trips"] if t["id"] == d["current"]][0]
+    assert (shut["line"], shut["foot"]) == (768 - 24, 0), shut
+    assert css(".memo-body", "visibility") == "hidden" and css(".memo-handle svg", "transform") == "none"
+    # opening is a movement, not a jump: part-way through, the line is between the two places
+    page.click("#memoh")
+    page.wait_for_timeout(110)
+    mid = memo()["line"]
+    assert 664 < mid < 744, mid
+    page.wait_for_timeout(400)
+    empty = memo()
+    assert empty["line"] == 664 and empty["adds"] == [[694, 30], [724, 30]] and empty["ents"] == [], empty
+    assert empty["list"] == shut["list"] - 80, "the list above gives up exactly that much"
+    assert css(".memo-handle svg", "transform") == "matrix(-1, 0, 0, -1, 0, 0)", "the arrow turns over"
+    assert page.locator(".memoadd").all_inner_texts() == ["Add a note", "Add a checklist"]
+    # a note and a checklist, written the way a stop's are
+    page.click(".memoadd >> nth=0"); page.wait_for_timeout(200)
+    assert page.evaluate("document.activeElement.className") == "edit nbedit"
+    page.keyboard.type("行前準備事情事情事情事情事情事情事情事情事情事情"); page.keyboard.press("Enter"); page.wait_for_timeout(300)
+    page.click(".memoadd >> nth=1"); page.wait_for_timeout(200)
+    page.keyboard.type("辦簽證"); page.keyboard.press("Enter"); page.wait_for_timeout(300)
+    if page.locator(".edit").count():
+        page.keyboard.press("Escape"); page.wait_for_timeout(200)
+    two = memo()
+    assert two["line"] == 566 and two["ents"] == [[596, 52], [656, 16]] and two["adds"] == [[694, 30], [724, 30]], two
+    assert [e["k"] + ":" + e["text"][:4] for e in cur()["memo"]["plan"]] == ["n:行前準備", "c:辦簽證"]
+    assert page.locator(".mk").count() > 0 and page.locator(".day.sel").count() == 0, "nothing on the map or among the days is touched"
+    # ticking, and the menu of an entry (it shows at the right end of the row, as in a day)
+    page.click("#memoents .cbox"); page.wait_for_timeout(200)
+    assert cur()["memo"]["plan"][1]["done"] is True and page.locator("#memoents .ck.done").count() == 1
+    row = page.locator("#memoents .ck").bounding_box()
+    page.mouse.move(row["x"] + row["width"] - 6, row["y"] + 8); page.wait_for_timeout(600)
+    page.click("#memoents .ck .more"); page.wait_for_timeout(300)
+    assert page.locator("#menu button").all_inner_texts() == ["Edit", "Add a link", "Add a file", "Delete"]
+    page.click("#menu button:has-text('Add a link')"); page.wait_for_timeout(200)
+    page.keyboard.type("visa.example.org/apply"); page.keyboard.press("Enter"); page.wait_for_timeout(300)
+    assert cur()["memo"]["plan"][1]["link"] == "https://visa.example.org/apply" and page.locator("#memoents a.ckic").count() == 1
+    # a double click edits in place
+    page.dblclick("#memoents .cktext"); page.wait_for_timeout(200)
+    assert page.evaluate("document.activeElement.className") == "edit ckedit"
+    page.keyboard.press("End"); page.keyboard.type("（線上）"); page.keyboard.press("Enter"); page.wait_for_timeout(300)
+    if page.locator(".edit").count():
+        page.keyboard.press("Escape"); page.wait_for_timeout(200)
+    assert cur()["memo"]["plan"][1]["text"] == "辦簽證（線上）"
+    # it grows with what it holds, up to where Day 1 sits; from there the entries scroll and the rest stays put
+    for i in range(7):
+        page.click(".memoadd >> nth=0"); page.wait_for_timeout(120)
+        page.keyboard.type("事情" * 30); page.keyboard.press("Enter"); page.wait_for_timeout(180)
+    page.mouse.move(700, 600); page.wait_for_timeout(300)
+    full = memo()
+    assert full["line"] == 129 and full["adds"] == [[694, 30], [724, 30]] and full["foot"] == 0, full
+    assert page.evaluate("(() => { const e = document.getElementById('memoents'); return e.scrollHeight > e.clientHeight + 100 && e.scrollTop > 0; })()"), "the entries scroll, at the newest"
+    # the state is the trip's and survives a reload; closed again, the list is back
+    page.reload(); page.wait_for_timeout(1000)
+    again = memo()
+    assert again["line"] == 129 and len(cur()["memo"]["plan"]) == 9
+    page.click("#memoh"); page.wait_for_timeout(500)
+    assert memo()["line"] == 744 and memo()["list"] == shut["list"] and cur()["memo"]["open"] is False
+    # with the panel put away, the notes are too
+    page.click(".sidebtn"); page.wait_for_timeout(400)
+    assert not page.locator("#memo").is_visible()
+    page.click(".sidebtn"); page.wait_for_timeout(400)
+    # an old save without notes gets an empty set, and loses nothing
+    old = stored(); n_places = len(cur()["places"])
+    for t in old["trips"]:
+        del t["memo"]
+    page.evaluate("d => localStorage.setItem('plan-a-trip:v1', JSON.stringify(d))", old)
+    page.reload(); page.wait_for_timeout(1000)
+    page.click("#memoh"); page.wait_for_timeout(500)
+    assert memo()["line"] == 664 and len(cur()["places"]) == n_places and cur()["memo"] == {"open": True, "plan": []}
+    page.click("#memoh"); page.wait_for_timeout(500)
+
     # the arrow is not there until the pointer is on the trip's name; then it pushes the name right and the collapse icon steps aside
     page.mouse.move(700, 600)
     page.wait_for_timeout(700)

@@ -8,7 +8,7 @@
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./css/app.css?v=13">
+<link rel="stylesheet" href="./css/app.css?v=14">
 </head>
 <body>
 <div class="app" id="app">
@@ -23,6 +23,13 @@
       <div class="search"><input id="q" type="search" placeholder="Search" autocomplete="off" aria-label="搜尋地點"><div class="results" id="results" hidden></div></div>
     </div>
     <div class="lp-scroll" id="lpscroll"></div>
+    <div class="memo" id="memo">
+      <button class="memo-handle" id="memoh" data-act="memo-toggle"></button>
+      <div class="memo-body"><div class="memo-clip"><div class="memo-in">
+        <div class="memo-ents" id="memoents" data-stop="memo"></div>
+        <div class="memo-adds" id="memoadds"></div>
+      </div></div></div>
+    </div>
   </aside>
   <section class="tp" id="tp" aria-label="Travel Collection">
     <button class="tclose" id="th" data-act="toggle-top"></button>
@@ -37,6 +44,6 @@
 <div id="toast" role="status" aria-live="polite"></div>
 <p class="narrow">目前只設計了電腦的版面，請用電腦開啟。</p>
 
-<script type="module" src="./js/main.js?v=13"></script>
+<script type="module" src="./js/main.js?v=14"></script>
 </body>
 </html>

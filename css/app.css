@@ -92,7 +92,7 @@ body.dragging .ckmove{transform:none!important}
 /* ---------- left panel ---------- */
 .lp{position:absolute;left:var(--gap);top:var(--gap);bottom:var(--gap);width:var(--lw);display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r16);z-index:10;box-shadow:var(--shadow-panel)}
 .app.lc .lp{bottom:auto}
-.app.lc .lp .search,.app.lc .lp-scroll{display:none}
+.app.lc .lp .search,.app.lc .lp-scroll,.app.lc .memo{display:none}
 .lp-head{flex:none;padding:20px 20px 0}
 .app.lc .lp-head{padding-bottom:20px}
 .lp-top{display:flex;align-items:center;gap:12px;height:22px}
@@ -124,7 +124,10 @@ input.edit.title{height:30px;margin:-4px 0;overflow:visible;text-overflow:clip}
 .results button:hover,.results button:focus-visible{background:var(--fill-note)}
 .results .tag{margin-left:auto;font-size:12px;color:var(--text-2);white-space:nowrap}
 .results p{margin:4px 10px;font:400 12px/20px var(--ui);letter-spacing:.04em;color:var(--text-2)}
-.lp-scroll{position:relative;flex:1;min-height:0;overflow-y:auto;padding:24px 20px 20px;scrollbar-width:none;-ms-overflow-style:none}
+/* the space under the last row is an element, not padding: padding cannot be squeezed, and the trip notes below must
+   be able to take the list down to nothing but its top margin */
+.lp-scroll{position:relative;flex:1;min-height:0;overflow-y:auto;padding:24px 20px 0;scrollbar-width:none;-ms-overflow-style:none}
+.lp-scroll::after{content:"";display:block;height:20px}
 .lp-scroll::-webkit-scrollbar{display:none}
 .day{margin:0 -8px 16px;padding:8px;border-radius:var(--r8)}
 .day.over{background:var(--fill-note)}
@@ -179,6 +182,31 @@ textarea.edit.nbedit::placeholder{color:var(--text-ph);opacity:1}
 .addday{display:flex;align-items:center;gap:10px;height:16px;margin-top:24px;padding:0 0 0 2px;border:0;background:none;color:var(--text-3);font:500 12px/16px var(--ui)}
 .addday svg{display:block;flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1}
 .addday:hover{color:var(--ink)}
+/* ---- the trip's own notes, at the foot of the left panel (Figma: left side, four states) ----
+   The handle is a line with an arrow under it, 24 from the panel's foot when closed. Opening pushes the line up by
+   what the notes hold: 6, the entries (8 apart), 22, the two "Add" rows (30 each), 14. The line never goes above where
+   Day 1 sits (129 from the panel's top); from there the entries scroll between the handle and the "Add" rows. */
+.memo{flex:none;display:flex;flex-direction:column;min-height:24px;max-height:calc(100% - 129px)}
+.memo-handle{position:relative;flex:none;display:block;width:100%;height:24px;margin:0;border:0;padding:0;background:none;color:var(--ink)}
+.memo-handle::before{content:"";position:absolute;left:20px;right:20px;top:0;height:1px;border-radius:1px;background:var(--ink)}
+.memo-handle svg{position:absolute;left:50%;top:9px;width:10px;height:6px;margin-left:-5px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
+.memo.open .memo-handle svg{transform:rotate(180deg)}
+.memo-handle:focus-visible{outline-offset:-2px}
+/* the same opening as a day's entries: a grid row from 0 to its content's height */
+.memo-body{flex:0 1 auto;min-height:0;display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .25s ease,visibility 0s .25s}
+.memo.open .memo-body{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .25s ease,visibility 0s}
+.memo-clip{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.memo-in{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;padding:6px 20px 14px;opacity:0;transition:opacity .15s ease}
+.memo.open .memo-in{opacity:1;transition:opacity .2s ease .08s}
+.memo-ents{flex:0 1 auto;min-height:0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+.memo-ents::-webkit-scrollbar{display:none}
+.memo-ents .ent:first-child{margin-top:0}
+.memo-adds{flex:none;margin-top:22px}
+.memo-ents:empty+.memo-adds{margin-top:0}
+/* the look of "Add a day"; the plus starts 2 left of the entries, as drawn */
+.memoadd{display:flex;align-items:center;gap:7px;width:100%;height:30px;margin:0 0 0 -2px;padding:0;border:0;background:none;color:var(--text-3);font:500 12px/16px var(--ui);text-align:left}
+.memoadd svg{display:block;flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1}
+.memoadd:hover{color:var(--ink)}
 .ck{display:flex;align-items:flex-start;gap:8px;min-height:16px;padding-right:2px;font:400 12px/16px var(--ui);letter-spacing:.04em;color:var(--text-2)}
 .cbox{position:relative;flex:none;width:12px;height:12px;margin:2px 0;padding:0;border:1.5px solid var(--line);border-radius:var(--r4);background:none;color:var(--on-ink)}
 .cbox svg{position:absolute;left:-1.5px;top:-1.5px;width:12px;height:12px;display:none;fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}

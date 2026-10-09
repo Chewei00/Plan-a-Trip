@@ -1,9 +1,9 @@
 /* Someday — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=13';
-import {fetchRoute} from './geoapify.js?v=13';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=13';
-import {createMap} from './mapview.js?v=13';
+import {ICON,CATICON,catSvg} from './icons.js?v=14';
+import {fetchRoute} from './geoapify.js?v=14';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=14';
+import {createMap} from './mapview.js?v=14';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -26,7 +26,7 @@ function newPlace(c){var p={id:uid(),name:c.name,cat:c.cat,lat:c.lat,lng:c.lng,n
 /* a stop is one visit: the same place can be visited on several days (or twice in a day), each visit with its own notes and checklist */
 function newStop(pid,plan){return {id:uid(),place:pid,plan:plan||[]};}
 function place0(d,id){for(var i=0;i<d.places.length;i++)if(d.places[i].id===id)return d.places[i];return null;}
-function newTrip(title){return {id:uid(),title:title,places:[],days:[{id:uid(),stops:[]}],legs:{}};}
+function newTrip(title){return {id:uid(),title:title,places:[],days:[{id:uid(),stops:[]}],legs:{},memo:{open:false,plan:[]}};}
 function sample(){
   var d={id:uid(),title:'富士山 5 日',places:[],days:[],legs:{}};
   function P(name,cat,lat,lng,note){var p=newPlace({name:name,cat:cat,lat:lat,lng:lng});p.note=note||'';d.places.push(p);return p.id;}
@@ -61,6 +61,9 @@ function fixTrip(d){
   if(!d.id)d.id=uid();
   if(typeof d.title!=='string'||!d.title)d.title='New trip';
   if(!d.legs||typeof d.legs!=='object')d.legs={};
+  /* the trip's own notes (not about any place or day), added 2026-10-09: the same entries a stop has */
+  if(!d.memo||typeof d.memo!=='object')d.memo={open:false,plan:[]};
+  if(!Array.isArray(d.memo.plan))d.memo.plan=[];
   d.places.forEach(function(p){if(p.plan)p.plan=p.plan.map(function(x){return typeof x==='string'?{k:'n',text:x}:x;});});
   d.days.forEach(function(day){day.stops=(day.stops||[]).map(function(x){
     if(typeof x!=='string'){x.plan=x.plan||[];return x;}
@@ -77,7 +80,7 @@ function load(){
       if(t.length)return {v:2,current:t.some(function(x){return x.id===d.current;})?d.current:t[0].id,trips:t};
     }else if(isTrip(d)){t=fixTrip(d);return {v:2,current:t.id,trips:[t]};}
   }}catch(e){}
-  var s=sample();
+  var s=fixTrip(sample());
   return {v:2,current:s.id,trips:[s]};
 }
 function save(){
@@ -90,7 +93,10 @@ function tripOf(id){for(var i=0;i<store.trips.length;i++)if(store.trips[i].id===
 store=load();db=tripOf(store.current);
 function place(id){for(var i=0;i<db.places.length;i++)if(db.places[i].id===id)return db.places[i];return null;}
 function getDay(id){for(var i=0;i<db.days.length;i++)if(db.days[i].id===id)return db.days[i];return null;}
-function stopOf(sid){for(var i=0;i<db.days.length;i++)for(var j=0;j<db.days[i].stops.length;j++)if(db.days[i].stops[j].id===sid)return {day:db.days[i],idx:j,stop:db.days[i].stops[j]};return null;}
+/* a stop by its id. The trip's own notes answer to MEMO: they hold entries exactly as a stop does, so everything that
+   edits, ticks, links or attaches works on them unchanged; they have no day and no place */
+var MEMO='memo';
+function stopOf(sid){if(sid===MEMO)return {day:null,idx:-1,stop:db.memo};for(var i=0;i<db.days.length;i++)for(var j=0;j<db.days[i].stops.length;j++)if(db.days[i].stops[j].id===sid)return {day:db.days[i],idx:j,stop:db.days[i].stops[j]};return null;}
 /* 1-based numbers of the days a place is in, ascending, each day once */
 function daysOf(pid){var a=[];db.days.forEach(function(d,i){if(d.stops.some(function(x){return x.place===pid;}))a.push(i+1);});return a;}
 function legMode(a,b){return db.legs[a+'>'+b]||'car';}
@@ -152,8 +158,13 @@ function fmtMin(m){if(m<60)return m+'\u00a0m';var h=Math.floor(m/60),r=m%60;retu
 var ui={day:null,open:[],focus:null,cat:'sight',leftOpen:true,topOpen:true,menu:null,editing:null,q:'',searchOpen:false,pending:null,};
 var $=function(id){return document.getElementById(id);};
 var app=$('app'),mapEl=$('map'),lp=$('lp'),tp=$('tp'),
-    titleWrap=$('titlewrap'),lpScroll=$('lpscroll'),chipsEl=$('chips'),cardsEl=$('cards'),menuEl=$('menu'),
+    titleWrap=$('titlewrap'),lpScroll=$('lpscroll'),memoEl=$('memo'),memoEnts=$('memoents'),chipsEl=$('chips'),cardsEl=$('cards'),menuEl=$('menu'),
     resultsEl=$('results'),qEl=$('q'),toastEl=$('toast');
+/* the parts of the trip notes that never change (see "trip notes") */
+(function(){var plus='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4v8M4 8h8"/></svg>';
+  $('memoh').innerHTML=ICON.memoChev;
+  $('memoadds').innerHTML='<button class="memoadd" data-act="m-addnote" data-id="memo">'+plus+'Add a note</button>'+
+    '<button class="memoadd" data-act="m-addcheck" data-id="memo">'+plus+'Add a checklist</button>';})();
 
 var toastTm;
 function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toastTm);toastTm=setTimeout(function(){toastEl.classList.remove('show');},2000);}
@@ -218,7 +229,29 @@ function renderLeft(){
     h+='</ol></section>';
   });
   h+='<button class="addday" data-act="add-day"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4v8M4 8h8"/></svg>Add a day</button>';
-  lpScroll.innerHTML=h;lpScroll.scrollTop=keep;hotSync();
+  lpScroll.innerHTML=h;lpScroll.scrollTop=keep;renderMemo();hotSync();
+}
+
+/* ================= trip notes ================= */
+/* At the foot of the left panel: notes and checklists that belong to the trip rather than to a place (a visa to get,
+   things to pack). Closed, only the handle shows: a line and an arrow. Open, the entries and the two ways to add one.
+   It grows with what it holds, up to where Day 1 sits; past that the entries scroll between the handle and the two
+   "Add" rows. Open or closed is kept with the trip. Only the entries are drawn again; the rest is in index.html, so the
+   opening and closing can animate. */
+function renderMemo(){
+  var h='',pl=db.memo.plan;
+  pl.forEach(function(en,k){h+=entryHTML(MEMO,en,k);});
+  if(isEditing('plan','left',MEMO,'new'))h+='<div class="ent n"><textarea class="edit nbedit" rows="1" maxlength="300" placeholder="備註" aria-label="新增旅行備註"></textarea></div>';
+  if(isEditing('check','left',MEMO,'new'))h+='<div class="ent c"><div class="ck"><span class="cbox"></span><textarea class="edit ckedit" rows="1" maxlength="200" placeholder="待辦" aria-label="新增待辦"></textarea></div></div>';
+  memoEnts.innerHTML=h;
+  /* a new entry is written at the end: bring it into view when the entries are scrolling */
+  if(ui.editing&&ui.editing.place===MEMO&&ui.editing.i==='new')memoEnts.scrollTop=memoEnts.scrollHeight;
+  applyMemo();
+}
+function applyMemo(){
+  var on=!!db.memo.open,hd=$('memoh');
+  memoEl.classList.toggle('open',on);
+  hd.title=on?'收起旅行備註':'展開旅行備註';hd.setAttribute('aria-label',hd.title);hd.setAttribute('aria-expanded',on);
 }
 
 /* ================= top panel ================= */
@@ -485,7 +518,7 @@ function hotSync(){
   var row=null,el;
   if(hotPt&&!(drag&&drag.on)){
     el=document.elementFromPoint(hotPt.x,hotPt.y);
-    row=el&&lpScroll.contains(el)?el.closest('.day.sel .srow,.day.sel .ck,.day.sel .nb'):null;
+    row=el&&lp.contains(el)?el.closest('.day.sel .srow,.day.sel .ck,.day.sel .nb,.memo .ck,.memo .nb'):null;
     if(row&&hotPt.x<row.getBoundingClientRect().right-HOTW&&!el.closest('.ckmove,.more'))row=null;
   }
   if(row===hotEl&&(!row||row.classList.contains('hot')))return;
@@ -495,7 +528,7 @@ function hotSync(){
 function hotMove(e){hotPt={x:e.clientX,y:e.clientY};hotSync();}
 lp.addEventListener('pointermove',hotMove);lp.addEventListener('pointerdown',hotMove);
 lp.addEventListener('pointerleave',function(){hotPt=null;hotSync();});
-lpScroll.addEventListener('scroll',hotSync);
+lpScroll.addEventListener('scroll',hotSync);memoEnts.addEventListener('scroll',hotSync);
 function render(){
   renderLeft();renderTop();renderMap();renderMenu();syncFocus();syncOpen();
   var inp=document.querySelector('.edit');
@@ -526,7 +559,7 @@ function switchTrip(id){
 /* Deleting takes the trip's attached files with it. There is always a trip to show: deleting the last one leaves an empty one */
 function deleteTrip(id){
   var t=tripOf(id),i=store.trips.indexOf(t);if(!t)return;
-  t.days.forEach(function(d){d.stops.forEach(dropFilesOf);});
+  t.days.forEach(function(d){d.stops.forEach(dropFilesOf);});dropFilesOf(t.memo||{});
   store.trips.splice(i,1);
   if(!store.trips.length)store.trips.push(newTrip('New trip'));
   switchTrip(store.trips[Math.max(0,i-1)].id);
@@ -588,8 +621,8 @@ function commitEdit(cancel){
     if(e.kind==='title'){if(v)db.title=v;}
     else{
       /* in the left panel an edit targets one stop (a visit); on a card it targets the place */
-      var so=e.where==='left'?stopOf(e.place):null,st=so&&so.stop,p=place(st?st.place:e.place);if(p){
-      if(e.kind==='name'){if(v)p.name=v;}
+      var so=e.where==='left'?stopOf(e.place):null,st=so&&so.stop,p=place(st?st.place:e.place);if(p||e.place===MEMO){
+      if(e.kind==='name'){if(v&&p)p.name=v;}
       else if(e.kind==='plan'||e.kind==='check'){if(st){st.plan=st.plan||[];
         if(e.i==='new'){if(v)st.plan.push(e.kind==='plan'?{k:'n',text:v}:{k:'c',text:v,done:false,link:'',file:null});}
         else{var en=st.plan[+e.i];if(en){if(v)en.text=v;else{if(en.file)fileDel(en.file.id);st.plan.splice(+e.i,1);}}}}}
@@ -598,7 +631,7 @@ function commitEdit(cancel){
         else{var u=/^[a-z][a-z0-9+.-]*:/i.test(v)?v:'https://'+v,ok=false;
           try{var U=new URL(u);ok=(U.protocol==='https:'||U.protocol==='http:')&&U.hostname.indexOf('.')>0;}catch(_){}
           if(ok)le.link=u;else toast('這不是有效的網址，連結沒有變更');}}}
-      else p.note=v;}}
+      else if(p)p.note=v;}}
     save();
   }
   render();
@@ -686,7 +719,7 @@ document.addEventListener('drop',function(e){
   e.preventDefault();markDrop(null,'dropimg');markDrop(null,'dropfile');
   var c=e.target.closest&&e.target.closest('.card'),k=e.target.closest&&e.target.closest('.ent.c');
   var fs=e.dataTransfer&&e.dataTransfer.files,f=null,i;
-  if(k){var st=k.closest('.stop');if(fs&&fs[0]&&st)attachFile(st.dataset.stop,+k.dataset.ent,fs[0]);return;}
+  if(k){var st=k.closest('.stop,.memo-ents');if(fs&&fs[0]&&st)attachFile(st.dataset.stop,+k.dataset.ent,fs[0]);return;}
   if(!c)return;
   for(i=0;fs&&i<fs.length;i++)if(/^image\//.test(fs[i].type)){f=fs[i];break;}
   if(!f){toast('請從電腦拖曳圖片檔進來');return;}
@@ -832,6 +865,7 @@ var ACT={
   'chip':function(el){var c=el.dataset.cat;if(c===ui.cat)return;   /* one category at a time, never none */
     ui.cat=c;cardsEl.scrollLeft=0;renderTop();},
   'toggle-left':function(){ui.leftOpen=!ui.leftOpen;applyPanels();},
+  'memo-toggle':function(){db.memo.open=!db.memo.open;save();applyMemo();},
   'toggle-top':function(){ui.topOpen=!ui.topOpen;applyPanels();},
   'focus':function(el){focusPlace(el.dataset.place);},
   'pick-saved':function(el){var p=place(el.dataset.id);if(!p)return;
@@ -869,7 +903,7 @@ document.addEventListener('click',function(e){
   if(t.closest('input,textarea,a,#viewer'))return;
   var ed=t.closest('[data-edit]'),pl=t.closest('.card[data-place],.stop[data-place]');
   if(ed){
-    var where=ed.closest('.card')?'card':'left',pid=pl?(where==='left'&&pl.dataset.stop)||pl.dataset.place:'',ei=ed.dataset.i||'',key=ed.dataset.edit+'|'+where+'|'+pid+'|'+ei,now=Date.now();
+    var where=ed.closest('.card')?'card':'left',pid=ed.closest('.memo-ents')?MEMO:pl?(where==='left'&&pl.dataset.stop)||pl.dataset.place:'',ei=ed.dataset.i||'',key=ed.dataset.edit+'|'+where+'|'+pid+'|'+ei,now=Date.now();
     if(lastClick.key===key&&now-lastClick.t<450){lastClick={key:'',t:0};startEdit(ed.dataset.edit,where,pid,ei);return;}
     lastClick={key:key,t:now};
   }

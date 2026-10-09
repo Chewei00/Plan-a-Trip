@@ -52,10 +52,13 @@ explain in plain words, never ask them to run commands.
 - Google's logo and credit line must stay visible and unaltered: `css/app.css` moves the logo to the right of the left
   panel while it is open. The routes are not Google's, so their credit (Geoapify, OpenStreetMap) is a separate line.
 - Data lives in `localStorage` (`plan-a-trip:v1`) and attached files in IndexedDB (`plan-a-trip-files`). The saved
-  object is `{v:2, current, trips:[{id,title,places,days,legs}]}`; `db` in `js/main.js` is the trip on screen and
+  object is `{v:2, current, trips:[{id,title,places,days,legs,memo}]}`; `db` in `js/main.js` is the trip on screen and
   `switchTrip()` points it at another. Saves from before there were several trips were one bare trip object; `load()`
   wraps it as the first trip. A place may carry `gid` (Places API ID, from the search) or `fid` (Google Maps' own
-  identifier, from the extension) — neither, for places from before either existed.
+  identifier, from the extension) — neither, for places from before either existed. `memo` is the trip's own notes
+  (`{open, plan:[entries]}`, the same entries a stop's `plan` holds), shown at the foot of the left panel; in the code
+  they answer to the stop id `memo` (`stopOf`), which is how every note and checklist action works on them unchanged.
+  Trips saved before 2026-10-09 get an empty one on load (`fixTrip`).
 - `extension/` is a Chrome extension (Manifest V3, no build step) that saves the place open on the Google Maps website
   into a trip. The toolbar button is its switch (`background.js`; `pat_on` in the extension's storage, remembered,
   grey icon off / coloured icon on, clicks on other sites ignored via `activeTab`); the site can also switch it on,
@@ -106,7 +109,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; the Chrome extension (0.4.0); the name Someday; the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (0.4.0); the name Someday; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
