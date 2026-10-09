@@ -1,6 +1,6 @@
 /* The toolbar button. It is the extension's switch: a click while a Google Maps tab is in front turns saving on
    or off, for every Google Maps tab, and the choice is remembered (pat_on in the extension's storage; maps.js watches
-   it). The SomeDay site can also turn it on (site.js), never off. The icon is the earth-coloured D; while it is on, the toolbar shows the blue one (icon-on-*). A click on any other site does nothing: the "activeTab" permission
+   it). It is on from the moment it is installed. The SomeDay site can also turn it on (site.js), never off. The icon is the earth-coloured D; while it is on, the toolbar shows the blue one (icon-on-*). A click on any other site does nothing: the "activeTab" permission
    lets the click handler see the address of the tab that was clicked on, and only that. */
 var SITE = 'https://chewei00.github.io/SomeDay/';
 function icons(on) {
@@ -14,7 +14,16 @@ function paint(on) {
 }
 function sync() { chrome.storage.local.get(['pat_on'], function (r) { paint(!!(r && r.pat_on)); }); }
 var MAPS = /^https:\/\/www\.google\.com(\.tw)?\/maps(\/|\?|$)/;
-chrome.runtime.onInstalled.addListener(sync);
+/* newly installed, it is on (2026-10-10: someone who has just put it in wants to see it at once, and the icon is not on
+   the toolbar until they pin it there). An update leaves the choice as it was */
+chrome.runtime.onInstalled.addListener(function (d) {
+  if (!d || d.reason !== 'install') { sync(); return; }
+  chrome.storage.local.get(['pat_on'], function (r) {
+    if (r && r.pat_on !== undefined) { sync(); return; }
+    chrome.storage.local.set({ pat_on: true });
+    paint(true);
+  });
+});
 /* switched from somewhere else (the site): the button follows */
 chrome.storage.onChanged.addListener(function (changes, area) { if (area === 'local' && changes.pat_on) paint(!!changes.pat_on.newValue); });
 chrome.runtime.onStartup.addListener(sync);

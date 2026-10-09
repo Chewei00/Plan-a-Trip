@@ -54,6 +54,14 @@
     '.bar{position:relative;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
     '.trip{display:flex;align-items:center;gap:8px;width:100%;height:36px;padding:0 12px;border:0;border-radius:var(--r8);background:none;text-align:left;font:500 13px/20px var(--ui);letter-spacing:.04em}',
     '.trip span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    /* words beside an icon (.t) are centred on it by the words themselves, not by their line. A line keeps room under
+       the letters for tails, and where the product's own font is not there (this is Google's page: the computer's own
+       Chinese font is used) the characters sit lower in it still. So the box is cut down to capital height
+       (text-box), which pins the baseline to its foot, and level() then moves it by however far the middle of the ink
+       of that font is from the middle of that box. Where the words can be cut short, 4px each way keeps their tops
+       and tails from being cut off with them */
+    '.t{display:block;text-box:trim-both cap alphabetic}',
+    '.trip .t,.menu button .t{padding-block:4px;margin-block:-4px}',
     '.chev{width:6px;height:10px;stroke-width:1.5;transition:transform .25s ease}',
     '.bar.open .chev{transform:rotate(90deg)}',
     '.menu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:2;padding:6px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
@@ -228,6 +236,36 @@
     return n;
   }
 
+  /* see .t in the styles. How far above the baseline the middle of the ink is, for Chinese or Japanese (measured on
+     one full character) or for Latin (on a capital), is asked of a canvas once for each font and kept. Whether the
+     browser has cut the box down (Chrome 133 on) is read off the box itself: it is then lower than the letters are
+     tall; otherwise it is a whole line, and is left where it is */
+  var inkAt = {}, pen = null;
+  function inkMid(font, cjk) {
+    var k = font + '|' + cjk;
+    if (!(k in inkAt)) {
+      try {
+        pen = pen || document.createElement('canvas').getContext('2d');
+        pen.font = font;
+        var m = pen.measureText(cjk ? '\u570b' : 'H');
+        inkAt[k] = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+      } catch (e) { inkAt[k] = null; }
+    }
+    return inkAt[k];
+  }
+  function level() {
+    if (!box) return;
+    [].forEach.call(box.querySelectorAll('.t'), function (el) {
+      var cs = getComputedStyle(el), mid = inkMid(cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily, /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(el.textContent));
+      var r = el.getBoundingClientRect(), cap = r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      if (mid == null || !isFinite(mid) || !(cap > 0) || cap >= parseFloat(cs.fontSize)) return;
+      /* the baseline is put on a whole pixel of the screen, the nearest to where it should be: left between two, the
+         browser picks one itself, and on an ordinary (1x) screen that can be a whole pixel off */
+      var base = r.bottom - parseFloat(cs.paddingBottom), dpr = window.devicePixelRatio || 1;
+      el.style.translate = '0 ' + (Math.round((base + mid - cap / 2) * dpr) / dpr - base).toFixed(3) + 'px';
+    });
+  }
+
   /* ---- the bar and the card ---- */
   var host = null, root = null, box = null, cur = null, menuOpen = false, popMenu = false, touched = false;
   /* The list of trips comes in when it opens and goes out when it closes; the arrow turns with it. Everything is drawn
@@ -263,7 +301,7 @@
       fresh = true;
     }
     var t = trip(), h = '';
-    h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'SomeDay') + '</span>' + CHEV + '</button>';
+    h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span class="t">' + esc(t ? t.title : 'SomeDay') + '</span>' + CHEV + '</button>';
     /* pressed a moment ago: the number of the category the place went into rolls, as far along as it has got */
     var gone = cur && added && added.key === cur.key ? Date.now() - added.at : -1, going = gone >= 0 && gone < ADDING;
     h += '<div class="counts" role="group" aria-label="Travel Collection">' + CATS.map(function (c) {
@@ -273,9 +311,9 @@
     }).join('') + '</div>';
     if (menuOpen || menuClosing) {
       h += '<div class="menu' + (menuOpen ? (popMenu ? ' pop' : '') : ' out') + '" role="menu">' + state.trips.map(function (x) {
-        return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '">' + PIN + '<span>' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
+        return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '">' + PIN + '<span class="t">' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
       }).join('') + (state.trips.length ? '<div class="sep"></div>' : '') +
-        '<button role="menuitem" data-act="open">' + DMARK + '<span>Open SomeDay</span>' + ARROW + '</button></div>';
+        '<button role="menuitem" data-act="open">' + DMARK + '<span class="t">Open SomeDay</span>' + ARROW + '</button></div>';
     }
     h += '</div>';
     if (cur) {
@@ -283,7 +321,7 @@
       /* pressed a moment ago: draw the button on its way to "Added", as far along as it has got */
       h += '<div class="pend" role="group" aria-label="Add to Travel Collection"><div class="pend-name">' + esc(cur.name) + '</div>' +
         '<div class="chips">' + CATS.map(function (c) {
-          return '<button class="chip' + (cur.cat === c[0] ? ' on' : '') + '" data-act="cat" data-cat="' + c[0] + '" aria-pressed="' + (cur.cat === c[0]) + '"' + (saved ? ' disabled' : '') + '>' + glyph(c[0]) + c[1] + '</button>';
+          return '<button class="chip' + (cur.cat === c[0] ? ' on' : '') + '" data-act="cat" data-cat="' + c[0] + '" aria-pressed="' + (cur.cat === c[0]) + '"' + (saved ? ' disabled' : '') + '>' + glyph(c[0]) + '<span class="t">' + c[1] + '</span></button>';
         }).join('') + '</div>' +
         (saved && going
           ? '<button class="savebtn adding" data-act="save" disabled aria-label="Added"><span class="was" aria-hidden="true">Add to Travel Collection</span><span class="now">Added</span></button></div>'
@@ -291,6 +329,7 @@
     }
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
+    level();
     if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span, .num.roll span'), function (el) { el.style.animationDelay = -gone + 'ms'; });
     if (shownOpen !== menuOpen) { var bar = box.querySelector('.bar'); void bar.offsetWidth; bar.classList.toggle('open', menuOpen); shownOpen = menuOpen; }
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);

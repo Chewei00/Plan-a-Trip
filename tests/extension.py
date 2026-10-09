@@ -41,6 +41,7 @@ PANEL = """<!doctype html><meta charset="utf-8"><title>Google 地圖</title><div
 
 with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     ctx = p.chromium.launch_persistent_context(profile, channel="chromium", headless=True, viewport={"width": 1440, "height": 800},
+                                               device_scale_factor=int(os.environ.get("DSF", "1")),
                                                args=[f"--disable-extensions-except={EXT}", f"--load-extension={EXT}"])
     errors = []
 
@@ -87,20 +88,23 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     app.keyboard.type("東京 3 日"); app.keyboard.press("Enter"); app.wait_for_timeout(400)
     assert app.locator(".title").inner_text() == "東京 3 日"
 
-    # Google Maps with the extension off (as installed): nothing on the page
+    # Google Maps with the extension as installed: it is on, so the bar and the card for the place are there at once
     maps = ctx.new_page()
     maps.on("pageerror", lambda e: errors.append(str(e)))
     maps.goto(FUJIQ)
     maps.wait_for_timeout(1200)
     card = maps.locator("#plan-a-trip-card")
-    assert card.count() == 0 and not kept("pat_on")
+    assert card.count() == 1 and kept("pat_on") is True, "on from the moment it is installed"
     # pressing the button while another site is in front does nothing
     press_icon(SITE + "index.html")
     press_icon("https://www.google.com/search?q=maps")
     maps.wait_for_timeout(400)
-    assert card.count() == 0 and not kept("pat_on")
-
-    # pressing the toolbar button turns it on: the bar names the trip to save to, and the card for the place is there
+    assert card.count() == 1 and kept("pat_on") is True
+    # on a Google Maps tab it is the switch: off, the page is as Google made it; on again, the bar names the trip to
+    # save to, and the card for the place is there
+    press_icon()
+    maps.wait_for_timeout(500)
+    assert card.count() == 0 and kept("pat_on") is False and "turn on" in sw.evaluate("() => chrome.action.getTitle({})")
     press_icon()
     maps.wait_for_timeout(600)
     assert kept("pat_on") is True and "turn off" in sw.evaluate("() => chrome.action.getTitle({})")
@@ -117,6 +121,26 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert abs(k[1]["x"] - (k[0]["x"] + k[0]["width"]) - 6) < 0.01, "6 apart"
     ic = card.locator(".counts .pill >> nth=0 >> svg").bounding_box(); nb = card.locator(".counts .pill >> nth=0 >> .num").bounding_box()
     assert ic["width"] == 10 and ic["x"] == k[0]["x"] + 6 and abs(nb["x"] - (ic["x"] + 10 + 4)) < 0.01 and nb["height"] == 17, (ic, nb)
+    # words beside an icon are centred on it by their ink (checked on the picture: the middle row of the dark pixels of
+    # the words against that of the icon), in the card's categories, the bar's name and its arrow
+    def ink_gap(sel_words, sel_icon):
+        import io
+        from PIL import Image
+        dsf = int(os.environ.get("DSF", "1"))
+        def mid(sel):
+            el = card.locator(sel)
+            b = el.bounding_box()
+            im = Image.open(io.BytesIO(maps.screenshot(clip={"x": b["x"] - 1, "y": b["y"] - 8, "width": b["width"] + 2, "height": b["height"] + 16}))).convert("L")
+            rows = [y for y in range(im.height) if im.crop((0, y, im.width, y + 1)).getextrema()[0] < 150]
+            return b["y"] - 8 + (rows[0] + rows[-1] + 1) / 2 / dsf
+        return mid(sel_words) - mid(sel_icon)
+    if maps.evaluate("CSS.supports('text-box', 'trim-both cap alphabetic')"):
+        gaps = {"chip": ink_gap(".chip >> nth=1 >> .t", ".chip >> nth=1 >> svg"), "name": ink_gap(".trip .t", ".trip .chev")}
+        assert all(abs(g) <= 0.75 for g in gaps.values()), ("words and icon share a middle line", gaps)
+        if os.environ.get("SHOTS"):
+            print("ink gaps", gaps)
+            maps.screenshot(path=os.environ["SHOTS"] + "/ext-chips.png", clip={"x": 1440 - 16 - 236, "y": 64 + 70 + 8 + 30, "width": 236, "height": 40})
+        assert card.locator(".chip .t").count() == 4 and "px" in (card.locator(".chip >> nth=0 >> .t").get_attribute("style") or "")
     # the figures are centred on the icon by their own height (where the browser can cut the text's box down to them)
     mid = maps.evaluate("""(() => { const p = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.counts .pill'), a = p.querySelector('svg').getBoundingClientRect(), b = p.querySelector('.now').getBoundingClientRect();
         return [CSS.supports('text-box', 'trim-both cap alphabetic'), a.top + a.height / 2, b.top + b.height / 2, b.height]; })()""")

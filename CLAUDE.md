@@ -68,7 +68,8 @@ explain in plain words, never ask them to run commands.
   they answer to the stop id `memo` (`stopOf`), which is how every note and checklist action works on them unchanged.
   Trips saved before 2026-10-09 get an empty one on load (`fixTrip`).
 - `extension/` is a Chrome extension (Manifest V3, no build step) that saves the place open on the Google Maps website
-  into a trip. The toolbar button is its switch (`background.js`; `pat_on` in the extension's storage, remembered,
+  into a trip. The toolbar button is its switch (`background.js`; `pat_on` in the extension's storage, remembered; on
+  from the moment it is installed, Chewei's choice of 2026-10-10, since a new icon is not on the toolbar until pinned;
   earth-coloured icon off / blue icon on, clicks on other sites ignored via `activeTab`); the site can also switch it on,
   never off (the empty Travel Collection posts `switch-on`, then opens Google Maps). While on, `maps.js` shows a bar
   (the trip to save to; its menu lists the trips and opens the site) and, on a place's page, the site's own save card.
@@ -76,8 +77,10 @@ explain in plain words, never ask them to run commands.
   each count 33 x 19 with a 1px `line` border, 6 apart, 12 from the left and the foot): four counts, an icon and a
   number each, of the trip's places in the four categories. All four are the one colour (`ink`), none is lit, they do
   not hop and are not buttons. At a press the number of the category the place went into rolls: the old one goes up
-  and out, the new one comes up from below, cut off by the pill's edge, .3s. Only a press rolls it. The number is centred
-  on the icon by the height of its figures (`text-box`), not of its line, which sat it visibly low. (Earlier the same
+  and out, the new one comes up from below, cut off by the pill's edge, .3s. Only a press rolls it. Words and numbers
+  beside an icon are centred on it by their ink, not by their line (`.t` and `level()` in `maps.js`): on Google's page
+  the product's font is not loaded, the computer's own Chinese font is used, and its characters sit low in a line.
+  The site needs none of this: it loads its own font. (Earlier the same
   night: a panel of tiles under the card, then lit and hopping pills; both replaced.) The site tells the extension
   every place of every trip (`places` in the `state` message); `site.js` keeps only the counts (`pat_counts`), so what
   is done on the site shows here only after the site has been open.
