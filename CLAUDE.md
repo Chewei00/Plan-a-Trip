@@ -159,15 +159,16 @@ Next, in order: Supabase with Google sign-in for accounts and cloud data → con
 For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone
 editing layout (see the Handoff document, 延後與未決事項).
 
-The phone itinerary so far is a preview page only (https://claude.ai/artifact/7Pvae9G2PePVoC6Lr3VkDy, version 7 of
-2026-10-10), not in this repository; how it joins the site (what on the desktop makes the link, how the link gets to
+The phone itinerary so far is a preview page only (https://claude.ai/artifact/7Pvae9G2PePVoC6Lr3VkDy, version 8 of
+2026-10-10, which Chewei accepted: "nothing more to change"), not in this repository; how it joins the site (what on the desktop makes the link, how the link gets to
 the phone, offline on an iPhone) is still to be discussed with Chewei before building. What is settled on the preview:
 only the left panel's content; days open at first; a day opens and closes as on the desktop (closed keeps the places'
 names, the rest folds away, the category and the arrow fade, a closed day is paler while another is open; classes are
 switched on the elements that are there, nothing is redrawn; the dot is level with the first line of the name,
 open or closed); it moves even when the phone asks for less motion (Chewei's wish; the desktop and the extension
 keep their own rule); the trip's notes are a sheet held at the foot of the screen, as on the desktop (a line and an
-arrow, drawn up in .45s, closed at first, rising at most to Day 1's label, then its entries scroll); a ticked item is kept on the phone; an arrow by each
+arrow, drawn up in .45s, closed at first, rising at most to Day 1's label, then its entries scroll); checkbox to checkbox is 16, the same as checkbox to note (two checklist lines in a row
+sit directly together); nothing is written under the itinerary (no "SomeDay" line); a ticked item is kept on the phone; an arrow by each
 place opens Google Maps; attached files are not carried (Chewei will put Google Drive links in the checklist instead);
 no cloud. Smooth corners there cannot use `corner-shape` (no iPhone browser has it, Chrome on iPhone included): the
 same curve (|x|^n + |y|^n = 1, n = 2^1.4, radius x 1.25) is drawn as an SVG path, behind each note (redrawn when
