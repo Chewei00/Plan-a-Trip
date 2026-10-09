@@ -72,12 +72,14 @@ explain in plain words, never ask them to run commands.
   earth-coloured icon off / blue icon on, clicks on other sites ignored via `activeTab`); the site can also switch it on,
   never off (the empty Travel Collection posts `switch-on`, then opens Google Maps). While on, `maps.js` shows a bar
   (the trip to save to; its menu lists the trips and opens the site) and, on a place's page, the site's own save card.
-  The bar has a second row under the trip's name (0.4.6, 2026-10-10, Chewei's picture): four counts, an icon and a
-  number each, of the trip's places in the four categories. The one the card would add to is lit, none while no place
-  is open; at a press it hops with the button, one higher. They are not buttons. (0.4.5, never released, had a panel
-  of tiles under the card instead; Chewei replaced it with this the same night.) The site tells the extension every
-  place of every trip (`places` in the `state` message); `site.js` keeps only the counts (`pat_counts`), so what is
-  done on the site shows here only after the site has been open.
+  The bar has a second row under the trip's name (0.4.6, 2026-10-10, Chewei's drawing from Figma: the bar is 70 high,
+  each count 33 x 19 with a 1px `line` border, 6 apart, 12 from the left and the foot): four counts, an icon and a
+  number each, of the trip's places in the four categories. All four are the one colour (`ink`), none is lit, they do
+  not hop and are not buttons. At a press the number of the category the place went into rolls: the old one goes up
+  and out, the new one comes up from below, cut off by the pill's edge, .3s. Only a press rolls it. (Earlier the same
+  night: a panel of tiles under the card, then lit and hopping pills; both replaced.) The site tells the extension
+  every place of every trip (`places` in the `state` message); `site.js` keeps only the counts (`pat_counts`), so what
+  is done on the site shows here only after the site has been open.
   The place is read from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…!3d<lat>!4d<lng>`, checked against the
   real site on 2026-10-09). The data part is a flattened tree and can describe two places (what was searched or opened
   first, then the one that is open): `parse` in `maps.js` reads the open one by its position in the tree (group 3
@@ -139,11 +141,10 @@ two places, `css/app.css` and `extension/maps.js`: change both.
 
 The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
 
-To fix, asked 2026-10-10 and put off by Chewei until he says: the icons in the extension's counts are drawn in a
-half-transparent colour, so where two strokes cross the crossing is darker (same fault as the menu arrow once had).
-Draw them solid and make the whole icon lighter instead. Chewei is also redrawing the four category icons himself (he
-was given the current ones as 12 x 12 SVG files); when they arrive they replace `CATICON`/`CATCHIP` in `js/icons.js`
-and `GLYPH` in `extension/maps.js`, which must stay the same drawings.
+Chewei is redrawing the four category icons himself (2026-10-10; he was given the current ones as 12 x 12 SVG
+files). When they arrive they replace `CATICON`/`CATCHIP` in `js/icons.js` and `GLYPH` in `extension/maps.js`, which
+must stay the same drawings. Icons are drawn in a solid colour: a half-transparent one makes crossings darker (it
+showed in the counts for a while, as it once did in the menu arrow).
 
 Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
 For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone

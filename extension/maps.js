@@ -42,7 +42,7 @@
   /* same values as css/app.css on the site */
   var CSS = [
     ':host{all:initial}',
-    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--text-3:rgba(0,0,0,.4);--text-ph:rgba(0,0,0,.15);--line:#d2d2d2;--line-soft:#e5e5e5;--fill-note:rgba(0,0,0,.04);--fill-selected:#cdccca;--r6:6px;--r8:8px;',
+    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--text-3:rgba(0,0,0,.4);--line:#d2d2d2;--line-soft:#e5e5e5;--fill-note:rgba(0,0,0,.04);--fill-selected:#cdccca;--r6:6px;--r8:8px;',
     '  --float:0 4px 14px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.04);--ui:"Noto Sans","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;',
     '  position:fixed;top:64px;right:16px;z-index:2147483646;width:236px;display:flex;flex-direction:column;gap:8px;color:var(--ink);font:400 13px/20px var(--ui);-webkit-font-smoothing:antialiased;',
     '  opacity:0;transform:translateY(-6px);transition:opacity .25s ease,transform .25s ease}',
@@ -98,15 +98,21 @@
     '.savebtn.adding .was{color:var(--on-ink);animation:added-out .4s linear both}',
     '.savebtn.adding .now{position:absolute;left:0;right:0;top:6px;animation:added-in .4s linear both}',
     /* under the trip's name, in the same bar: how many places the trip has in each of the four categories, an icon and
-       a number each (Chewei's picture, 2026-10-10; the sizes are the ones he picked on the preview page). The one the
-       card is about to add to is lit; none is while no place is open. They are a reading, not buttons. At a press the
-       lit one gives the same hop as the button, with one more in it */
-    '.counts{display:flex;gap:4px;padding:2px 10px 9px}',
-    '.pill{display:inline-flex;align-items:center;justify-content:center;gap:2px;height:18px;padding:0 5px 0 4px;border:1px solid var(--line-soft);border-radius:999px;font:500 10px/13px var(--ui);color:var(--text-3);font-variant-numeric:tabular-nums;cursor:default}',
+       a number each, all in the one colour (Chewei's drawing from Figma, 2026-10-10: the bar 70 high, each 33 x 19
+       with a 1px line, 6 apart, 12 from the left and from the foot, icon 10 with 6 to its left, number 11px and 4
+       after the icon). They are a reading, not buttons, and none is lit. At a press the number of the category the
+       place went into rolls: the old one goes up and out, the new one comes up from below into its place, cut off by
+       the pill's own edge */
+    '.counts{display:flex;gap:6px;padding:3px 12px 12px}',
+    '.pill{display:inline-flex;align-items:center;gap:4px;height:19px;padding:0 5px;border:1px solid var(--line);border-radius:999px;font:500 11px/17px var(--ui);color:var(--ink);font-variant-numeric:tabular-nums;cursor:default}',
     '.pill svg{width:10px;height:10px}',
-    '.pill.zero{color:var(--text-ph)}',
-    '.pill.on{background:var(--line-soft);color:var(--ink)}',
-    '.pill.hop{animation:added-hop .4s linear both}',
+    '.num{position:relative;display:block;height:17px;overflow:hidden}',
+    '.num span{display:block}',
+    '.num .was{position:absolute;left:0;top:0}',
+    '@keyframes num-out{from{transform:translateY(0)}to{transform:translateY(-100%)}}',
+    '@keyframes num-in{from{transform:translateY(100%)}to{transform:translateY(0)}}',
+    '.num.roll .was{animation:num-out .3s cubic-bezier(.3,0,.3,1) both}',
+    '.num.roll .now{animation:num-in .3s cubic-bezier(.3,0,.3,1) both}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
     '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
   ].join('\n');
@@ -255,11 +261,12 @@
     }
     var t = trip(), h = '';
     h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'SomeDay') + '</span>' + CHEV + '</button>';
-    /* pressed a moment ago: the count the place went into hops with the button, as far along as it has got */
+    /* pressed a moment ago: the number of the category the place went into rolls, as far along as it has got */
     var gone = cur && added && added.key === cur.key ? Date.now() - added.at : -1, going = gone >= 0 && gone < ADDING;
     h += '<div class="counts" role="group" aria-label="Travel Collection">' + CATS.map(function (c) {
-      var n = count(c[0]), on = !!(cur && cur.cat === c[0]);
-      return '<span class="pill' + (on ? ' on' + (going ? ' hop' : '') : '') + (n ? '' : ' zero') + '" title="' + c[1] + '" aria-label="' + c[1] + ' ' + n + '">' + glyph(c[0]) + n + '</span>';
+      var n = count(c[0]), roll = going && cur.cat === c[0] && n > 0;
+      return '<span class="pill" title="' + c[1] + '" aria-label="' + c[1] + ' ' + n + '">' + glyph(c[0]) +
+        '<span class="num' + (roll ? ' roll' : '') + '">' + (roll ? '<span class="was" aria-hidden="true">' + (n - 1) + '</span>' : '') + '<span class="now">' + n + '</span></span></span>';
     }).join('') + '</div>';
     if (menuOpen || menuClosing) {
       h += '<div class="menu' + (menuOpen ? (popMenu ? ' pop' : '') : ' out') + '" role="menu">' + state.trips.map(function (x) {
@@ -281,7 +288,7 @@
     }
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
-    if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span, .pill.hop'), function (el) { el.style.animationDelay = -gone + 'ms'; });
+    if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span, .num.roll span'), function (el) { el.style.animationDelay = -gone + 'ms'; });
     if (shownOpen !== menuOpen) { var bar = box.querySelector('.bar'); void bar.offsetWidth; bar.classList.toggle('open', menuOpen); shownOpen = menuOpen; }
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);
   }
