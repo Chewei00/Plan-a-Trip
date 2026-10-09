@@ -139,6 +139,12 @@ two places, `css/app.css` and `extension/maps.js`: change both.
 
 The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
 
+To fix, asked 2026-10-10 and put off by Chewei until he says: the icons in the extension's counts are drawn in a
+half-transparent colour, so where two strokes cross the crossing is darker (same fault as the menu arrow once had).
+Draw them solid and make the whole icon lighter instead. Chewei is also redrawing the four category icons himself (he
+was given the current ones as 12 x 12 SVG files); when they arrive they replace `CATICON`/`CATCHIP` in `js/icons.js`
+and `GLYPH` in `extension/maps.js`, which must stay the same drawings.
+
 Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
 For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone
 editing layout (see the Handoff document, 延後與未決事項).
