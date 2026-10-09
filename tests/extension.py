@@ -103,8 +103,14 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert abs(box["x"] + box["width"] - (1440 - 16)) < 1 and box["y"] == 64 and box["width"] == 236 and bar["height"] == 36 and pend["y"] == 64 + 36 + 8, (box, bar, pend)
 
     # saving: the button says so, and the place arrives in that trip on the site, which is open in another tab
+    # pressed, the button turns into "Added": its colour runs across while one label goes out and the other comes in
     card.locator(".savebtn").click()
-    maps.wait_for_timeout(300)
+    maps.wait_for_timeout(60)
+    turning = maps.evaluate("""(() => { const b = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.savebtn'), s = getComputedStyle(b);
+        return [b.className, b.disabled, [...b.querySelectorAll('span')].map(x => x.textContent), s.animationName, parseFloat(s.animationDelay) < 0]; })()""")
+    assert turning == ["savebtn adding", True, ["Add to Travel Collection", "Added"], "added-bg", True], turning
+    maps.wait_for_timeout(450)
+    assert card.locator(".savebtn.adding").count() == 0, "and is then the plain Added button"
     assert card.locator(".savebtn").inner_text() == "Added" and card.locator(".savebtn").is_disabled()
     look = maps.evaluate("(() => { const b = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.savebtn'), s = getComputedStyle(b); return [s.backgroundColor, s.color]; })()")
     assert look == ["rgb(229, 229, 229)", "rgba(0, 0, 0, 0.4)"], look
@@ -114,9 +120,14 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert saved["cat"] == "sight" and saved["lat"] == 35.486947 and saved["lng"] == 138.780551 and saved["fid"] == "0x60196005c1d9f19f:0x9a5a9d0b9cbd5c0b", saved
     assert "gid" not in saved, "a place from the Google Maps site is not a Places API result"
 
-    # the bar lists the trips; picking another one changes where places go, and "saved" is judged for that trip
+    # the bar lists the trips; picking another one changes where places go, and "saved" is judged for that trip.
+    # Its arrow points right and turns a quarter, to point down, while the list is open
+    def turn():
+        return maps.evaluate("getComputedStyle(document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.bar .chev')).transform")
+    assert turn() == "none"
     card.locator(".trip").click()
-    maps.wait_for_timeout(200)
+    maps.wait_for_timeout(400)
+    assert turn() == "matrix(0, 1, -1, 0, 0, 0)"
     assert card.locator(".menu button").all_inner_texts() == ["富士山 5 日", "東京 3 日", "Open Someday"]
     assert card.locator(".menu button >> nth=1 >> .rck").count() == 1 and card.locator(".menu button >> nth=0 >> .rck").count() == 0
     assert card.locator(".menu .mico").count() == 2 and card.locator(".menu button >> nth=2 >> .pmark").count() == 1, "a pin for each trip, the P for the site"
@@ -129,10 +140,19 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert shaft["height"] == 1.5 and (shaft["y"] * 2) % 1 == 0, shaft
     card.locator(".menu button >> nth=2").hover(); maps.wait_for_timeout(700)
     assert abs(arrow.bounding_box()["width"] - 16.6) < 0.01
+    # closing, the list goes out the way it came in, and the arrow turns back
     card.locator(".menu button:has-text('富士山 5 日')").click()
-    maps.wait_for_timeout(300)
+    maps.wait_for_timeout(50)
+    assert card.locator(".menu.out").count() == 1 and card.locator(".bar.open").count() == 0
+    maps.wait_for_timeout(400)
+    assert turn() == "none"
     assert card.locator(".menu").count() == 0 and card.locator(".trip span").inner_text() == "富士山 5 日"
     assert card.locator(".savebtn").inner_text() == "Add to Travel Collection", "not saved in this trip yet"
+    card.locator(".trip").click(); maps.wait_for_timeout(250)
+    card.locator(".menu button:has-text('東京 3 日')").click(); maps.wait_for_timeout(60)
+    assert card.locator(".savebtn.adding").count() == 0 and card.locator(".savebtn").inner_text() == "Added", "changing trip does not play the turn"
+    card.locator(".trip").click(); maps.wait_for_timeout(250)
+    card.locator(".menu button:has-text('富士山 5 日')").click(); maps.wait_for_timeout(300)
     card.locator(".savebtn").click()
     app.wait_for_timeout(900)
     assert places(app, "富士山 5 日")[-1] == "富士急樂園" and app.locator(".title").inner_text() == "東京 3 日", "it goes to the chosen trip; the site stays on its own"
@@ -194,7 +214,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     # with the site closed, a saved place waits in the extension and is there the next time the site is opened
     app.close()
     card.locator(".savebtn").click()
-    maps.wait_for_timeout(300)
+    maps.wait_for_timeout(450)
     assert card.locator(".savebtn").inner_text() == "Added" and len(kept("pat_inbox")) == 1
     # "Open Someday" opens the site when it is not open...
     before = len(ctx.pages)

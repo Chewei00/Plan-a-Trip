@@ -84,6 +84,15 @@
     '.chip[disabled]{cursor:default}',
     '.savebtn{display:block;width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}',
     '.savebtn[disabled]{background:var(--line-soft);color:var(--text-3);cursor:default}',
+    /* just pressed: the button turns into "Added" instead of being swapped for it. Its colour runs from one to the
+       other while the old words go out and the new ones come in, overlapping for a moment. These are animations, not
+       transitions, so that a button drawn again part-way through can be told how far along it is (see draw) */
+    '@keyframes added-bg{from{background-color:var(--ink)}to{background-color:var(--line-soft)}}',
+    '@keyframes added-out{from{opacity:1}70%,to{opacity:0}}',
+    '@keyframes added-in{from,30%{opacity:0}to{opacity:1}}',
+    '.savebtn.adding{position:relative;animation:added-bg .25s ease both}',
+    '.savebtn.adding .was{color:var(--on-ink);animation:added-out .25s linear both}',
+    '.savebtn.adding .now{position:absolute;left:0;right:0;top:6px;animation:added-in .25s linear both}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
     '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
   ].join('\n');
@@ -193,6 +202,8 @@
      afresh each time, so the bar is drawn as it was (shownOpen) and then switched, which is what lets the arrow turn;
      a list that is closing is drawn once more, going out, and taken away when it has gone */
   var shownOpen = false, menuClosing = false, closeT = 0;
+  var ADDING = 250, added = null, addedT = 0;
+  function calm() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function setMenu(open) {
     if (open === menuOpen) return;
     menuOpen = open;
@@ -230,14 +241,19 @@
     h += '</div>';
     if (cur) {
       var saved = isSaved(cur);
+      /* pressed a moment ago: draw the button on its way to "Added", as far along as it has got */
+      var gone = added && added.key === cur.key ? Date.now() - added.at : -1, going = gone >= 0 && gone < ADDING;
       h += '<div class="pend" role="group" aria-label="Add to Travel Collection"><div class="pend-name">' + esc(cur.name) + '</div>' +
         '<div class="chips">' + CATS.map(function (c) {
           return '<button class="chip' + (cur.cat === c[0] ? ' on' : '') + '" data-act="cat" data-cat="' + c[0] + '" aria-pressed="' + (cur.cat === c[0]) + '"' + (saved ? ' disabled' : '') + '>' + glyph(c[0]) + c[1] + '</button>';
         }).join('') + '</div>' +
-        '<button class="savebtn" data-act="save"' + (saved ? ' disabled' : '') + '>' + (saved ? 'Added' : 'Add to Travel Collection') + '</button></div>';
+        (saved && going
+          ? '<button class="savebtn adding" data-act="save" disabled aria-label="Added"><span class="was" aria-hidden="true">Add to Travel Collection</span><span class="now">Added</span></button></div>'
+          : '<button class="savebtn" data-act="save"' + (saved ? ' disabled' : '') + '>' + (saved ? 'Added' : 'Add to Travel Collection') + '</button></div>');
     }
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
+    if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span'), function (el) { el.style.animationDelay = -gone + 'ms'; });
     if (shownOpen !== menuOpen) { var bar = box.querySelector('.bar'); void bar.offsetWidth; bar.classList.toggle('open', menuOpen); shownOpen = menuOpen; }
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);
   }
@@ -258,6 +274,10 @@
         name: cur.name, lat: cur.lat, lng: cur.lng, cat: cur.cat, fid: cur.fid, at: Date.now() };
       state.inbox = state.inbox.concat([item]);
       setMenu(false);
+      /* only a press makes the button turn; changing trip or place shows "Added" as it is */
+      clearTimeout(addedT);
+      added = calm() ? null : { key: cur.key, at: Date.now() };
+      if (added) addedT = setTimeout(function () { added = null; draw(); }, ADDING + 20);
       S.set({ pat_inbox: state.inbox });
       draw();
     }

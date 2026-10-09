@@ -260,6 +260,15 @@ with sync_playwright() as p:
     assert page.locator(".title").inner_text() == "富士山 5 日" and page.locator(".day").count() == 2 and page.locator(".day.sel").count() == 0
     assert page.evaluate("__map.moves.length") > moves + 20, "the map glides to the trip"
 
+    # closing a menu: it goes out the way it came in, then is taken away; the arrow turns back
+    open_trips()
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(50)
+    assert "out" in page.get_attribute("#menu", "class") and page.locator("#menu").is_visible() and css("#menu", "animation-name") == "menu-out"
+    page.wait_for_timeout(350)
+    assert not page.locator("#menu").is_visible() and page.inner_html("#menu") == "" and css(".tripbtn svg", "transform") == "none"
+    assert page.title() == "Someday"
+
     # deleting a trip asks once more; deleting the last one leaves an empty trip
     open_trips()
     page.click("#menu button:has-text('東京 3 日')")

@@ -1,6 +1,10 @@
-# Plan a Trip — working notes for Claude
+# Someday (formerly Plan a Trip) — working notes for Claude
 
-A trip planner for Chewei and friends (not a public product). Chewei is an industrial designer, not an engineer:
+A trip planner for Chewei and friends (not a public product). **The product is called Someday** in everything a
+person reads (page title, extension name, menus, guides) since 2026-10-09. The old name stays in what a person does
+not read and must not be renamed casually: the repository and site address (`Plan-a-Trip`), the saved-data keys
+(`plan-a-trip:v1`, `plan-a-trip-files`), the message names between page and extension, the element id and the zip of
+the extension. The logo and favicon (a P) are to be replaced when the product is published, not before. Chewei is an industrial designer, not an engineer:
 explain in plain words, never ask them to run commands.
 
 ## How to work with Chewei
@@ -61,7 +65,9 @@ explain in plain words, never ask them to run commands.
   real site on 2026-10-09). The data part is a flattened tree and can describe two places (what was searched or opened
   first, then the one that is open): `parse` in `maps.js` reads the open one by its position in the tree (group 3
   inside group 4), never "the first match". Between two places the address briefly names none; the card stays put for
-  a second before it goes. The category is marked once Google's panel shows the new place (its `h1` is the name). `site.js` hands saved places to the page and learns the trips from it; page and extension
+  a second before it goes. The category is marked once Google's panel shows the new place (its `h1` is the name).
+  `maps.js` draws everything afresh on each change, so what moves is drawn in its earlier state and then switched (the
+  bar's arrow), or is a CSS animation told how far along it is (the button turning into "Added"). `site.js` hands saved places to the page and learns the trips from it; page and extension
   talk through `window.postMessage` (see "browser extension" in `js/main.js`). The trip saved to is whichever was
   chosen last, in the bar or by switching trips on the site. Installed by hand in developer mode, not published.
   It reads only the page being viewed, uses none of the Google quota, and is not an official Google integration.
@@ -100,7 +106,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; the Chrome extension (0.3.1); the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; the Chrome extension (0.4.0); the name Someday; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
