@@ -106,11 +106,14 @@
     '.counts{display:flex;gap:6px;padding:3px 12px 12px}',
     '.pill{display:inline-flex;align-items:center;gap:4px;height:19px;padding:0 5px;border:1px solid var(--line);border-radius:999px;font:500 11px/17px var(--ui);color:var(--ink);font-variant-numeric:tabular-nums;cursor:default}',
     '.pill svg{width:10px;height:10px}',
-    '.num{position:relative;display:block;height:17px;overflow:hidden}',
-    '.num span{display:block}',
-    '.num .was{position:absolute;left:0;top:0}',
-    '@keyframes num-out{from{transform:translateY(0)}to{transform:translateY(-100%)}}',
-    '@keyframes num-in{from{transform:translateY(100%)}to{transform:translateY(0)}}',
+    /* the number is centred on the icon by the height of its figures, not of its line: a line keeps room under the
+       figures for the tails of letters, which put them visibly lower than the icon. text-box cuts the box down to the
+       figures themselves, whatever font the computer ends up using (without it, Chrome before 133, the line is centred
+       as before). Old and new number share one cell, so the box is as wide as the wider of them */
+    '.num{display:grid;align-items:center;height:17px;overflow:hidden}',
+    '.num span{grid-area:1/1;display:block;text-box:trim-both cap alphabetic}',
+    '@keyframes num-out{from{transform:translateY(0)}to{transform:translateY(-14px)}}',
+    '@keyframes num-in{from{transform:translateY(14px)}to{transform:translateY(0)}}',
     '.num.roll .was{animation:num-out .3s cubic-bezier(.3,0,.3,1) both}',
     '.num.roll .now{animation:num-in .3s cubic-bezier(.3,0,.3,1) both}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',

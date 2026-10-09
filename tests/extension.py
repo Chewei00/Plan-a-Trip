@@ -117,6 +117,10 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert abs(k[1]["x"] - (k[0]["x"] + k[0]["width"]) - 6) < 0.01, "6 apart"
     ic = card.locator(".counts .pill >> nth=0 >> svg").bounding_box(); nb = card.locator(".counts .pill >> nth=0 >> .num").bounding_box()
     assert ic["width"] == 10 and ic["x"] == k[0]["x"] + 6 and abs(nb["x"] - (ic["x"] + 10 + 4)) < 0.01 and nb["height"] == 17, (ic, nb)
+    # the figures are centred on the icon by their own height (where the browser can cut the text's box down to them)
+    mid = maps.evaluate("""(() => { const p = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.counts .pill'), a = p.querySelector('svg').getBoundingClientRect(), b = p.querySelector('.now').getBoundingClientRect();
+        return [CSS.supports('text-box', 'trim-both cap alphabetic'), a.top + a.height / 2, b.top + b.height / 2, b.height]; })()""")
+    assert not mid[0] or (abs(mid[1] - mid[2]) < 0.01 and 6 < mid[3] < 10), ("the middle of the figures is the middle of the icon", mid)
     look = maps.evaluate("(() => [...document.getElementById('plan-a-trip-card').shadowRoot.querySelectorAll('.counts .pill')].map(x => { const s = getComputedStyle(x); return [s.color, s.borderTopColor, s.backgroundColor, s.fontSize].join('|'); }))()")
     assert set(look) == {"rgb(51, 51, 51)|rgb(210, 210, 210)|rgba(0, 0, 0, 0)|11px"}, ("one colour for all four, none lit", look)
     assert card.locator(".counts .pill svg").count() == 4 and card.locator(".counts [data-act]").count() == 0 and card.locator(".coll").count() == 0, "icons, not buttons, and nothing under the card"

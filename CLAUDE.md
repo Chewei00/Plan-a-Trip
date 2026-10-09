@@ -76,7 +76,8 @@ explain in plain words, never ask them to run commands.
   each count 33 x 19 with a 1px `line` border, 6 apart, 12 from the left and the foot): four counts, an icon and a
   number each, of the trip's places in the four categories. All four are the one colour (`ink`), none is lit, they do
   not hop and are not buttons. At a press the number of the category the place went into rolls: the old one goes up
-  and out, the new one comes up from below, cut off by the pill's edge, .3s. Only a press rolls it. (Earlier the same
+  and out, the new one comes up from below, cut off by the pill's edge, .3s. Only a press rolls it. The number is centred
+  on the icon by the height of its figures (`text-box`), not of its line, which sat it visibly low. (Earlier the same
   night: a panel of tiles under the card, then lit and hopping pills; both replaced.) The site tells the extension
   every place of every trip (`places` in the `state` message); `site.js` keeps only the counts (`pat_counts`), so what
   is done on the site shows here only after the site has been open.
