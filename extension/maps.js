@@ -42,7 +42,7 @@
   /* same values as css/app.css on the site */
   var CSS = [
     ':host{all:initial}',
-    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--text-3:rgba(0,0,0,.4);--text-ph:rgba(0,0,0,.15);--line:#d2d2d2;--line-soft:#e5e5e5;--fill-note:rgba(0,0,0,.04);--fill-selected:#cdccca;--r4:4px;--r6:6px;--r8:8px;',
+    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--text-3:rgba(0,0,0,.4);--text-ph:rgba(0,0,0,.15);--line:#d2d2d2;--line-soft:#e5e5e5;--fill-note:rgba(0,0,0,.04);--fill-selected:#cdccca;--r6:6px;--r8:8px;',
     '  --float:0 4px 14px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.04);--ui:"Noto Sans","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;',
     '  position:fixed;top:64px;right:16px;z-index:2147483646;width:236px;display:flex;flex-direction:column;gap:8px;color:var(--ink);font:400 13px/20px var(--ui);-webkit-font-smoothing:antialiased;',
     '  opacity:0;transform:translateY(-6px);transition:opacity .25s ease,transform .25s ease}',
@@ -97,23 +97,18 @@
     '.savebtn.adding{position:relative;animation:added-bg .4s linear both,added-hop .4s linear both}',
     '.savebtn.adding .was{color:var(--on-ink);animation:added-out .4s linear both}',
     '.savebtn.adding .now{position:absolute;left:0;right:0;top:6px;animation:added-in .4s linear both}',
-    /* the trip's collection in small, under the card (Chewei's picture, 2026-10-10; the sizes are measured off it):
-       four counts in the order of the four categories, and a tile for each place of the one that is lit, with the
-       first character of its name. The tile of the place that is open stands 2px higher, like the selected card on
-       the site; a tile just added comes up from below. More than a row scrolls sideways */
-    '.coll{padding:12px 10px 10px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
-    '.pills{display:flex;gap:6px}',
-    '.pill{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:15px;padding:0 6px;border:1px solid var(--line-soft);border-radius:999px;background:none;font:500 10px/13px var(--ui);color:var(--text-3);font-variant-numeric:tabular-nums}',
+    /* under the trip's name, in the same bar: how many places the trip has in each of the four categories, an icon and
+       a number each (Chewei's picture, 2026-10-10; the sizes are the ones he picked on the preview page). The one the
+       card is about to add to is lit; none is while no place is open. They are a reading, not buttons. At a press the
+       lit one gives the same hop as the button, with one more in it */
+    '.counts{display:flex;gap:4px;padding:2px 10px 9px}',
+    '.pill{display:inline-flex;align-items:center;justify-content:center;gap:2px;height:18px;padding:0 5px 0 4px;border:1px solid var(--line-soft);border-radius:999px;font:500 10px/13px var(--ui);color:var(--text-3);font-variant-numeric:tabular-nums;cursor:default}',
+    '.pill svg{width:10px;height:10px}',
     '.pill.zero{color:var(--text-ph)}',
     '.pill.on{background:var(--line-soft);color:var(--ink)}',
-    '.tiles{position:relative;display:flex;gap:6px;height:42px;margin-top:6px;padding-top:2px;overflow-x:auto;overscroll-behavior:contain;scrollbar-width:none}',
-    '.tiles::-webkit-scrollbar{display:none}',
-    '.tile{flex:none;display:grid;place-items:center;width:34px;height:40px;border-radius:var(--r4);background:var(--line-soft);font:500 12px/1 var(--ui);color:var(--text-2);cursor:default;transition:transform .15s ease}',
-    '.tile.up{transform:translateY(-2px)}',
-    '@keyframes tile-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(-2px)}}',
-    '.tile.new{animation:tile-in .3s cubic-bezier(.2,.7,.3,1) both}',
-    '@supports (corner-shape:superellipse(1.4)){.wrap{--r4:5px;--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn,.coll,.tile{corner-shape:superellipse(1.4)}}',
-    '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr,.tile{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
+    '.pill.hop{animation:added-hop .4s linear both}',
+    '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
+    '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
   ].join('\n');
 
   /* ---- reading the place from the page address ----
@@ -202,7 +197,7 @@
 
   /* ---- what the extension knows: whether it is on, the trips on the site, the one to save to, what each already
           holds, and what is waiting to go there ---- */
-  var state = { on: false, trips: [], target: null, saved: {}, inbox: [], places: {} };
+  var state = { on: false, trips: [], target: null, saved: {}, inbox: [], counts: {} };
   function trip() {
     for (var i = 0; i < state.trips.length; i++) if (state.trips[i].id === state.target) return state.trips[i];
     return state.trips[0] || null;
@@ -215,20 +210,14 @@
     });
   }
 
-  /* the places of one category in the trip places go to: what the site has told of (in its order), then what was
-     saved here and is still waiting to be taken there. Each is its name and, if it came from Google Maps, its fid */
-  function held(cat) {
-    var t = trip(), tid = t ? t.id : null, out = [], known = {};
-    ((tid && state.places[tid]) || []).forEach(function (p) { if (p.f) known[p.f] = 1; if (p.c === cat) out.push({ n: p.n, f: p.f || '' }); });
-    state.inbox.forEach(function (it) {
-      if ((it.tripId || null) !== tid || (it.fid && known[it.fid]) || it.cat !== cat) return;
-      out.push({ n: it.name, f: it.fid || '' });
-    });
-    return out;
+  /* how many places the trip that places go to has in one category: what the site last told of, and what was saved
+     here and is still waiting to be taken there (once taken, its fid is among the trip's saved ones and the site's
+     own count has it) */
+  function count(cat) {
+    var t = trip(), tid = t ? t.id : null, n = (tid && state.counts[tid] && state.counts[tid][cat]) || 0, saved = (tid && state.saved[tid]) || [];
+    state.inbox.forEach(function (it) { if ((it.tripId || null) === tid && it.cat === cat && !(it.fid && saved.indexOf(it.fid) >= 0)) n++; });
+    return n;
   }
-  /* which category the tiles are of: the one marked on the card, each time that is set or changed, until a count is
-     pressed. Where the row of tiles had been scrolled to is kept across redraws (see draw) */
-  var view = 'sight', followed = '', tilesSig = '', tilesAt = 0;
 
   /* ---- the bar and the card ---- */
   var host = null, root = null, box = null, cur = null, menuOpen = false, popMenu = false, touched = false;
@@ -266,6 +255,12 @@
     }
     var t = trip(), h = '';
     h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'SomeDay') + '</span>' + CHEV + '</button>';
+    /* pressed a moment ago: the count the place went into hops with the button, as far along as it has got */
+    var gone = cur && added && added.key === cur.key ? Date.now() - added.at : -1, going = gone >= 0 && gone < ADDING;
+    h += '<div class="counts" role="group" aria-label="Travel Collection">' + CATS.map(function (c) {
+      var n = count(c[0]), on = !!(cur && cur.cat === c[0]);
+      return '<span class="pill' + (on ? ' on' + (going ? ' hop' : '') : '') + (n ? '' : ' zero') + '" title="' + c[1] + '" aria-label="' + c[1] + ' ' + n + '">' + glyph(c[0]) + n + '</span>';
+    }).join('') + '</div>';
     if (menuOpen || menuClosing) {
       h += '<div class="menu' + (menuOpen ? (popMenu ? ' pop' : '') : ' out') + '" role="menu">' + state.trips.map(function (x) {
         return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '">' + PIN + '<span>' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
@@ -273,11 +268,9 @@
         '<button role="menuitem" data-act="open">' + DMARK + '<span>Open SomeDay</span>' + ARROW + '</button></div>';
     }
     h += '</div>';
-    var gone = -1, going = false;
     if (cur) {
       var saved = isSaved(cur);
       /* pressed a moment ago: draw the button on its way to "Added", as far along as it has got */
-      gone = added && added.key === cur.key ? Date.now() - added.at : -1; going = gone >= 0 && gone < ADDING;
       h += '<div class="pend" role="group" aria-label="Add to Travel Collection"><div class="pend-name">' + esc(cur.name) + '</div>' +
         '<div class="chips">' + CATS.map(function (c) {
           return '<button class="chip' + (cur.cat === c[0] ? ' on' : '') + '" data-act="cat" data-cat="' + c[0] + '" aria-pressed="' + (cur.cat === c[0]) + '"' + (saved ? ' disabled' : '') + '>' + glyph(c[0]) + c[1] + '</button>';
@@ -286,32 +279,9 @@
           ? '<button class="savebtn adding" data-act="save" disabled aria-label="Added"><span class="was" aria-hidden="true">Add to Travel Collection</span><span class="now">Added</span></button></div>'
           : '<button class="savebtn" data-act="save"' + (saved ? ' disabled' : '') + '>' + (saved ? 'Added' : 'Add to Travel Collection') + '</button></div>');
     }
-    /* the collection: always there while the extension is on */
-    if (cur && cur.cat && followed !== cur.key + '|' + cur.cat) { followed = cur.key + '|' + cur.cat; view = cur.cat; }
-    var list = held(view), upAt = -1;
-    h += '<div class="coll" role="group" aria-label="Travel Collection"><div class="pills">' + CATS.map(function (c) {
-      var n = held(c[0]).length;
-      return '<button class="pill' + (view === c[0] ? ' on' : '') + (n ? '' : ' zero') + '" data-act="view" data-cat="' + c[0] + '" title="' + c[1] + '" aria-label="' + c[1] + ' ' + n + '" aria-pressed="' + (view === c[0]) + '">' + n + '</button>';
-    }).join('') + '</div><div class="tiles">' + list.map(function (it, i) {
-      var up = !!(cur && cur.fid && it.f === cur.fid);
-      if (up) upAt = i;
-      return '<span class="tile' + (up ? ' up' + (going ? ' new' : '') : '') + '" title="' + esc(it.n) + '">' + esc(Array.from(it.n)[0] || '') + '</span>';
-    }).join('') + '</div></div>';
-    var was = box.querySelector('.tiles');
-    if (was) tilesAt = was.scrollLeft;
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
-    /* the row of tiles stays where it was scrolled to, unless what it shows has changed: then the raised tile is
-       brought into view, or failing that the newest, at the end */
-    var row = box.querySelector('.tiles'), sig = (t ? t.id : '') + '|' + view + '|' + list.length + '|' + upAt;
-    if (sig !== tilesSig) {
-      tilesSig = sig;
-      var el = upAt >= 0 ? row.children[upAt] : null;
-      tilesAt = !el ? row.scrollWidth : el.offsetLeft + el.offsetWidth > row.scrollLeft + row.clientWidth ? el.offsetLeft + el.offsetWidth - row.clientWidth : Math.min(row.scrollLeft, el.offsetLeft);
-    }
-    row.scrollLeft = tilesAt;
-    if (going) { var nt = row.querySelector('.tile.new'); if (nt) nt.style.animationDelay = -gone + 'ms'; }
-    if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span'), function (el) { el.style.animationDelay = -gone + 'ms'; });
+    if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span, .pill.hop'), function (el) { el.style.animationDelay = -gone + 'ms'; });
     if (shownOpen !== menuOpen) { var bar = box.querySelector('.bar'); void bar.offsetWidth; bar.classList.toggle('open', menuOpen); shownOpen = menuOpen; }
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);
   }
@@ -324,7 +294,6 @@
     if (!alive()) { a.textContent = '請重新整理這個分頁'; return; }
     if (act === 'pick') { state.target = a.getAttribute('data-id'); setMenu(false); S.set({ pat_target: state.target }); draw(); }
     else if (act === 'open') { setMenu(false); draw(); chrome.runtime.sendMessage({ type: 'open-site' }); }
-    else if (act === 'view') { view = a.getAttribute('data-cat'); setMenu(false); draw(); }
     else if (act === 'cat' && cur) { cur.cat = a.getAttribute('data-cat'); touched = true; setMenu(false); draw(); }
     else if (act === 'save' && cur) {
       var t = trip();
@@ -390,10 +359,10 @@
   }
   function refresh() {
     if (!alive()) return;
-    S.get(['pat_on', 'pat_trips', 'pat_target', 'pat_saved', 'pat_inbox', 'pat_places'], function (r) {
+    S.get(['pat_on', 'pat_trips', 'pat_target', 'pat_saved', 'pat_inbox', 'pat_counts'], function (r) {
       r = r || {};
       state.on = !!r.pat_on; state.trips = r.pat_trips || []; state.target = r.pat_target || null;
-      state.saved = r.pat_saved || {}; state.inbox = r.pat_inbox || []; state.places = r.pat_places || {};
+      state.saved = r.pat_saved || {}; state.inbox = r.pat_inbox || []; state.counts = r.pat_counts || {};
       draw();
     });
   }

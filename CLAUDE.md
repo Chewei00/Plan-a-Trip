@@ -72,12 +72,12 @@ explain in plain words, never ask them to run commands.
   earth-coloured icon off / blue icon on, clicks on other sites ignored via `activeTab`); the site can also switch it on,
   never off (the empty Travel Collection posts `switch-on`, then opens Google Maps). While on, `maps.js` shows a bar
   (the trip to save to; its menu lists the trips and opens the site) and, on a place's page, the site's own save card.
-  Under them, always while it is on, is the trip's collection in small (0.4.5, 2026-10-10, from Chewei's picture): four
-  counts in the order of the four categories and a tile per place of the lit one, with the first character of its name;
-  the open place's tile stands 2px higher, a tile just added comes up from below, a row that is too long scrolls
-  sideways and keeps its place across redraws. The counts carry no icon and do not hop (Chewei's choice); tiles cannot
-  be pressed. The site tells the extension every place of every trip for this (`places` in the `state` message,
-  `pat_places` in the extension's storage), so what is done on the site shows here only after the site has been open.
+  The bar has a second row under the trip's name (0.4.6, 2026-10-10, Chewei's picture): four counts, an icon and a
+  number each, of the trip's places in the four categories. The one the card would add to is lit, none while no place
+  is open; at a press it hops with the button, one higher. They are not buttons. (0.4.5, never released, had a panel
+  of tiles under the card instead; Chewei replaced it with this the same night.) The site tells the extension every
+  place of every trip (`places` in the `state` message); `site.js` keeps only the counts (`pat_counts`), so what is
+  done on the site shows here only after the site has been open.
   The place is read from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…!3d<lat>!4d<lng>`, checked against the
   real site on 2026-10-09). The data part is a flattened tree and can describe two places (what was searched or opened
   first, then the one that is open): `parse` in `maps.js` reads the open one by its position in the tree (group 3
@@ -87,7 +87,7 @@ explain in plain words, never ask them to run commands.
   bar's arrow), or is a CSS animation told how far along it is (the button turning into "Added"). `site.js` hands saved places to the page and learns the trips from it; page and extension
   talk through `window.postMessage` (see "browser extension" in `js/main.js`). The trip saved to is whichever was
   chosen last, in the bar or by switching trips on the site. Submitted to the Chrome Web Store for review on 2026-10-09 (version 0.4.3; Chewei's plan is Unlisted, so only
-  people with the link can install it); on 2026-10-10 Chewei decided to cancel that review and upload 0.4.5 in its place. Until it is approved it is installed by hand in developer mode. The store upload is a
+  people with the link can install it); on 2026-10-10 Chewei decided to cancel that review and upload 0.4.6 in its place. Until it is approved it is installed by hand in developer mode. The store upload is a
   zip with `manifest.json` at the top level and no README; every later upload needs a higher version number and goes
   through review again, while the site itself updates on push as before. Once the store copy is installed, the
   hand-installed copy must be removed, or Google Maps shows two bars.
@@ -127,7 +127,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei then chose to cancel that review and submit 0.4.5 instead, which has the hop of the button and the small collection under the card); the name SomeDay and the address /SomeDay/; the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei then chose to cancel that review and submit a newer one instead: 0.4.6, which has the hop of the button and the four counts in the bar); the name SomeDay and the address /SomeDay/; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 

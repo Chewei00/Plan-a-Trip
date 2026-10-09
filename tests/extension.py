@@ -69,11 +69,10 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     def kept(key):
         return sw.evaluate("k => chrome.storage.local.get([k]).then(r => r[k])", key)
 
-    def coll():
-        # the small collection under the card: the four counts, which is lit, and each tile as "<first character>[^][+]"
-        return maps.evaluate("""(() => { const r = document.getElementById('plan-a-trip-card').shadowRoot;
-            return [[...r.querySelectorAll('.pill')].map(x => x.textContent).join(' '), [...r.querySelectorAll('.pill')].findIndex(x => x.classList.contains('on')),
-                    [...r.querySelectorAll('.tile')].map(x => x.textContent + (x.classList.contains('up') ? '^' : '') + (x.classList.contains('new') ? '+' : '')).join(' ')]; })()""")
+    def counts():
+        # the four counts in the bar: their numbers, which one is lit (-1: none), which one is hopping (-1: none)
+        return maps.evaluate("""(() => { const p = [...document.getElementById('plan-a-trip-card').shadowRoot.querySelectorAll('.counts .pill')];
+            return [p.map(x => x.textContent).join(' '), p.findIndex(x => x.classList.contains('on')), p.findIndex(x => x.classList.contains('hop'))]; })()""")
     def by_cat(title):
         ps = [x for t in trips(app)["trips"] if t["title"] == title for x in t["places"]]
         return [[x["name"] for x in ps if x["cat"] == c] for c in ["sight", "food", "stay", "transit"]]
@@ -108,14 +107,17 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert card.locator(".trip span").inner_text() == "東京 3 日"
     assert card.locator(".pend-name").inner_text() == "富士急樂園" and card.locator(".chip.on").inner_text() == "景點"
     assert card.locator(".xbtn").count() == 0 and card.locator(".dest").count() == 0, "no close button and no destination line on the card"
-    # under the card, the trip's collection in small: nothing in the new trip yet; the counts follow the card's category
-    assert coll() == ["0 0 0 0", 0, ""], coll()
-    cb = card.locator(".coll").bounding_box(); pb = card.locator(".pend").bounding_box()
-    assert cb["width"] == 236 and abs(cb["y"] - (pb["y"] + pb["height"] + 8)) < 0.01 and cb["height"] == 85, (cb, pb)
+    # in the bar, under the trip's name: how many places the trip has in each category (none yet in the new trip), an
+    # icon and a number each; the one the card would add to is lit. The bar is as wide as the card and 65 high
+    assert counts() == ["0 0 0 0", 0, -1], counts()
+    bb = card.locator(".bar").bounding_box(); pb = card.locator(".pend").bounding_box(); kb = card.locator(".counts .pill >> nth=0").bounding_box()
+    assert bb["width"] == 236 and bb["height"] == 65 and pb["y"] == 64 + 65 + 8, (bb, pb)
+    assert kb["height"] == 18 and kb["x"] == bb["x"] + 10 and bb["y"] + bb["height"] - (kb["y"] + kb["height"]) == 9, (kb, bb)
+    assert card.locator(".counts .pill svg").count() == 4 and card.locator(".counts [data-act]").count() == 0 and card.locator(".coll").count() == 0, "icons, not buttons, and nothing under the card"
     assert [card.locator(".pill >> nth=%d" % i).get_attribute("title") for i in range(4)] == ["景點", "飲食", "住宿", "交通"]
     box = card.locator(".wrap").bounding_box()
-    bar, pend = card.locator(".bar").bounding_box(), card.locator(".pend").bounding_box()
-    assert abs(box["x"] + box["width"] - (1440 - 16)) < 1 and box["y"] == 64 and box["width"] == 236 and bar["height"] == 36 and pend["y"] == 64 + 36 + 8, (box, bar, pend)
+    bar, pend = card.locator(".trip").bounding_box(), card.locator(".pend").bounding_box()
+    assert abs(box["x"] + box["width"] - (1440 - 16)) < 1 and box["y"] == 64 and box["width"] == 236 and bar["height"] == 36 and bar["y"] == 64, (box, bar, pend)
 
     # saving: the button says so, and the place arrives in that trip on the site, which is open in another tab
     # pressed, the button turns into "Added": it hops, its colour runs across, one label goes out and the other comes in
@@ -124,7 +126,9 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     turning = maps.evaluate("""(() => { const b = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.savebtn'), s = getComputedStyle(b);
         return [b.className, b.disabled, [...b.querySelectorAll('span')].map(x => x.textContent), s.animationName, parseFloat(s.animationDelay) < 0, s.animationDuration, s.transform !== 'none' && new DOMMatrix(s.transform).m42 < 0]; })()""")
     assert turning == ["savebtn adding", True, ["Add to Travel Collection", "Added"], "added-bg, added-hop", True, "0.4s, 0.4s", True], turning
-    assert coll() == ["1 0 0 0", 0, "富^+"], ("its tile comes up at the press, raised, with the first character of the name", coll())
+    assert counts() == ["1 0 0 0", 0, 0], ("at the press the count it went into has one more, and hops with the button", counts())
+    hopping = maps.evaluate("(() => { const s = getComputedStyle(document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.pill.hop')); return [s.animationName, s.animationDuration, parseFloat(s.animationDelay) < 0]; })()")
+    assert hopping == ["added-hop", "0.4s", True], hopping
     maps.wait_for_timeout(450)
     assert card.locator(".savebtn.adding").count() == 0, "and is then the plain Added button"
     assert card.locator(".savebtn").inner_text() == "Added" and card.locator(".savebtn").is_disabled()
@@ -136,9 +140,9 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert saved["cat"] == "sight" and saved["lat"] == 35.486947 and saved["lng"] == 138.780551 and saved["fid"] == "0x60196005c1d9f19f:0x9a5a9d0b9cbd5c0b", saved
     assert "gid" not in saved, "a place from the Google Maps site is not a Places API result"
     maps.wait_for_timeout(300)
-    if os.environ.get("SHOTS"): maps.screenshot(path=os.environ["SHOTS"] + "/ext-added.png", clip={"x": 1440 - 16 - 236 - 24, "y": 40, "width": 284, "height": 380})
-    assert coll() == ["1 0 0 0", 0, "富^"], ("taken by the site, it is still one tile, raised while its place is open", coll())
-    assert card.locator(".tile").get_attribute("title") == "富士急樂園" and card.locator(".tile[data-act]").count() == 0, "a tile names its place and is not a button"
+    if os.environ.get("SHOTS"): maps.screenshot(path=os.environ["SHOTS"] + "/ext-added.png", clip={"x": 1440 - 16 - 236 - 24, "y": 40, "width": 284, "height": 300})
+    assert counts() == ["1 0 0 0", 0, -1], ("taken by the site, it is still counted once, and the hop is over", counts())
+    assert kept("pat_places") is None and kept("pat_counts")[[t for t in trips(app)["trips"] if t["title"] == "東京 3 日"][0]["id"]] == {"sight": 1, "food": 0, "stay": 0, "transit": 0}, "only counts are kept, not names"
 
     # the bar lists the trips; picking another one changes where places go, and "saved" is judged for that trip.
     # Its arrow points right and turns a quarter, to point down, while the list is open
@@ -168,20 +172,14 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert turn() == "none"
     assert card.locator(".menu").count() == 0 and card.locator(".trip span").inner_text() == "富士山 ( 範例 )"
     assert card.locator(".savebtn").inner_text() == "Add to Travel Collection", "not saved in this trip yet"
-    # the collection is the chosen trip's: the sample trip's places by category, in the site's order, none raised
+    # the counts are the chosen trip's; the one lit follows the category marked on the card
     fuji = by_cat("富士山 ( 範例 )")
-    assert coll() == [" ".join(str(len(x)) for x in fuji), 0, " ".join(x[0] for x in fuji[0])], (coll(), fuji)
-    assert len(fuji[0]) > 5, "the sample has more sights than fit in a row"
-    row = maps.evaluate("(() => { const t = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.tiles'); return [t.scrollWidth > t.clientWidth, Math.abs(t.scrollLeft + t.clientWidth - t.scrollWidth) < 1]; })()")
-    assert row == [True, True], ("more than a row scrolls sideways and starts at the newest", row)
-    if os.environ.get("SHOTS"): maps.screenshot(path=os.environ["SHOTS"] + "/ext-collection.png", clip={"x": 1440 - 16 - 236 - 24, "y": 40, "width": 284, "height": 380})
-    # a count shows that category's tiles; marking another category on the card brings them back to it
-    card.locator(".pill >> nth=1").click(); maps.wait_for_timeout(100)
-    assert coll() == [" ".join(str(len(x)) for x in fuji), 1, " ".join(x[0] for x in fuji[1])], coll()
+    assert counts() == [" ".join(str(len(x)) for x in fuji), 0, -1], (counts(), fuji)
+    if os.environ.get("SHOTS"): maps.screenshot(path=os.environ["SHOTS"] + "/ext-collection.png", clip={"x": 1440 - 16 - 236 - 24, "y": 40, "width": 284, "height": 300})
     card.locator(".chip >> nth=2").click(); maps.wait_for_timeout(100)
-    assert coll()[1] == 2 and coll()[2] == " ".join(x[0] for x in fuji[2]), coll()
+    assert counts()[1] == 2
     card.locator(".chip >> nth=0").click(); maps.wait_for_timeout(100)
-    assert coll()[1] == 0
+    assert counts()[1] == 0
     card.locator(".trip").click(); maps.wait_for_timeout(250)
     card.locator(".menu button:has-text('東京 3 日')").click(); maps.wait_for_timeout(60)
     assert card.locator(".savebtn.adding").count() == 0 and card.locator(".savebtn").inner_text() == "Added", "changing trip does not play the turn"
@@ -296,6 +294,9 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     fresh.wait_for_timeout(1200)
     assert fresh.url.startswith("https://www.google.com/maps") and kept("pat_on") is True and "turn off" in sw.evaluate("() => chrome.action.getTitle({})")
     assert fresh.locator("#plan-a-trip-card .trip span").inner_text() == "空的", "the bar is there, on the trip that was on screen"
+    bare = fresh.evaluate("""(() => { const r = document.getElementById('plan-a-trip-card').shadowRoot, p = [...r.querySelectorAll('.counts .pill')];
+        return [p.map(x => x.textContent).join(' '), p.filter(x => x.classList.contains('on')).length, r.querySelectorAll('.pend').length]; })()""")
+    assert bare == ["0 0 0 0", 0, 0], ("with no place open the counts are there and none is lit", bare)
 
     assert not errors, errors
     ctx.close()

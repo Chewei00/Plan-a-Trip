@@ -1,8 +1,9 @@
 /* Runs on the SomeDay site. It carries two things between the page and the extension's own storage (and lets the
    page switch the extension on, see 'switch-on'):
      - from the page: the trips there are, which one is on screen, which Google places each already holds (so the
-       bar on Google Maps can list the trips and the card can say whether a place is already saved), and every
-       place of each trip by name and category (for the small collection shown under the card)
+       bar on Google Maps can list the trips and the card can say whether a place is already saved), and how many
+       places each trip has in each category (for the four counts in the bar). The page tells of every place by
+       name; only the counts are kept
      - to the page: the places saved on Google Maps since the site was last open (the "inbox")
    The page and this script can only talk through window messages; see "browser extension" in js/main.js.
 
@@ -20,9 +21,10 @@
     });
   }
   function clean(t) { return t && typeof t.id === 'string' ? { id: t.id, title: String(t.title || '').slice(0, 60) } : null; }
-  var CAT = { sight: 1, food: 1, stay: 1, transit: 1 }, FID = /^0x[0-9a-f]+:0x[0-9a-f]+$/;
-  function spot(p) {
-    return p && typeof p === 'object' ? { n: String(p.n == null ? '' : p.n).slice(0, 40), c: CAT[p.c] ? p.c : 'sight', f: typeof p.f === 'string' && FID.test(p.f) ? p.f : '' } : null;
+  function tally(list) {
+    var n = { sight: 0, food: 0, stay: 0, transit: 0 };
+    list.forEach(function (p) { if (!p || typeof p !== 'object') return; n[Object.prototype.hasOwnProperty.call(n, p.c) ? p.c : 'sight']++; });
+    return n;
   }
   window.addEventListener('message', function (e) {
     if (e.source !== window || e.origin !== location.origin || !alive()) return;
@@ -32,14 +34,15 @@
       var trip = clean(m.trip), trips = (Array.isArray(m.trips) ? m.trips : []).map(clean).filter(Boolean).slice(0, 200);
       var saved = {};
       if (m.saved && typeof m.saved === 'object') trips.forEach(function (t) { if (Array.isArray(m.saved[t.id])) saved[t.id] = m.saved[t.id].slice(0, 5000); });
-      var places = {};
-      if (m.places && typeof m.places === 'object') trips.forEach(function (t) { if (Array.isArray(m.places[t.id])) places[t.id] = m.places[t.id].slice(0, 2000).map(spot).filter(Boolean); });
+      var counts = {};
+      if (m.places && typeof m.places === 'object') trips.forEach(function (t) { if (Array.isArray(m.places[t.id])) counts[t.id] = tally(m.places[t.id].slice(0, 5000)); });
       S.get(['pat_site_trip', 'pat_target'], function (r) {
         r = r || {};
-        var set = { pat_trips: trips, pat_saved: saved, pat_places: places, pat_site_trip: trip ? trip.id : null };
+        var set = { pat_trips: trips, pat_saved: saved, pat_counts: counts, pat_site_trip: trip ? trip.id : null };
         var known = trips.some(function (t) { return t.id === r.pat_target; });
         if (trip && (!known || trip.id !== r.pat_site_trip)) set.pat_target = trip.id;
         S.set(set, deliver);
+        S.remove('pat_places');   /* 0.4.5, never released, kept the names here */
       });
     } else if (m.type === 'switch-on') {
       /* the empty Travel Collection on the site was clicked: it opens Google Maps, and the card should be there */
