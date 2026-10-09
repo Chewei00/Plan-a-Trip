@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=20';
-import {fetchRoute} from './geoapify.js?v=20';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=20';
-import {createMap} from './mapview.js?v=20';
+import {ICON,CATICON,catSvg} from './icons.js?v=21';
+import {fetchRoute} from './geoapify.js?v=21';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=21';
+import {createMap} from './mapview.js?v=21';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';

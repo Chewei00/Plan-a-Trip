@@ -147,7 +147,11 @@ two places, `css/app.css` and `extension/maps.js`: change both.
 The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
 
 Icons are drawn in a solid colour: a half-transparent one makes crossings darker (it showed in the extension's counts
-for a while, as it once did in the menu arrow). The four category icons are the same drawings on the site (`CATICON`
+for a while, as it once did in the menu arrow). And the lines of an icon are one `<path>`, not several shapes laid over each
+other (2026-10-10, seven icons merged: food, transit, file, the side-panel button, bike, car, train): where a place
+draws an icon half-transparent, separate shapes go darker where they cross, one path never does. Filled dots that
+touch no line may stay separate. A new icon follows the same rule. In the extension this is in the source only: it
+goes out with the next upload (above 0.4.6). The four category icons are the same drawings on the site (`CATICON`
 and `CATCHIP` in `js/icons.js`) and in the extension (`GLYPH` in `extension/maps.js`); Chewei has them as 12 x 12 SVG
 files, which he asked for to use in his own mockups, not to redraw them.
 
