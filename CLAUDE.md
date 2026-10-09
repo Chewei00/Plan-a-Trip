@@ -93,7 +93,8 @@ explain in plain words, never ask them to run commands.
   bar's arrow), or is a CSS animation told how far along it is (the button turning into "Added"). `site.js` hands saved places to the page and learns the trips from it; page and extension
   talk through `window.postMessage` (see "browser extension" in `js/main.js`). The trip saved to is whichever was
   chosen last, in the bar or by switching trips on the site. Submitted to the Chrome Web Store for review on 2026-10-09 (version 0.4.3; Chewei's plan is Unlisted, so only
-  people with the link can install it); on 2026-10-10 Chewei decided to cancel that review and upload 0.4.6 in its place. Until it is approved it is installed by hand in developer mode. The store upload is a
+  people with the link can install it); on 2026-10-10 Chewei cancelled that review and submitted 0.4.6 in its place (in review since then; the
+  store's second screenshot still shows the bar without its counts, which Chewei is leaving as it is). Until it is approved it is installed by hand in developer mode. The store upload is a
   zip with `manifest.json` at the top level and no README; every later upload needs a higher version number and goes
   through review again, while the site itself updates on push as before. Once the store copy is installed, the
   hand-installed copy must be removed, or Google Maps shows two bars.
@@ -133,7 +134,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei then chose to cancel that review and submit a newer one instead: 0.4.6, which has the hop of the button and the four counts in the bar); the name SomeDay and the address /SomeDay/; the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei cancelled that review and submitted 0.4.6 on 2026-10-10, which has the hop of the button, the four counts in the bar, and is on from install; the next upload must be numbered higher than 0.4.6); the name SomeDay and the address /SomeDay/; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
