@@ -1,8 +1,8 @@
 /* Runs on the Google Maps website. The extension's toolbar button turns it on and off (background.js), and the Plan a
    Trip site can turn it on (site.js); while it is on, two things sit in the top-right corner of the page:
      - a bar with the name of the trip places are saved to. Clicking it lists the trips, to save to another one, and
-       ends with a link that opens Someday
-     - under it, whenever the page is showing one place, the same card the Someday site shows after a search:
+       ends with a link that opens SomeDay
+     - under it, whenever the page is showing one place, the same card the SomeDay site shows after a search:
        the place's name, the four categories, and the button that saves it
    Off, there is nothing on the page at all.
 
@@ -10,7 +10,7 @@
      https://www.google.com/maps/place/<name>/@<view>/data=...!1s<place id>...!3d<lat>!4d<lng>...
    (the address can describe two places at once; see parse)
    Nothing is read from Google's lists of saved places, and nothing is sent anywhere: a saved place is kept in the
-   extension's own storage (the "inbox") until the Someday site is open in this browser, which then takes it
+   extension's own storage (the "inbox") until the SomeDay site is open in this browser, which then takes it
    (site.js). */
 (function () {
   'use strict';
@@ -232,12 +232,12 @@
       fresh = true;
     }
     var t = trip(), h = '';
-    h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'Someday') + '</span>' + CHEV + '</button>';
+    h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'SomeDay') + '</span>' + CHEV + '</button>';
     if (menuOpen || menuClosing) {
       h += '<div class="menu' + (menuOpen ? (popMenu ? ' pop' : '') : ' out') + '" role="menu">' + state.trips.map(function (x) {
         return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '">' + PIN + '<span>' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
       }).join('') + (state.trips.length ? '<div class="sep"></div>' : '') +
-        '<button role="menuitem" data-act="open">' + DMARK + '<span>Open Someday</span>' + ARROW + '</button></div>';
+        '<button role="menuitem" data-act="open">' + DMARK + '<span>Open SomeDay</span>' + ARROW + '</button></div>';
     }
     h += '</div>';
     if (cur) {

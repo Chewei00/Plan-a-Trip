@@ -1,5 +1,5 @@
 """End-to-end test of the Chrome extension, without network access: the real extension is loaded into Chromium, and
-the two sites it runs on are stood in for (Google Maps by a blank page at the same address, Someday by the local
+the two sites it runs on are stood in for (Google Maps by a blank page at the same address, SomeDay by the local
 files, served at the site's real address so the extension recognises it).
 
     python3 -m http.server 8765 --bind 127.0.0.1 &     # from the repository root
@@ -13,7 +13,7 @@ from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 EXT = str(ROOT / "extension")
 MOCK = (ROOT / "tests/mock-googlemaps.js").read_text(encoding="utf-8")
-SITE = "https://chewei00.github.io/Plan-a-Trip/"
+SITE = "https://chewei00.github.io/SomeDay/"
 CORS = {"access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*"}
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png"}
 
@@ -128,7 +128,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     card.locator(".trip").click()
     maps.wait_for_timeout(400)
     assert turn() == "matrix(0, 1, -1, 0, 0, 0)"
-    assert card.locator(".menu button").all_inner_texts() == ["富士山 5 日", "東京 3 日", "Open Someday"]
+    assert card.locator(".menu button").all_inner_texts() == ["富士山 5 日", "東京 3 日", "Open SomeDay"]
     assert card.locator(".menu button >> nth=1 >> .rck").count() == 1 and card.locator(".menu button >> nth=0 >> .rck").count() == 0
     assert card.locator(".menu .mico").count() == 2 and card.locator(".menu button >> nth=2 >> .dmark").count() == 1, "a pin for each trip, the site's icon for the site"
     menu = card.locator(".menu").bounding_box()
@@ -216,11 +216,11 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     card.locator(".savebtn").click()
     maps.wait_for_timeout(450)
     assert card.locator(".savebtn").inner_text() == "Added" and len(kept("pat_inbox")) == 1
-    # "Open Someday" opens the site when it is not open...
+    # "Open SomeDay" opens the site when it is not open...
     before = len(ctx.pages)
     card.locator(".trip").click(); maps.wait_for_timeout(200)
     with ctx.expect_page() as opened:
-        card.locator(".menu button:has-text('Open Someday')").click()
+        card.locator(".menu button:has-text('Open SomeDay')").click()
     app = opened.value
     assert len(ctx.pages) == before + 1
     # a tab the extension opens loads from the real network, which this test does not have: load the stand-in there
@@ -235,10 +235,10 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     # ...and goes to its tab, without opening another, when it is
     maps.bring_to_front()
     card.locator(".trip").click(); maps.wait_for_timeout(200)
-    card.locator(".menu button:has-text('Open Someday')").click()
+    card.locator(".menu button:has-text('Open SomeDay')").click()
     maps.wait_for_timeout(600)
     assert len(ctx.pages) == before + 1
-    assert sw.evaluate("() => chrome.tabs.query({active: true}).then(ts => ts.some(t => (t.url || '').includes('Plan-a-Trip')))")
+    assert sw.evaluate("() => chrome.tabs.query({active: true}).then(ts => ts.some(t => (t.url || '').includes('/SomeDay/')))")
 
     # on is remembered across a reload; pressing the button again turns everything off, and that is remembered too
     maps.reload()

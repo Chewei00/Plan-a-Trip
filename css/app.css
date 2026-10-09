@@ -1,4 +1,4 @@
-/* Someday — styles. Values come from the 旅行地圖 design system; change tokens there first. */
+/* SomeDay — styles. Values come from the 旅行地圖 design system; change tokens there first. */
 :root{
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);

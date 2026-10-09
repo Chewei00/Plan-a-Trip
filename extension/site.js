@@ -1,4 +1,4 @@
-/* Runs on the Someday site. It carries two things between the page and the extension's own storage (and lets the
+/* Runs on the SomeDay site. It carries two things between the page and the extension's own storage (and lets the
    page switch the extension on, see 'switch-on'):
      - from the page: the trips there are, which one is on screen, and which Google places each already holds (so
        the bar on Google Maps can list the trips and the card can say whether a place is already saved)

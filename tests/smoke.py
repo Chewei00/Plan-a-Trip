@@ -355,7 +355,7 @@ with sync_playwright() as p:
     assert "out" in page.get_attribute("#menu", "class") and page.locator("#menu").is_visible() and css("#menu", "animation-name") == "menu-out"
     page.wait_for_timeout(350)
     assert not page.locator("#menu").is_visible() and page.inner_html("#menu") == "" and css(".tripbtn svg", "transform") == "none"
-    assert page.title() == "Someday"
+    assert page.title() == "SomeDay"
 
     # deleting a trip asks once more; deleting the last one leaves an empty trip
     open_trips()

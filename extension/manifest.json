@@ -1,17 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "Someday：從 Google 地圖加入",
-  "short_name": "Someday",
-  "version": "0.4.1",
-  "description": "在 Google 地圖上點一下圖示開啟，之後點開地點就能把它加進 Someday 的 Travel Collection，不用重新搜尋。",
+  "name": "SomeDay",
+  "short_name": "SomeDay",
+  "version": "0.4.2",
+  "description": "在 Google 地圖上點一下圖示開啟，之後點開地點就能把它加進 SomeDay 的 Travel Collection，不用重新搜尋。",
   "icons": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "128": "icon-128.png" },
   "action": {
-    "default_title": "Someday：點一下開啟",
+    "default_title": "SomeDay：點一下開啟",
     "default_icon": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "128": "icon-128.png" }
   },
   "background": { "service_worker": "background.js" },
   "permissions": ["storage", "activeTab"],
-  "host_permissions": ["https://chewei00.github.io/Plan-a-Trip/*"],
+  "host_permissions": ["https://chewei00.github.io/SomeDay/*"],
   "content_scripts": [
     {
       "matches": ["https://www.google.com/maps/*", "https://www.google.com.tw/maps/*"],
@@ -19,7 +19,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://chewei00.github.io/Plan-a-Trip/*"],
+      "matches": ["https://chewei00.github.io/SomeDay/*"],
       "js": ["site.js"],
       "run_at": "document_start"
     }

@@ -1,10 +1,13 @@
-# Someday (formerly Plan a Trip) — working notes for Claude
+# SomeDay (formerly Plan a Trip, briefly "Someday") — working notes for Claude
 
-A trip planner for Chewei and friends (not a public product). **The product is called Someday** in everything a
-person reads (page title, extension name, menus, guides) since 2026-10-09. The old name stays in what a person does
-not read and must not be renamed casually: the repository and site address (`Plan-a-Trip`), the saved-data keys
-(`plan-a-trip:v1`, `plan-a-trip-files`), the message names between page and extension, the element id and the zip of
-the extension. The logo is Chewei's D on a disc (2026-10-09): earth-coloured (#F1EFE9 / #8A8579) everywhere, and blue
+A trip planner for Chewei and friends (not a public product). **The product is called SomeDay**, with a capital D
+like the logo, in everything a person reads (page title, extension name, menus, guides, the site address) since
+2026-10-09. The repository is `Chewei00/SomeDay` and the site is https://chewei00.github.io/SomeDay/ (GitHub Pages
+treats the name's capitals as part of the address: `/someday/` is "not found"; the extension's manifest and
+`background.js` carry this address, so changing it again means a new store review). The old name stays in what a
+person does not read and must not be renamed casually: the saved-data keys (`plan-a-trip:v1`, `plan-a-trip-files`),
+the message names between page and extension, the element id of the card, and this working folder. The zip of the
+extension is `someday-extension`. The logo is Chewei's D on a disc (2026-10-09): earth-coloured (#F1EFE9 / #8A8579) everywhere, and blue
 (#CCEDF0 / #458186) only in the toolbar while the extension is on. The small sizes are Chewei's own exports from Figma:
 replace them with new exports, do not scale them. Chewei is an industrial designer, not an engineer:
 explain in plain words, never ask them to run commands.
@@ -29,7 +32,7 @@ explain in plain words, never ask them to run commands.
 
 ## The code
 
-- Static site, **no build step and no npm**. GitHub Pages serves `main` as is at https://chewei00.github.io/Plan-a-Trip/.
+- Static site, **no build step and no npm**. GitHub Pages serves `main` as is at https://chewei00.github.io/SomeDay/.
   Libraries are loaded at run time: the Google Maps JavaScript API by `js/google.js` (`v=quarterly`, Google's stable
   channel — a fixed version number cannot be pinned for long), pdf.js 4.10.38 legacy build from a CDN, lazy-loaded in
   `js/main.js`. Do not add tooling without discussing it first.
@@ -63,7 +66,7 @@ explain in plain words, never ask them to run commands.
   Trips saved before 2026-10-09 get an empty one on load (`fixTrip`).
 - `extension/` is a Chrome extension (Manifest V3, no build step) that saves the place open on the Google Maps website
   into a trip. The toolbar button is its switch (`background.js`; `pat_on` in the extension's storage, remembered,
-  grey icon off / coloured icon on, clicks on other sites ignored via `activeTab`); the site can also switch it on,
+  earth-coloured icon off / blue icon on, clicks on other sites ignored via `activeTab`); the site can also switch it on,
   never off (the empty Travel Collection posts `switch-on`, then opens Google Maps). While on, `maps.js` shows a bar
   (the trip to save to; its menu lists the trips and opens the site) and, on a place's page, the site's own save card.
   The place is read from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…!3d<lat>!4d<lng>`, checked against the
@@ -90,7 +93,7 @@ for `tests/mock-googlemaps.js` (real Web-Mercator camera maths, no rendering), a
 with canned data, and checks the main flows. What it cannot check — tiles, real rendering, fonts, real search
 results — has to be looked at on the live site with the built-in browser. The Google key only works from
 `https://chewei00.github.io/*`, so a risky change can be pushed to a `preview/` folder first, checked at
-`/Plan-a-Trip/preview/`, then moved to the root (remove the folder afterwards). Google's map only draws while the
+`/SomeDay/preview/`, then moved to the root (remove the folder afterwards). Google's map only draws while the
 browser pane is actually visible on Chewei's screen; if `document.visibilityState` is `hidden`, ask them to keep the
 window in view.
 
@@ -111,7 +114,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (0.4.0); the name Someday; the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (0.4.2); the name SomeDay and the address /SomeDay/; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
