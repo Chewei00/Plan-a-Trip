@@ -1,4 +1,4 @@
-/* Plan a Trip — styles. Values come from the 旅行地圖 design system; change tokens there first. */
+/* Someday — styles. Values come from the 旅行地圖 design system; change tokens there first. */
 :root{
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -279,9 +279,12 @@ div.cnote{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;m
 .arr{position:relative;display:inline-block;width:10.5px;height:10px;opacity:.4;transition:width .45s ease}
 .arr i{position:absolute;left:0;right:1.5px;top:4.5px;height:1.5px;background:#000}
 .arr svg{position:absolute;right:0;top:.5px;width:6px;height:9.5px;overflow:visible;fill:none;stroke:#000;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter}
-/* menus come in, they do not just appear (only when one opens, not each time it is redrawn: see renderMenu) */
+/* menus come in and go out, they do not just appear (only when one opens or closes, not each time it is redrawn:
+   see renderMenu and hideMenu) */
 @keyframes menu-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .menu.pop{animation:menu-in .2s ease}
+@keyframes menu-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-4px)}}
+.menu.out{animation:menu-out .15s ease forwards;pointer-events:none}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);z-index:120;padding:6px 14px;border-radius:999px;background:var(--ink);color:var(--on-ink);font:400 12px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 .narrow{display:none}

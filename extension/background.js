@@ -1,6 +1,6 @@
 /* The toolbar button. It is the extension's switch: a click while a Google Maps tab is in front turns saving on
    or off, for every Google Maps tab, and the choice is remembered (pat_on in the extension's storage; maps.js watches
-   it). The Plan a Trip site can also turn it on (site.js), never off. On: the coloured icon. Off: the grey one. A click on any other site does nothing: the "activeTab" permission
+   it). The Someday site can also turn it on (site.js), never off. On: the coloured icon. Off: the grey one. A click on any other site does nothing: the "activeTab" permission
    lets the click handler see the address of the tab that was clicked on, and only that. */
 var SITE = 'https://chewei00.github.io/Plan-a-Trip/';
 function icons(off) {
@@ -10,7 +10,7 @@ function icons(off) {
 }
 function paint(on) {
   chrome.action.setIcon({ path: icons(!on) });
-  chrome.action.setTitle({ title: on ? 'Plan a Trip：開啟中，點一下關閉' : 'Plan a Trip：點一下開啟' });
+  chrome.action.setTitle({ title: on ? 'Someday：開啟中，點一下關閉' : 'Someday：點一下開啟' });
 }
 function sync() { chrome.storage.local.get(['pat_on'], function (r) { paint(!!(r && r.pat_on)); }); }
 var MAPS = /^https:\/\/www\.google\.com(\.tw)?\/maps(\/|\?|$)/;
@@ -26,7 +26,7 @@ chrome.action.onClicked.addListener(function (tab) {
     paint(on);
   });
 });
-/* "Open Plan a Trip" in the bar on Google Maps: go to the tab that already has it, or open one */
+/* "Open Someday" in the bar on Google Maps: go to the tab that already has it, or open one */
 chrome.runtime.onMessage.addListener(function (m) {
   if (!m || m.type !== 'open-site') return;
   chrome.tabs.query({ url: SITE + '*' }, function (tabs) {

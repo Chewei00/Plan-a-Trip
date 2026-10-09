@@ -1,4 +1,4 @@
-/* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
+/* Someday — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
 import {ICON,CATICON,catSvg} from './icons.js?v=12';
 import {fetchRoute} from './geoapify.js?v=12';
@@ -267,12 +267,20 @@ function applyPanels(){
 function mi(act,id,icon,label,checked,val){
   return '<button role="menuitem" data-act="'+act+'" data-id="'+esc(id)+'"'+(val?' data-val="'+val+'"':'')+'>'+(icon||'')+'<span>'+label+'</span>'+(checked?(checked==='round'?'<span class="rck">'+ICON.tick+'</span>':'<span class="ck">'+ICON.check+'</span>'):'')+'</button>';
 }
-var menuShown='';
+var menuShown='',menuOut=0;
+/* closing: the menu goes the way it came, and is taken away when it has gone */
+function hideMenu(){
+  if(menuOut||menuEl.hidden)return;
+  var was=menuShown;menuShown='';
+  if(!was||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)){menuEl.hidden=true;menuEl.innerHTML='';return;}
+  menuEl.classList.remove('pop');menuEl.classList.add('out');
+  menuOut=setTimeout(function(){menuOut=0;menuEl.hidden=true;menuEl.innerHTML='';menuEl.classList.remove('out');},150);
+}
 function renderMenu(){
   var m=ui.menu,open=document.querySelectorAll('.more.open'),i,tz=titleWrap.querySelector('.tzone');
   for(i=0;i<open.length;i++)open[i].classList.remove('open');
   if(tz)tz.classList.toggle('on',!!m&&m.type==='trips');
-  if(!m){menuEl.hidden=true;menuEl.innerHTML='';menuShown='';return;}
+  if(!m){hideMenu();return;}
   var h='',p;
   var SEP='<div class="sep"></div>';
   if(m.type==='stop')h=mi('m-rename',m.id,'','Rename')+SEP+mi('m-addnote',m.id,'','Add a note')+mi('m-addcheck',m.id,'','Add a checklist')+SEP+mi('m-remove',m.id,'','Delete from day');
@@ -304,6 +312,7 @@ function renderMenu(){
   /* it comes in when it opens, or when another one takes its place; not when the same one is drawn again (the
      confirmation row of "Delete this trip", say) */
   var fresh=menuShown!==m.type+'|'+m.id;menuShown=m.type+'|'+m.id;
+  clearTimeout(menuOut);menuOut=0;
   menuEl.className='menu'+(m.type==='trips'?' trips':'');
   menuEl.innerHTML=h;menuEl.hidden=false;
   if(fresh){void menuEl.offsetWidth;menuEl.classList.add('pop');}

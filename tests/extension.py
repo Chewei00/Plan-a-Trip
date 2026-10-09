@@ -1,5 +1,5 @@
 """End-to-end test of the Chrome extension, without network access: the real extension is loaded into Chromium, and
-the two sites it runs on are stood in for (Google Maps by a blank page at the same address, Plan a Trip by the local
+the two sites it runs on are stood in for (Google Maps by a blank page at the same address, Someday by the local
 files, served at the site's real address so the extension recognises it).
 
     python3 -m http.server 8765 --bind 127.0.0.1 &     # from the repository root
@@ -117,7 +117,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     # the bar lists the trips; picking another one changes where places go, and "saved" is judged for that trip
     card.locator(".trip").click()
     maps.wait_for_timeout(200)
-    assert card.locator(".menu button").all_inner_texts() == ["富士山 5 日", "東京 3 日", "Open Plan a Trip"]
+    assert card.locator(".menu button").all_inner_texts() == ["富士山 5 日", "東京 3 日", "Open Someday"]
     assert card.locator(".menu button >> nth=1 >> .rck").count() == 1 and card.locator(".menu button >> nth=0 >> .rck").count() == 0
     assert card.locator(".menu .mico").count() == 2 and card.locator(".menu button >> nth=2 >> .pmark").count() == 1, "a pin for each trip, the P for the site"
     menu = card.locator(".menu").bounding_box()
@@ -196,11 +196,11 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     card.locator(".savebtn").click()
     maps.wait_for_timeout(300)
     assert card.locator(".savebtn").inner_text() == "Added" and len(kept("pat_inbox")) == 1
-    # "Open Plan a Trip" opens the site when it is not open...
+    # "Open Someday" opens the site when it is not open...
     before = len(ctx.pages)
     card.locator(".trip").click(); maps.wait_for_timeout(200)
     with ctx.expect_page() as opened:
-        card.locator(".menu button:has-text('Open Plan a Trip')").click()
+        card.locator(".menu button:has-text('Open Someday')").click()
     app = opened.value
     assert len(ctx.pages) == before + 1
     # a tab the extension opens loads from the real network, which this test does not have: load the stand-in there
@@ -215,7 +215,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     # ...and goes to its tab, without opening another, when it is
     maps.bring_to_front()
     card.locator(".trip").click(); maps.wait_for_timeout(200)
-    card.locator(".menu button:has-text('Open Plan a Trip')").click()
+    card.locator(".menu button:has-text('Open Someday')").click()
     maps.wait_for_timeout(600)
     assert len(ctx.pages) == before + 1
     assert sw.evaluate("() => chrome.tabs.query({active: true}).then(ts => ts.some(t => (t.url || '').includes('Plan-a-Trip')))")

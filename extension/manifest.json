@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Plan a Trip：從 Google 地圖加入",
-  "short_name": "Plan a Trip",
-  "version": "0.3.1",
-  "description": "在 Google 地圖上點一下圖示開啟，之後點開地點就能把它加進 Plan a Trip 的 Travel Collection，不用重新搜尋。",
+  "name": "Someday：從 Google 地圖加入",
+  "short_name": "Someday",
+  "version": "0.4.0",
+  "description": "在 Google 地圖上點一下圖示開啟，之後點開地點就能把它加進 Someday 的 Travel Collection，不用重新搜尋。",
   "icons": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "128": "icon-128.png" },
   "action": {
-    "default_title": "Plan a Trip：點一下開啟",
+    "default_title": "Someday：點一下開啟",
     "default_icon": { "16": "icon-off-16.png", "32": "icon-off-32.png", "48": "icon-off-48.png", "128": "icon-off-128.png" }
   },
   "background": { "service_worker": "background.js" },

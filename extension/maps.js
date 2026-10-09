@@ -1,8 +1,8 @@
 /* Runs on the Google Maps website. The extension's toolbar button turns it on and off (background.js), and the Plan a
    Trip site can turn it on (site.js); while it is on, two things sit in the top-right corner of the page:
      - a bar with the name of the trip places are saved to. Clicking it lists the trips, to save to another one, and
-       ends with a link that opens Plan a Trip
-     - under it, whenever the page is showing one place, the same card the Plan a Trip site shows after a search:
+       ends with a link that opens Someday
+     - under it, whenever the page is showing one place, the same card the Someday site shows after a search:
        the place's name, the four categories, and the button that saves it
    Off, there is nothing on the page at all.
 
@@ -10,7 +10,7 @@
      https://www.google.com/maps/place/<name>/@<view>/data=...!1s<place id>...!3d<lat>!4d<lng>...
    (the address can describe two places at once; see parse)
    Nothing is read from Google's lists of saved places, and nothing is sent anywhere: a saved place is kept in the
-   extension's own storage (the "inbox") until the Plan a Trip site is open in this browser, which then takes it
+   extension's own storage (the "inbox") until the Someday site is open in this browser, which then takes it
    (site.js). */
 (function () {
   'use strict';
@@ -28,7 +28,8 @@
     transit: '<rect x="5.6" y="4.4" width="6.8" height="7.4" rx="1.8"/><path d="M5.6 8.4h6.8M7 11.8l-1 1.8M11 11.8l1 1.8"/><circle cx="7.6" cy="10.1" r=".6" fill="currentColor" stroke="none"/><circle cx="10.4" cy="10.1" r=".6" fill="currentColor" stroke="none"/>'
   };
   function glyph(id) { return '<svg viewBox="3 3 12 12" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + GLYPH[id] + '</svg>'; }
-  var DOWN = '<svg class="down" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>';
+  /* points right; turns a quarter, to point down, while the list of trips is open (like a day's arrow on the site) */
+  var CHEV = '<svg class="chev" viewBox="0 0 6 10" aria-hidden="true"><path d="M1 1l4 4-4 4"/></svg>';
   /* the menu's icons, the same as the trip menu's on the site (js/icons.js): a pin in front of each trip, a round tick
      on the one places go to, the site's P (Chewei's drawing, as given), and an arrow whose shaft grows when the row is
      pointed at */
@@ -52,8 +53,8 @@
     '.bar{position:relative;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
     '.trip{display:flex;align-items:center;gap:8px;width:100%;height:36px;padding:0 12px;border:0;border-radius:var(--r8);background:none;text-align:left;font:500 13px/20px var(--ui);letter-spacing:.04em}',
     '.trip span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '.down{width:10px;height:6px;stroke-width:1.5;transition:transform .25s ease}',
-    '.bar.open .down{transform:rotate(180deg)}',
+    '.chev{width:6px;height:10px;stroke-width:1.5;transition:transform .25s ease}',
+    '.bar.open .chev{transform:rotate(90deg)}',
     '.menu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:2;padding:6px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
     '.menu button{display:flex;align-items:center;gap:9px;width:100%;height:32px;padding:0 8px;border:0;border-radius:var(--r6);background:none;text-align:left;font:400 13px/20px var(--ui);white-space:nowrap}',
     '.menu button span{min-width:0;overflow:hidden;text-overflow:ellipsis}',
@@ -70,6 +71,8 @@
     '.menu button:hover .arr,.menu button:focus-visible .arr{width:16.6px}',
     '@keyframes menu-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}',
     '.menu.pop{animation:menu-in .2s ease}',
+    '@keyframes menu-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-4px)}}',
+    '.menu.out{animation:menu-out .15s ease forwards;pointer-events:none}',
     '.sep{height:1px;margin:6px 8px;background:var(--line-soft)}',
     '.pend{padding:10px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float);transition:opacity .2s ease}',
     '.pend.out{opacity:0}',
@@ -82,7 +85,7 @@
     '.savebtn{display:block;width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}',
     '.savebtn[disabled]{background:var(--line-soft);color:var(--text-3);cursor:default}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
-    '@media (prefers-reduced-motion:reduce){.wrap,.down,.pend,.arr{transition:none}.menu.pop{animation:none}}'
+    '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
   ].join('\n');
 
   /* ---- reading the place from the page address ----
@@ -186,8 +189,19 @@
 
   /* ---- the bar and the card ---- */
   var host = null, root = null, box = null, cur = null, menuOpen = false, popMenu = false, touched = false;
+  /* The list of trips comes in when it opens and goes out when it closes; the arrow turns with it. Everything is drawn
+     afresh each time, so the bar is drawn as it was (shownOpen) and then switched, which is what lets the arrow turn;
+     a list that is closing is drawn once more, going out, and taken away when it has gone */
+  var shownOpen = false, menuClosing = false, closeT = 0;
+  function setMenu(open) {
+    if (open === menuOpen) return;
+    menuOpen = open;
+    clearTimeout(closeT);
+    popMenu = open; menuClosing = !open;
+    if (!open) closeT = setTimeout(function () { menuClosing = false; var m = box && box.querySelector('.menu'); if (m) m.remove(); }, 150);
+  }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function hide() { if (host) { host.remove(); host = null; root = null; box = null; } menuOpen = false; }
+  function hide() { if (host) { host.remove(); host = null; root = null; box = null; } clearTimeout(closeT); menuOpen = shownOpen = menuClosing = false; }
   function draw() {
     if (!state.on) { hide(); return; }
     var fresh = false;
@@ -206,12 +220,12 @@
       fresh = true;
     }
     var t = trip(), h = '';
-    h += '<div class="bar' + (menuOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'Plan a Trip') + '</span>' + DOWN + '</button>';
-    if (menuOpen) {
-      h += '<div class="menu' + (popMenu ? ' pop' : '') + '" role="menu">' + state.trips.map(function (x) {
+    h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span>' + esc(t ? t.title : 'Someday') + '</span>' + CHEV + '</button>';
+    if (menuOpen || menuClosing) {
+      h += '<div class="menu' + (menuOpen ? (popMenu ? ' pop' : '') : ' out') + '" role="menu">' + state.trips.map(function (x) {
         return '<button role="menuitem" data-act="pick" data-id="' + esc(x.id) + '">' + PIN + '<span>' + esc(x.title) + '</span>' + (t && x.id === t.id ? TICK : '') + '</button>';
       }).join('') + (state.trips.length ? '<div class="sep"></div>' : '') +
-        '<button role="menuitem" data-act="open">' + PMARK + '<span>Open Plan a Trip</span>' + ARROW + '</button></div>';
+        '<button role="menuitem" data-act="open">' + PMARK + '<span>Open Someday</span>' + ARROW + '</button></div>';
     }
     h += '</div>';
     if (cur) {
@@ -224,32 +238,33 @@
     }
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
+    if (shownOpen !== menuOpen) { var bar = box.querySelector('.bar'); void bar.offsetWidth; bar.classList.toggle('open', menuOpen); shownOpen = menuOpen; }
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);
   }
   function onClick(e) {
     e.stopPropagation();
     var a = e.target.closest ? e.target.closest('[data-act]') : null;
-    if (!a) { if (menuOpen) { menuOpen = false; draw(); } return; }
+    if (!a) { if (menuOpen) { setMenu(false); draw(); } return; }
     var act = a.getAttribute('data-act');
-    if (act === 'menu') { menuOpen = !menuOpen; popMenu = menuOpen; draw(); return; }
+    if (act === 'menu') { setMenu(!menuOpen); draw(); return; }
     if (!alive()) { a.textContent = '請重新整理這個分頁'; return; }
-    if (act === 'pick') { state.target = a.getAttribute('data-id'); menuOpen = false; S.set({ pat_target: state.target }); draw(); }
-    else if (act === 'open') { menuOpen = false; draw(); chrome.runtime.sendMessage({ type: 'open-site' }); }
-    else if (act === 'cat' && cur) { cur.cat = a.getAttribute('data-cat'); touched = true; menuOpen = false; draw(); }
+    if (act === 'pick') { state.target = a.getAttribute('data-id'); setMenu(false); S.set({ pat_target: state.target }); draw(); }
+    else if (act === 'open') { setMenu(false); draw(); chrome.runtime.sendMessage({ type: 'open-site' }); }
+    else if (act === 'cat' && cur) { cur.cat = a.getAttribute('data-cat'); touched = true; setMenu(false); draw(); }
     else if (act === 'save' && cur) {
       var t = trip();
       if (!cur.cat) cur.cat = guess(cur.name, kindOf(cur.name));
       var item = { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), tripId: t ? t.id : null,
         name: cur.name, lat: cur.lat, lng: cur.lng, cat: cur.cat, fid: cur.fid, at: Date.now() };
       state.inbox = state.inbox.concat([item]);
-      menuOpen = false;
+      setMenu(false);
       S.set({ pat_inbox: state.inbox });
       draw();
     }
   }
   /* a click anywhere else on the page closes the list of trips */
   document.addEventListener('pointerdown', function (e) {
-    if (menuOpen && host && !(e.composedPath && e.composedPath().indexOf(host) >= 0)) { menuOpen = false; draw(); }
+    if (menuOpen && host && !(e.composedPath && e.composedPath().indexOf(host) >= 0)) { setMenu(false); draw(); }
   }, true);
 
   /* ---- follow the page: Google Maps changes its address without loading a new page ----

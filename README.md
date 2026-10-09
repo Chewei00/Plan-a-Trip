@@ -1,4 +1,6 @@
-# Plan a Trip
+# Someday
+
+（原名 Plan a Trip。網址、程式庫名稱和瀏覽器裡的儲存名稱沿用舊名，沒有改。）
 
 規劃旅行的工具，把想去的地方搜集起來（Travel Collection），再安排到每一天
 
@@ -26,7 +28,7 @@
 | `js/google.js` | 載入 Google 地圖元件、地點搜尋。金鑰在這裡 |
 | `js/geoapify.js` | 路線。只有這個檔案會呼叫 Geoapify |
 | `favicon.svg`、`favicon-32.png`、`apple-touch-icon.png` | 網站圖示。SVG 是 Chewei 畫的原稿，另外兩張由它轉出（分頁用的 PNG、手機主畫面用的 180 × 180 方形） |
-| `extension/` | Chrome 外掛：在 Google 地圖上把地點存進 Plan a Trip |
+| `extension/` | Chrome 外掛：在 Google 地圖上把地點存進 Someday |
 | `tests/` | 不需要網路的測試：`smoke.py` 測網站，`extension.py` 載入真的外掛做端到端測試 |
 
 沒有建置步驟：檔案改了、推上 `main`，GitHub Pages 就會更新。
