@@ -1,9 +1,9 @@
 /* Plan a Trip — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=11';
-import {fetchRoute} from './geoapify.js?v=11';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=11';
-import {createMap} from './mapview.js?v=11';
+import {ICON,CATICON,catSvg} from './icons.js?v=12';
+import {fetchRoute} from './geoapify.js?v=12';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=12';
+import {createMap} from './mapview.js?v=12';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -245,7 +245,7 @@ function renderTop(){
   cardsEl.innerHTML=list.length?list.map(cardHTML).join(''):
     !db.places.length?'<button class="collect" data-act="collect"><span class="collect-t">Your travel collection starts here</span>'+
       '<span class="collect-s">Add your favorite spots from Google Maps here, then start planning your trip'+ICON.arrow+'</span></button>':
-    '<p class="empty-cards">這個分類還沒有地點。用左邊的 Search 找地點存進來。</p>';
+    '<div class="card-empty" role="img" aria-label="這個分類還沒有地點"></div>';
   cardsEl.scrollLeft=keep;
 }
 function revealCard(pid){
@@ -267,16 +267,17 @@ function applyPanels(){
 function mi(act,id,icon,label,checked,val){
   return '<button role="menuitem" data-act="'+act+'" data-id="'+esc(id)+'"'+(val?' data-val="'+val+'"':'')+'>'+(icon||'')+'<span>'+label+'</span>'+(checked?(checked==='round'?'<span class="rck">'+ICON.tick+'</span>':'<span class="ck">'+ICON.check+'</span>'):'')+'</button>';
 }
+var menuShown='';
 function renderMenu(){
   var m=ui.menu,open=document.querySelectorAll('.more.open'),i,tz=titleWrap.querySelector('.tzone');
   for(i=0;i<open.length;i++)open[i].classList.remove('open');
   if(tz)tz.classList.toggle('on',!!m&&m.type==='trips');
-  if(!m){menuEl.hidden=true;menuEl.innerHTML='';return;}
+  if(!m){menuEl.hidden=true;menuEl.innerHTML='';menuShown='';return;}
   var h='',p;
   var SEP='<div class="sep"></div>';
   if(m.type==='stop')h=mi('m-rename',m.id,'','Rename')+SEP+mi('m-addnote',m.id,'','Add a note')+mi('m-addcheck',m.id,'','Add a checklist')+SEP+mi('m-remove',m.id,'','Delete from day');
   else if(m.type==='check'){
-    var en=entryOf(m.id);if(!en){ui.menu=null;menuEl.hidden=true;return;}
+    var en=entryOf(m.id);if(!en){ui.menu=null;menuEl.hidden=true;menuShown='';return;}
     h=mi('m-ck-edit',m.id,'','Edit')+SEP+
       (en.link?mi('m-ck-link',m.id,'','Edit link')+mi('m-ck-unlink',m.id,'','Remove link'):mi('m-ck-link',m.id,'','Add a link'))+
       (en.link||en.file?SEP:'')+
@@ -286,7 +287,7 @@ function renderMenu(){
   else if(m.type==='note')h=mi('m-note-edit',m.id,'','Edit note')+'<div class="sep"></div>'+mi('m-note-del',m.id,'','Delete note');
   else if(m.type==='day')h=mi('m-day-delete',m.id,'','Delete');
   else if(m.type==='card'){
-    p=place(m.id);if(!p){ui.menu=null;menuEl.hidden=true;return;}
+    p=place(m.id);if(!p){ui.menu=null;menuEl.hidden=true;menuShown='';return;}
     h=CATS.map(function(c){return mi('m-cat',m.id,'',c.name,p.cat===c.id,c.id);}).join('')+'<div class="sep"></div>'+
       (p.img?mi('m-clear',m.id,'','Clear image')+'<div class="sep"></div>':'')+
       mi('m-delete',m.id,'','Delete');
@@ -300,8 +301,12 @@ function renderMenu(){
       mi('m-trip-new','trips',ICON.plusSm,'Create a new trip')+SEP+
       (m.confirm?mi('m-trip-del2','trips',ICON.trashSm,'Delete “'+esc(short)+'”?'):mi('m-trip-del','trips',ICON.trashSm,'Delete this trip'));
   }
+  /* it comes in when it opens, or when another one takes its place; not when the same one is drawn again (the
+     confirmation row of "Delete this trip", say) */
+  var fresh=menuShown!==m.type+'|'+m.id;menuShown=m.type+'|'+m.id;
   menuEl.className='menu'+(m.type==='trips'?' trips':'');
   menuEl.innerHTML=h;menuEl.hidden=false;
+  if(fresh){void menuEl.offsetWidth;menuEl.classList.add('pop');}
   var w=menuEl.offsetWidth,hh=menuEl.offsetHeight;
   menuEl.style.left=clamp(m.x,8,window.innerWidth-w-8)+'px';
   menuEl.style.top=(m.y+hh>window.innerHeight-8?Math.max(8,m.top-hh-4):m.y)+'px';

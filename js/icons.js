@@ -35,8 +35,9 @@ export var ICON={
   pin:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .6a3.9 3.9 0 0 1 3.9 3.9c0 2.3-2.6 5.4-3.9 6.9C4.7 9.9 2.1 6.8 2.1 4.5A3.9 3.9 0 0 1 6 .6z"/><circle cx="6" cy="4.5" r="1.55"/></svg>',
   plusSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2v8M2 6h8"/></svg>',
   trashSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.9 3.25h8.2M2.8 3.25v6.4a.9.9 0 0 0 .9.9h4.6a.9.9 0 0 0 .9-.9v-6.4M4.2 3.25v-.9a.9.9 0 0 1 .9-.9h1.8a.9.9 0 0 1 .9.9v.9M5.1 5.55v2.75M6.9 5.55v2.75"/></svg>',
-  /* an arrow whose shaft can be lengthened: the line stretches, the head keeps its size (class "arr") */
-  arrow:'<span class="arr" aria-hidden="true"><i></i><svg viewBox="0 0 5.3 9.3"><path d="M.65 .65l4 4-4 4"/></svg></span>',
+  /* an arrow whose shaft can be lengthened: the line stretches, the head keeps its size (class "arr"). Chewei's
+     drawing: a 1.5 line with square ends and a sharp point, 10.5 long at rest and 16.6 stretched */
+  arrow:'<span class="arr" aria-hidden="true"><i></i><svg viewBox="4.5 0 6 9.5"><path d="M5.2 .5 9.45 4.75 5.2 9"/></svg></span>',
   chevDown:'<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1.5 1.5 6 6.5l4.5-5"/></svg>',
   walk:svg('<circle cx="8.6" cy="2.9" r="1.35" '+F+'/><path d="M8.4 5.8 7.6 9.6 5.4 13.8M7.6 9.6l3 4M5.6 8l2.8-2.2L11 7.6"/>'),
   bike:svg('<circle cx="3.7" cy="10.5" r="2.7"/><circle cx="12.3" cy="10.5" r="2.7"/><path d="M3.7 10.5 6.6 5.8h3.2l2.5 4.7M9.8 5.8 9.3 4h1.6"/>'),

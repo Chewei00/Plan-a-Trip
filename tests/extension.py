@@ -106,6 +106,8 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     card.locator(".savebtn").click()
     maps.wait_for_timeout(300)
     assert card.locator(".savebtn").inner_text() == "Added" and card.locator(".savebtn").is_disabled()
+    look = maps.evaluate("(() => { const b = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.savebtn'), s = getComputedStyle(b); return [s.backgroundColor, s.color]; })()")
+    assert look == ["rgb(229, 229, 229)", "rgba(0, 0, 0, 0.4)"], look
     app.wait_for_timeout(800)
     assert app.locator(".card.focus .cname").inner_text() == "富士急樂園"
     saved = [t for t in trips(app)["trips"] if t["title"] == "東京 3 日"][0]["places"][-1]
@@ -122,9 +124,11 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert menu["width"] == 236 and maps.evaluate("getComputedStyle(document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.sep')).backgroundColor") == "rgb(229, 229, 229)"
     # the arrow on the last row grows when the row is pointed at
     arrow = card.locator(".menu .arr")
-    assert arrow.bounding_box()["width"] == 10
+    assert abs(arrow.bounding_box()["width"] - 10.5) < 0.01 and card.locator(".menu.pop").count() == 1, "the menu comes in"
+    shaft = card.locator(".menu .arr i").bounding_box()
+    assert shaft["height"] == 1.5 and (shaft["y"] * 2) % 1 == 0, shaft
     card.locator(".menu button >> nth=2").hover(); maps.wait_for_timeout(700)
-    assert arrow.bounding_box()["width"] == 17
+    assert abs(arrow.bounding_box()["width"] - 16.6) < 0.01
     card.locator(".menu button:has-text('富士山 5 日')").click()
     maps.wait_for_timeout(300)
     assert card.locator(".menu").count() == 0 and card.locator(".trip span").inner_text() == "富士山 5 日"

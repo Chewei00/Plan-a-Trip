@@ -191,6 +191,7 @@ with sync_playwright() as p:
     page.click(".tripbtn")
     page.wait_for_timeout(400)
     assert css(".tripbtn svg", "transform") == "matrix(0, 1, -1, 0, 0, 0)", "a quarter turn"
+    assert "pop" in page.get_attribute("#menu", "class") and css("#menu", "animation-name") == "menu-in", "the menu comes in"
     assert page.locator("#menu button").all_inner_texts() == ["富士山 5 日", "Create a new trip", "Delete this trip"]
     assert page.locator("#menu button > svg.mico").count() == 3 and page.locator("#menu button >> nth=0 >> .rck").count() == 1
     assert css("#menu .sep", "background-color") == "rgb(229, 229, 229)" and css("#menu .rck", "border-radius") == "50%"
@@ -211,9 +212,13 @@ with sync_playwright() as p:
     assert page.locator(".collect-s").inner_text() == "Add your favorite spots from Google Maps here, then start planning your trip"
     page.mouse.move(700, 600); page.wait_for_timeout(600)
     words = page.locator(".collect-s").bounding_box()
-    assert page.locator(".collect .arr").bounding_box()["width"] == 10
+    arr = page.locator(".collect .arr")
+    assert abs(arr.bounding_box()["width"] - 10.5) < 0.01 and css(".collect-s", "color") == "rgba(0, 0, 0, 0.4)" and css(".collect .arr", "opacity") == "0.4"
+    # the shaft is a 1.5 line on half pixels, through the middle of the lower-case letters (rows 10.5 to 12 of the line)
+    shaft, line = page.locator(".collect .arr i").bounding_box(), page.locator(".collect-s").bounding_box()
+    assert shaft["height"] == 1.5 and shaft["y"] - line["y"] == 10.5 and (shaft["y"] * 2) % 1 == 0, (shaft, line)
     page.hover(".collect"); page.wait_for_timeout(700)
-    assert page.locator(".collect .arr").bounding_box()["width"] == 17 and page.locator(".collect-s").bounding_box() == words, "the words stay put"
+    assert abs(arr.bounding_box()["width"] - 16.6) < 0.01 and page.locator(".collect-s").bounding_box() == words, "the words stay put"
     page.evaluate("window.__said = []; window.addEventListener('message', e => { if (e.data && e.data.from === 'plan-a-trip') __said.push(e.data.type); })")
     with ctx.expect_page() as opened:
         page.click(".collect")
@@ -259,10 +264,26 @@ with sync_playwright() as p:
     open_trips()
     page.click("#menu button:has-text('東京 3 日')")
     page.wait_for_timeout(300)
+    # a category with no places, in a trip that has places, shows the outline of a card in the first card's spot
+    have = {p["cat"] for p in stored()["trips"][1]["places"]}
+    none = [c for c in ["sight", "food", "stay", "transit"] if c not in have]
+    assert have and none, "this trip has a place, and a category without any"
+    first = None
+    for c in ["sight", "food", "stay", "transit"]:
+        if c in have and first is None:
+            page.click(f".chip[data-cat='{c}']"); page.wait_for_timeout(200)
+            first = page.locator(".card >> nth=0").bounding_box()
+    page.click(f".chip[data-cat='{none[0]}']"); page.wait_for_timeout(200)
+    hole = page.locator(".card-empty").bounding_box()
+    assert page.locator(".card").count() == 0 and page.locator(".collect").count() == 0
+    assert (hole["x"], hole["y"], hole["width"], hole["height"]) == (first["x"], first["y"], 152, 178), (hole, first)
+    assert css(".card-empty", "border-top-style") == "dashed" and css(".card-empty", "border-top-color") == css(".ph", "border-top-color") if page.locator(".ph").count() else True
+
     open_trips()
     page.click("#menu button:has-text('Delete this trip')")
     page.wait_for_timeout(200)
     assert page.locator("#menu").is_visible() and len(stored()["trips"]) == 2, "the first press only asks"
+    assert "pop" not in page.get_attribute("#menu", "class"), "drawn again, the menu does not come in a second time"
     assert page.locator("#menu button >> nth=-1").inner_text() == "Delete “東京 3 日”?"
     page.click("#menu button >> nth=-1")
     page.wait_for_timeout(300)

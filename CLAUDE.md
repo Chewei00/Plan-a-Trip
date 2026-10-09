@@ -100,7 +100,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; the Chrome extension (0.3.0); the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; the Chrome extension (0.3.1); the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
