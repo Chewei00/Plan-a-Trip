@@ -103,12 +103,12 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert abs(box["x"] + box["width"] - (1440 - 16)) < 1 and box["y"] == 64 and box["width"] == 236 and bar["height"] == 36 and pend["y"] == 64 + 36 + 8, (box, bar, pend)
 
     # saving: the button says so, and the place arrives in that trip on the site, which is open in another tab
-    # pressed, the button turns into "Added": its colour runs across while one label goes out and the other comes in
+    # pressed, the button turns into "Added": it hops, its colour runs across, one label goes out and the other comes in
     card.locator(".savebtn").click()
     maps.wait_for_timeout(60)
     turning = maps.evaluate("""(() => { const b = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.savebtn'), s = getComputedStyle(b);
-        return [b.className, b.disabled, [...b.querySelectorAll('span')].map(x => x.textContent), s.animationName, parseFloat(s.animationDelay) < 0]; })()""")
-    assert turning == ["savebtn adding", True, ["Add to Travel Collection", "Added"], "added-bg", True], turning
+        return [b.className, b.disabled, [...b.querySelectorAll('span')].map(x => x.textContent), s.animationName, parseFloat(s.animationDelay) < 0, s.animationDuration, s.transform !== 'none' && new DOMMatrix(s.transform).m42 < 0]; })()""")
+    assert turning == ["savebtn adding", True, ["Add to Travel Collection", "Added"], "added-bg, added-hop", True, "0.4s, 0.4s", True], turning
     maps.wait_for_timeout(450)
     assert card.locator(".savebtn.adding").count() == 0, "and is then the plain Added button"
     assert card.locator(".savebtn").inner_text() == "Added" and card.locator(".savebtn").is_disabled()

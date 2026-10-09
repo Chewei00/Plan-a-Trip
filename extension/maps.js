@@ -85,15 +85,18 @@
     '.chip[disabled]{cursor:default}',
     '.savebtn{display:block;width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}',
     '.savebtn[disabled]{background:var(--line-soft);color:var(--text-3);cursor:default}',
-    /* just pressed: the button turns into "Added" instead of being swapped for it. Its colour runs from one to the
-       other while the old words go out and the new ones come in, overlapping for a moment. These are animations, not
-       transitions, so that a button drawn again part-way through can be told how far along it is (see draw) */
-    '@keyframes added-bg{from{background-color:var(--ink)}to{background-color:var(--line-soft)}}',
-    '@keyframes added-out{from{opacity:1}70%,to{opacity:0}}',
-    '@keyframes added-in{from,30%{opacity:0}to{opacity:1}}',
-    '.savebtn.adding{position:relative;animation:added-bg .25s ease both}',
-    '.savebtn.adding .was{color:var(--on-ink);animation:added-out .25s linear both}',
-    '.savebtn.adding .now{position:absolute;left:0;right:0;top:6px;animation:added-in .25s linear both}',
+    /* just pressed: the button turns into "Added" instead of being swapped for it. It hops (Chewei's idea, 2026-10-09;
+       the numbers were chosen on a preview page): up 2px in the first quarter, fast then slowing, back down by 78%,
+       sinking half a pixel past where it rests, then settling; .4s in all. The old words go while it rises, "Added"
+       comes from the top of the hop as it falls, and the colour runs across from 10% to 70%. These are animations,
+       not transitions, so that a button drawn again part-way through can be told how far along it is (see draw) */
+    '@keyframes added-hop{0%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.7,.3,1)}25%{transform:translateY(-2px);animation-timing-function:cubic-bezier(.55,0,.45,1)}78%{transform:translateY(.5px);animation-timing-function:cubic-bezier(.3,0,.3,1)}100%{transform:translateY(0)}}',
+    '@keyframes added-bg{0%,10%{background-color:var(--ink)}70%,100%{background-color:var(--line-soft)}}',
+    '@keyframes added-out{0%{opacity:1}25%,100%{opacity:0}}',
+    '@keyframes added-in{0%,25%{opacity:0}70%,100%{opacity:1}}',
+    '.savebtn.adding{position:relative;animation:added-bg .4s linear both,added-hop .4s linear both}',
+    '.savebtn.adding .was{color:var(--on-ink);animation:added-out .4s linear both}',
+    '.savebtn.adding .now{position:absolute;left:0;right:0;top:6px;animation:added-in .4s linear both}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
     '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
   ].join('\n');
@@ -203,7 +206,7 @@
      afresh each time, so the bar is drawn as it was (shownOpen) and then switched, which is what lets the arrow turn;
      a list that is closing is drawn once more, going out, and taken away when it has gone */
   var shownOpen = false, menuClosing = false, closeT = 0;
-  var ADDING = 250, added = null, addedT = 0;
+  var ADDING = 400, added = null, addedT = 0;
   function calm() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function setMenu(open) {
     if (open === menuOpen) return;
