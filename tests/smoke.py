@@ -171,7 +171,7 @@ with sync_playwright() as p:
     page.evaluate("() => { const d = JSON.parse(localStorage.getItem('plan-a-trip:v1')); const t = d.trips[0]; delete t.id; localStorage.setItem('plan-a-trip:v1', JSON.stringify(t)); }")
     page.reload()
     page.wait_for_timeout(800)
-    assert page.locator(".title").inner_text() == "富士山 5 日" and page.locator(".day").count() == 2
+    assert page.locator(".title").inner_text() == "富士山 ( 範例 )" and page.locator(".day").count() == 2
     assert page.locator(".card").count() == 7 and page.evaluate("__map.lines.length") == 8, "its places and routes are all there"
 
     # ---- the trip's own notes, at the foot of the left panel ----
@@ -280,7 +280,7 @@ with sync_playwright() as p:
     page.wait_for_timeout(400)
     assert css(".tripbtn svg", "transform") == "matrix(0, 1, -1, 0, 0, 0)", "a quarter turn"
     assert "pop" in page.get_attribute("#menu", "class") and css("#menu", "animation-name") == "menu-in", "the menu comes in"
-    assert page.locator("#menu button").all_inner_texts() == ["富士山 5 日", "Create a new trip", "Delete this trip"]
+    assert page.locator("#menu button").all_inner_texts() == ["富士山 ( 範例 )", "Create a new trip", "Delete this trip"]
     assert page.locator("#menu button > svg.mico").count() == 3 and page.locator("#menu button >> nth=0 >> .rck").count() == 1
     assert css("#menu .sep", "background-color") == "rgb(229, 229, 229)" and css("#menu .rck", "border-radius") == "50%"
     # a new one starts empty, named New trip and ready to be renamed, and the map stays put
@@ -316,7 +316,7 @@ with sync_playwright() as p:
     assert "switch-on" in page.evaluate("__said"), "the extension, if there is one, is asked to switch on"
     assert page.evaluate("__map.moves.length") == moves, "and the map has not moved"
     d = stored()
-    assert [t["title"] for t in d["trips"]] == ["富士山 5 日", "東京 3 日"] and d["current"] == d["trips"][1]["id"]
+    assert [t["title"] for t in d["trips"]] == ["富士山 ( 範例 )", "東京 3 日"] and d["current"] == d["trips"][1]["id"]
     tokyo, fuji = d["trips"][1]["id"], d["trips"][0]["id"]
 
     # the extension's hand-over: places arrive in a message, go to the trip they were saved for, and are acknowledged
@@ -332,7 +332,7 @@ with sync_playwright() as p:
     assert [x["name"] for x in d["trips"][1]["places"]] == ["淺草寺"] and d["trips"][1]["places"][0]["fid"].startswith("0x60188e")
     assert d["trips"][0]["places"][-1]["name"] == "大石公園", "a place saved for another trip goes to that trip"
     assert page.evaluate("__state[__state.length-1]") == {"from": "plan-a-trip", "type": "state", "trip": {"id": tokyo, "title": "東京 3 日"},
-        "trips": [{"id": fuji, "title": "富士山 5 日"}, {"id": tokyo, "title": "東京 3 日"}],
+        "trips": [{"id": fuji, "title": "富士山 ( 範例 )"}, {"id": tokyo, "title": "東京 3 日"}],
         "saved": {fuji: ["0x6019600000000001:0x1"], tokyo: ["0x60188ec1a4463df1:0x6c0d289a8292810d"]}}, "the page tells the extension about every trip"
     page.evaluate("items => window.postMessage({from:'plan-a-trip-ext', type:'inbox', items}, location.origin)", inbox[:1] + [dict(inbox[0], id="a9")])
     page.wait_for_timeout(300)
@@ -343,9 +343,9 @@ with sync_playwright() as p:
     moves = page.evaluate("__map.moves.length")
     open_trips()
     assert page.locator("#menu button >> nth=1 >> .rck").count() == 1, "the trip on screen is ticked"
-    page.click("#menu button:has-text('富士山 5 日')")
+    page.click("#menu button:has-text('富士山 ( 範例 )')")
     page.wait_for_timeout(1300)
-    assert page.locator(".title").inner_text() == "富士山 5 日" and page.locator(".day").count() == 2 and page.locator(".day.sel").count() == 0
+    assert page.locator(".title").inner_text() == "富士山 ( 範例 )" and page.locator(".day").count() == 2 and page.locator(".day.sel").count() == 0
     assert page.evaluate("__map.moves.length") > moves + 20, "the map glides to the trip"
 
     # closing a menu: it goes out the way it came in, then is taken away; the arrow turns back
@@ -384,7 +384,7 @@ with sync_playwright() as p:
     assert page.locator("#menu button >> nth=-1").inner_text() == "Delete “東京 3 日”?"
     page.click("#menu button >> nth=-1")
     page.wait_for_timeout(300)
-    assert [t["title"] for t in stored()["trips"]] == ["富士山 5 日"] and page.locator(".title").inner_text() == "富士山 5 日"
+    assert [t["title"] for t in stored()["trips"]] == ["富士山 ( 範例 )"] and page.locator(".title").inner_text() == "富士山 ( 範例 )"
     open_trips()
     page.click("#menu button:has-text('Delete this trip')")
     page.wait_for_timeout(200)

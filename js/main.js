@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=16';
-import {fetchRoute} from './geoapify.js?v=16';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=16';
-import {createMap} from './mapview.js?v=16';
+import {ICON,CATICON,catSvg} from './icons.js?v=17';
+import {fetchRoute} from './geoapify.js?v=17';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=17';
+import {createMap} from './mapview.js?v=17';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -28,7 +28,7 @@ function newStop(pid,plan){return {id:uid(),place:pid,plan:plan||[]};}
 function place0(d,id){for(var i=0;i<d.places.length;i++)if(d.places[i].id===id)return d.places[i];return null;}
 function newTrip(title){return {id:uid(),title:title,places:[],days:[{id:uid(),stops:[]}],legs:{},memo:{open:false,plan:[]}};}
 function sample(){
-  var d={id:uid(),title:'富士山 5 日',places:[],days:[],legs:{}};
+  var d={id:uid(),title:'富士山 ( 範例 )',places:[],days:[],legs:{}};
   function P(name,cat,lat,lng,note){var p=newPlace({name:name,cat:cat,lat:lat,lng:lng});p.note=note||'';d.places.push(p);return p.id;}
   var kubota=P('久保田一竹美術館','sight',35.5252,138.7715,'非常喜歡');
   P('河口湖音樂森林美術館','sight',35.5222,138.7790);
@@ -45,7 +45,7 @@ function sample(){
   P('新富士站','transit',35.1422,138.6633);
   d.days.push({id:uid(),stops:[
     newStop(kubota,[{k:'n',text:'12 點左右到，買好午餐帶到這裡吃'}]),
-    newStop(kma,[{k:'n',text:'要去一棵大樹下\n傍晚 14:00 左右到'},{k:'c',text:'已買票，共 4000 元',done:true,link:'https://example.com/tickets',file:null}]),
+    newStop(kma,[{k:'n',text:'要去一棵大樹下\n下午 14:00 左右到'},{k:'c',text:'已買票，共 4000 元',done:true,link:'https://example.com/tickets',file:null}]),
     newStop(udon,[{k:'c',text:'已訂位，18:00，兩人',done:true,link:'',file:null}]),
     newStop(inn,[{k:'c',text:'付了訂金，500 元，現場需再繳 1000 元',done:true,link:'',file:null}])]});
   d.days.push({id:uid(),stops:[newStop(park),newStop(iwa)]});
