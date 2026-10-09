@@ -186,12 +186,13 @@ with sync_playwright() as p:
         return [t for t in d["trips"] if t["id"] == d["current"]][0]
     assert (shut["line"], shut["foot"]) == (768 - 24, 0), shut
     assert css(".memo-body", "visibility") == "hidden" and css(".memo-handle svg", "transform") == "none"
-    # opening is a movement, not a jump: part-way through, the line is between the two places
+    # opening is a movement, not a jump: part-way through, the line is between the two places, and the two "Add" rows
+    # are still coming up from under the panel's foot, keeping their distance below the line
     page.click("#memoh")
-    page.wait_for_timeout(110)
-    mid = memo()["line"]
-    assert 664 < mid < 744, mid
-    page.wait_for_timeout(400)
+    page.wait_for_timeout(180)
+    mid = memo()
+    assert 664 < mid["line"] < 744 and mid["adds"][0][0] - mid["line"] == 30 and css(".memo-in", "opacity") == "1", mid
+    page.wait_for_timeout(600)
     empty = memo()
     assert empty["line"] == 664 and empty["adds"] == [[694, 30], [724, 30]] and empty["ents"] == [], empty
     assert empty["list"] == shut["list"] - 80, "the list above gives up exactly that much"
@@ -238,8 +239,15 @@ with sync_playwright() as p:
     page.reload(); page.wait_for_timeout(1000)
     again = memo()
     assert again["line"] == 129 and len(cur()["memo"]["plan"]) == 9
-    page.click("#memoh"); page.wait_for_timeout(500)
+    assert css(".memo-body", "transition-duration").startswith("0.45s") and page.evaluate("document.querySelector('.memo-in').style.height") == "", "drawn open on loading, without the movement"
+    # closing: the whole sheet goes down together, entries and "Add" rows keeping their places under the line
+    gap = again["adds"][0][0] - again["line"]
+    page.click("#memoh"); page.wait_for_timeout(200)
+    going = memo()
+    assert 129 < going["line"] < 744 and going["adds"][0][0] - going["line"] == gap, going
+    page.wait_for_timeout(600)
     assert memo()["line"] == 744 and memo()["list"] == shut["list"] and cur()["memo"]["open"] is False
+    assert page.evaluate("document.querySelector('.memo-in').style.height") == "", "and is let go afterwards"
     # with the panel put away, the notes are too
     page.click(".sidebtn"); page.wait_for_timeout(400)
     assert not page.locator("#memo").is_visible()
@@ -250,9 +258,9 @@ with sync_playwright() as p:
         del t["memo"]
     page.evaluate("d => localStorage.setItem('plan-a-trip:v1', JSON.stringify(d))", old)
     page.reload(); page.wait_for_timeout(1000)
-    page.click("#memoh"); page.wait_for_timeout(500)
+    page.click("#memoh"); page.wait_for_timeout(700)
     assert memo()["line"] == 664 and len(cur()["places"]) == n_places and cur()["memo"] == {"open": True, "plan": []}
-    page.click("#memoh"); page.wait_for_timeout(500)
+    page.click("#memoh"); page.wait_for_timeout(700)
 
     # the arrow is not there until the pointer is on the trip's name; then it pushes the name right and the collapse icon steps aside
     page.mouse.move(700, 600)

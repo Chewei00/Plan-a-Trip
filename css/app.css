@@ -189,15 +189,17 @@ textarea.edit.nbedit::placeholder{color:var(--text-ph);opacity:1}
 .memo{flex:none;display:flex;flex-direction:column;min-height:24px;max-height:calc(100% - 129px)}
 .memo-handle{position:relative;flex:none;display:block;width:100%;height:24px;margin:0;border:0;padding:0;background:none;color:var(--ink)}
 .memo-handle::before{content:"";position:absolute;left:20px;right:20px;top:0;height:1px;border-radius:1px;background:var(--ink)}
-.memo-handle svg{position:absolute;left:50%;top:9px;width:10px;height:6px;margin-left:-5px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
+.memo-handle svg{position:absolute;left:50%;top:9px;width:10px;height:6px;margin-left:-5px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s ease}
 .memo.open .memo-handle svg{transform:rotate(180deg)}
 .memo-handle:focus-visible{outline-offset:-2px}
-/* the same opening as a day's entries: a grid row from 0 to its content's height */
-.memo-body{flex:0 1 auto;min-height:0;display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .25s ease,visibility 0s .25s}
-.memo.open .memo-body{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .25s ease,visibility 0s}
+/* The space the notes take runs from nothing to their height in 0.45s (a grid row, as for a day's entries). What is
+   inside does not fade or squeeze meanwhile: applyMemo holds it at full height, so it rides up behind the line as one
+   sheet, cut off by the panel's foot, and goes back down the same way. MEMOMS in main.js is this 0.45s. */
+.memo-body{flex:0 1 auto;min-height:0;display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .45s ease,visibility 0s .45s}
+.memo.open .memo-body{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .45s ease,visibility 0s}
+.memo.still,.memo.still *{transition:none!important}
 .memo-clip{min-height:0;overflow:hidden;display:flex;flex-direction:column}
-.memo-in{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;padding:6px 20px 14px;opacity:0;transition:opacity .15s ease}
-.memo.open .memo-in{opacity:1;transition:opacity .2s ease .08s}
+.memo-in{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;padding:6px 20px 14px}
 .memo-ents{flex:0 1 auto;min-height:0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
 .memo-ents::-webkit-scrollbar{display:none}
 .memo-ents .ent:first-child{margin-top:0}

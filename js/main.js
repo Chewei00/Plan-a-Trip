@@ -1,9 +1,9 @@
 /* Someday — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=14';
-import {fetchRoute} from './geoapify.js?v=14';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=14';
-import {createMap} from './mapview.js?v=14';
+import {ICON,CATICON,catSvg} from './icons.js?v=15';
+import {fetchRoute} from './geoapify.js?v=15';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=15';
+import {createMap} from './mapview.js?v=15';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -248,10 +248,32 @@ function renderMemo(){
   if(ui.editing&&ui.editing.place===MEMO&&ui.editing.i==='new')memoEnts.scrollTop=memoEnts.scrollHeight;
   applyMemo();
 }
+/* Opening and closing, the notes move as one sheet: pulled up from under the panel's foot, line first and the two
+   "Add" rows last, and let down the same way. The space they take is what animates (so the list above shortens with
+   it), and for that long the sheet is held at its full height instead of being squeezed; afterwards it is free again,
+   to grow with new entries and to give way when it reaches Day 1. Drawn for the first time, or for another trip, it
+   is simply shown as it is. */
+var memoTrip=null,memoT=0,MEMOMS=450;
 function applyMemo(){
-  var on=!!db.memo.open,hd=$('memoh');
-  memoEl.classList.toggle('open',on);
+  var on=!!db.memo.open,hd=$('memoh'),inn=memoEl.querySelector('.memo-in'),was=memoEl.classList.contains('open');
   hd.title=on?'收起旅行備註':'展開旅行備註';hd.setAttribute('aria-label',hd.title);hd.setAttribute('aria-expanded',on);
+  if(memoTrip!==db.id){
+    memoTrip=db.id;clearTimeout(memoT);inn.style.height=inn.style.flex='';
+    memoEl.classList.add('still');memoEl.classList.toggle('open',on);void memoEl.offsetWidth;memoEl.classList.remove('still');
+    return;
+  }
+  if(on===was)return;
+  var full=inn.offsetHeight;
+  if(on){
+    var adds=$('memoadds'),ci=getComputedStyle(inn);
+    full=Math.min(parseFloat(ci.paddingTop)+memoEnts.scrollHeight+parseFloat(getComputedStyle(adds).marginTop)+adds.offsetHeight+parseFloat(ci.paddingBottom),
+      lp.clientHeight-129-hd.offsetHeight);
+  }
+  clearTimeout(memoT);
+  inn.style.flex='none';inn.style.height=full+'px';
+  void memoEl.offsetWidth;
+  memoEl.classList.toggle('open',on);
+  memoT=setTimeout(function(){inn.style.height=inn.style.flex='';},MEMOMS+40);
 }
 
 /* ================= top panel ================= */
