@@ -158,3 +158,14 @@ files, which he asked for to use in his own mockups, not to redraw them.
 Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
 For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone
 editing layout (see the Handoff document, 延後與未決事項).
+
+The phone itinerary so far is a preview page only (https://claude.ai/artifact/7Pvae9G2PePVoC6Lr3VkDy, version 4 of
+2026-10-10), not in this repository; how it joins the site (what on the desktop makes the link, how the link gets to
+the phone, offline on an iPhone) is still to be discussed with Chewei before building. What is settled on the preview:
+only the left panel's content; days open at first; a day opens and closes as on the desktop (closed keeps the places'
+names, the rest folds away, the category and the arrow fade, a closed day is paler while another is open; classes are
+switched on the elements that are there, nothing is redrawn); a ticked item is kept on the phone; an arrow by each
+place opens Google Maps; attached files are not carried (Chewei will put Google Drive links in the checklist instead);
+no cloud. Smooth corners there cannot use `corner-shape` (no iPhone browser has it, Chrome on iPhone included): the
+same curve (|x|^n + |y|^n = 1, n = 2^1.4, radius x 1.25) is drawn as an SVG path, behind each note (redrawn when
+its size changes) and as the checkbox's own drawing.
