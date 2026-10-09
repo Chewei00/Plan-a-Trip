@@ -80,7 +80,11 @@ explain in plain words, never ask them to run commands.
   `maps.js` draws everything afresh on each change, so what moves is drawn in its earlier state and then switched (the
   bar's arrow), or is a CSS animation told how far along it is (the button turning into "Added"). `site.js` hands saved places to the page and learns the trips from it; page and extension
   talk through `window.postMessage` (see "browser extension" in `js/main.js`). The trip saved to is whichever was
-  chosen last, in the bar or by switching trips on the site. Installed by hand in developer mode, not published.
+  chosen last, in the bar or by switching trips on the site. Submitted to the Chrome Web Store for review on 2026-10-09 (version 0.4.3; Chewei's plan is Unlisted, so only
+  people with the link can install it). Until it is approved it is installed by hand in developer mode. The store upload is a
+  zip with `manifest.json` at the top level and no README; every later upload needs a higher version number and goes
+  through review again, while the site itself updates on push as before. Once the store copy is installed, the
+  hand-installed copy must be removed, or Google Maps shows two bars.
   It reads only the page being viewed, uses none of the Google quota, and is not an official Google integration.
   Chewei decided against copying Google's photos (not allowed beyond private use).
 - The repository is public: never commit secrets. Browser-side keys (Geoapify, Supabase anon key) are public by
@@ -120,6 +124,8 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
 Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (0.4.3, description and toolbar hints in English, wording by Chewei); the name SomeDay and the address /SomeDay/; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
+
+The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
 
 Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
 For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone
