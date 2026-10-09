@@ -145,10 +145,10 @@ two places, `css/app.css` and `extension/maps.js`: change both.
 
 The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
 
-Chewei is redrawing the four category icons himself (2026-10-10; he was given the current ones as 12 x 12 SVG
-files). When they arrive they replace `CATICON`/`CATCHIP` in `js/icons.js` and `GLYPH` in `extension/maps.js`, which
-must stay the same drawings. Icons are drawn in a solid colour: a half-transparent one makes crossings darker (it
-showed in the counts for a while, as it once did in the menu arrow).
+Icons are drawn in a solid colour: a half-transparent one makes crossings darker (it showed in the extension's counts
+for a while, as it once did in the menu arrow). The four category icons are the same drawings on the site (`CATICON`
+and `CATCHIP` in `js/icons.js`) and in the extension (`GLYPH` in `extension/maps.js`); Chewei has them as 12 x 12 SVG
+files, which he asked for to use in his own mockups, not to redraw them.
 
 Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
 For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone
