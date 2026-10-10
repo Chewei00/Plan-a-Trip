@@ -92,6 +92,11 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
    a filter is on or not (the words say which); darker only under the pointer and while its menu is open */
 .dayf{display:inline-flex;align-items:center;gap:6px;height:26px;margin-left:auto;padding:0 2px;border:0;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--text-2);white-space:nowrap}
 .dayf:hover,.dayf[aria-expanded="true"]{color:var(--ink)}
+/* in a narrow window the title and the categories keep their room and the filter's words are cut short */
+.tp-head h2,.chips{flex:none}
+.dayf{flex:0 1 auto;min-width:16px}
+.dayf span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:800px){.tp-head{gap:12px}}
 .more{width:22px;height:22px;flex:none;border:0;border-radius:50%;background:none;color:var(--line);display:grid;place-items:center;padding:0;opacity:0}
 .more:hover,.more.open{background:var(--fill-note);color:var(--ink)}
 .more:focus-visible,.more.open{opacity:1}

@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=26';
-import {fetchRoute} from './geoapify.js?v=26';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=26';
-import {createMap} from './mapview.js?v=26';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=27';
+import {fetchRoute} from './geoapify.js?v=27';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=27';
+import {createMap} from './mapview.js?v=27';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -457,7 +457,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=26').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=27').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */
