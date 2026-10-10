@@ -301,11 +301,52 @@ with sync_playwright() as p:
         return page.evaluate("""(() => { const lp = document.getElementById('lp').getBoundingClientRect(), m = document.getElementById('memo').getBoundingClientRect();
             const top = s => [...document.querySelectorAll(s)].map(x => { const r = x.getBoundingClientRect(); return [r.top - lp.top, r.height]; });
             return { line: m.top - lp.top, foot: lp.bottom - m.bottom, ents: top('#memoents > .ent'), adds: top('.memoadd'), list: document.getElementById('lpscroll').getBoundingClientRect().height }; })()""")
-    # closed: only the handle, a line 24 above the panel's foot with the arrow under it
-    shut = memo()
     def cur():
         d = stored()
         return [t for t in d["trips"] if t["id"] == d["current"]][0]
+    # the sample comes with notes of its own, open: a note first, then three things to bring, two of them ticked
+    WORDS = ["雨備景點 : 富士山世界遺產中心", "毛帽 ( 需遮住耳朵 )", "圍巾 ( 或防風頸套 )", "駕照日文譯本"]
+    def notes():
+        return page.evaluate("[].map.call(document.querySelectorAll('#memoents > .ent'),e=>[e.classList.contains('n')?'n':'c',(e.querySelector('.nb,.cktext')||e).innerText.trim(),!!e.querySelector('.ck.done')])")
+    page.click("#memoh"); page.wait_for_timeout(700); page.click("#memoh"); page.wait_for_timeout(700)   # (a press, so that the trip is saved as it came)
+    assert "open" in page.get_attribute("#memo", "class") and cur()["memo"]["open"] is True
+    assert notes() == [["n", WORDS[0], False], ["c", WORDS[1], True], ["c", WORDS[2], True], ["c", WORDS[3], False]], notes()
+    # they are put in order by dragging, as the entries under a place are: a line shows where the one in hand will land
+    def drag_note(i, to_y):
+        b = page.locator("#memoents > .ent").nth(i).bounding_box()
+        page.mouse.move(b["x"] + 30, b["y"] + b["height"] / 2); page.mouse.down()
+        page.mouse.move(b["x"] + 34, b["y"] + b["height"] / 2 + 8, steps=3)
+        page.mouse.move(b["x"] + 34, to_y, steps=8)
+    last = page.locator("#memoents > .ent").nth(3).bounding_box()
+    drag_note(0, last["y"] + last["height"] + 3)
+    line = page.evaluate("(()=>{var d=document.querySelector('#memoents .dropline'),e=document.querySelectorAll('#memoents > .ent')[3].getBoundingClientRect(),m=document.getElementById('memoents').getBoundingClientRect();if(!d)return null;var r=d.getBoundingClientRect();return [Math.round(r.top+r.height/2-e.bottom),r.left-m.left,m.right-r.right,document.querySelectorAll('#memoents .dragsrc').length,document.querySelectorAll('.ghost').length]})()")
+    assert line == [4, 0, 0, 1, 1], ("the line under the last one, as wide as the list", line)
+    page.mouse.up(); page.wait_for_timeout(200)
+    assert [n[1] for n in notes()] == WORDS[1:] + WORDS[:1] and [e["text"] for e in cur()["memo"]["plan"]] == WORDS[1:] + WORDS[:1]
+    first = page.locator("#memoents > .ent").nth(0).bounding_box()
+    drag_note(3, first["y"] - 2); page.mouse.up(); page.wait_for_timeout(200)
+    assert [n[1] for n in notes()] == WORDS and cur()["memo"]["plan"][1]["done"] is True, "and back; a tick goes with its line"
+    # one dragged up over a day does not go into the day: it stays among the notes, at their top (as an entry under a
+    # place dragged past its place stays under it)
+    day = page.locator(".day").first.bounding_box(); in_days = page.locator("#lpscroll .ent").count()
+    drag_note(1, day["y"] + 10); page.mouse.up(); page.wait_for_timeout(200)
+    assert [n[1] for n in notes()] == [WORDS[1], WORDS[0], WORDS[2], WORDS[3]] and page.locator("#lpscroll .ent").count() == in_days
+    second = page.locator("#memoents > .ent").nth(1).bounding_box()
+    drag_note(0, second["y"] + second["height"] + 2); page.mouse.up(); page.wait_for_timeout(200)
+    assert [n[1] for n in notes()] == WORDS
+    # a press without a move is still a press: the box is ticked, nothing moves
+    page.click("#memoents .ck:not(.done) .cbox"); page.wait_for_timeout(150)
+    assert [n[2] for n in notes()] == [False, True, True, True] and [n[1] for n in notes()] == WORDS
+    # (the checks below start from notes that are closed and empty)
+    for _ in range(4):
+        eb = page.locator("#memoents > .ent").first.bounding_box()
+        page.mouse.move(eb["x"] + eb["width"] - 30, eb["y"] + 8); page.mouse.move(eb["x"] + eb["width"] - 8, eb["y"] + 8); page.wait_for_timeout(200)
+        page.locator("#memoents > .ent").first.locator(".more").click(); page.wait_for_timeout(250)
+        page.click("#menu button:has-text('Delete')"); page.wait_for_timeout(200)
+    assert notes() == [] and cur()["memo"]["plan"] == []
+    page.click("#memoh"); page.wait_for_timeout(700)
+    # closed: only the handle, a line 24 above the panel's foot with the arrow under it
+    shut = memo()
     assert (shut["line"], shut["foot"]) == (768 - 24, 0), shut
     assert css(".memo-body", "visibility") == "hidden" and css(".memo-handle svg", "transform") == "none"
     # opening is a movement, not a jump: part-way through, the line is between the two places, and the two "Add" rows
@@ -551,6 +592,8 @@ with sync_playwright() as p:
     rows = p2.evaluate("[].map.call(document.querySelectorAll('#menu button')," + MID + ")")
     assert all(r == [0, 0, 0, True] for r in rows), rows
 
+    assert "open" in p2.get_attribute("#memo", "class") and p2.locator("#memoents > .ent").count() == 4, "a new visitor sees the sample's notes, open"
+    p2.click("#memoh"); p2.wait_for_timeout(700)
     # what answers to the pointer (2026-10-10). A frame goes one step darker, never to ink, and what is chosen already
     # does not answer; a pale ground comes up behind the two bare buttons; the arrows that open and close a panel move
     # 2 the way they point; a point of the map grows; "Add a day" answers along its whole row

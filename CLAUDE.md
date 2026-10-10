@@ -271,7 +271,14 @@ screen (Chewei's decision); they are listed, with sources and licences, in READM
 at the least: **keep that table in step with the files**, and put no picture into the sample whose licence does not
 allow it. A sample picture is a file's address in `img`, a dropped one is data (`loadImage`); both show the same way
 (the card's frame is filled, what sticks out is cut off, nothing is stretched). The sample is only made for someone
-who has nothing saved, so people who already changed theirs keep what they have.
+who has nothing saved, so people who already changed theirs keep what they have. It also comes with notes of its own,
+open (2026-10-10, Chewei's words and order): the note 雨備景點 : 富士山世界遺產中心, then three things to bring,
+毛帽 ( 需遮住耳朵 ) and 圍巾 ( 或防風頸套 ) ticked and 駕照日文譯本 not.
+
+The trip's notes are put in order by dragging, as the entries under a place are (2026-10-10; it had been left out):
+`drag.stop` is `MEMO` and `drag.id` null, the list is `#memoents` (it scrolls by itself, so the line that shows where
+the entry will land is drawn in it, and it is what scrolls at its edges). An entry stays among the notes: it cannot
+go into a day, nor one from a day come here, and one dragged past the list lands at its end, as under a place.
 
 Icons are drawn in a solid colour: a half-transparent one makes crossings darker (it showed in the extension's counts
 for a while, as it once did in the menu arrow). And the lines of an icon are one `<path>`, not several shapes laid over each

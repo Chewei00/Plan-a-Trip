@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=34';
-import {fetchRoute} from './geoapify.js?v=34';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=34';
-import {createMap} from './mapview.js?v=34';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=35';
+import {fetchRoute} from './geoapify.js?v=35';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=35';
+import {createMap} from './mapview.js?v=35';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -53,6 +53,12 @@ function sample(){
     newStop(inn,[{k:'c',text:'付了訂金，500 元，現場需再繳 1000 元',done:true,link:'',file:null}])]});
   d.days.push({id:uid(),stops:[newStop(park),newStop(iwa)]});
   d.legs[kubota+'>'+kma]='walk';d.legs[kma+'>'+udon]='walk';d.legs[udon+'>'+inn]='walk';
+  /* the trip's own notes, open, as Chewei wrote them (2026-10-10; the words, brackets and spaces are his) */
+  d.memo={open:true,plan:[
+    {k:'n',text:'雨備景點 : 富士山世界遺產中心'},
+    {k:'c',text:'毛帽 ( 需遮住耳朵 )',done:true,link:'',file:null},
+    {k:'c',text:'圍巾 ( 或防風頸套 )',done:true,link:'',file:null},
+    {k:'c',text:'駕照日文譯本',done:false,link:'',file:null}]};
   return d;
 }
 /* Everything saved is one object: {v:2, current: trip id, trips:[trip, ...]}. db is the trip being shown; the rest of
@@ -475,7 +481,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=34').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=35').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */
@@ -916,15 +922,19 @@ function clearDropUI(){
   var o=lpScroll.querySelectorAll('.day.over'),i;for(i=0;i<o.length;i++)o[i].classList.remove('over');
   if(dropline){dropline.remove();dropline=null;}
 }
+/* An entry of the trip's own notes is put in order the same way as one under a place (2026-10-10): it has no place
+   (drag.id is null) and its stop is MEMO; its list is #memoents, which scrolls by itself, so the line that shows
+   where it will land is drawn there. It stays among the notes: it cannot go into a day, nor one from a day here. */
+function entsBox(){return drag.stop===MEMO?memoEnts:lpScroll.querySelector('.stop[data-stop="'+drag.stop+'"]');}
 function startDrag(){
-  var p=place(drag.id);if(!p){drag=null;return;}
+  var p=drag.stop===MEMO?null:place(drag.id);if(!p&&drag.stop!==MEMO){drag=null;return;}
   drag.on=true;closeMenu();
   if(!ui.leftOpen){ui.leftOpen=true;applyPanels();}
   document.body.classList.add('dragging');
   ghost=document.createElement('div');ghost.className='ghost';document.body.appendChild(ghost);
   if(drag.ent!=null){
     var en=entryOf(drag.stop+'|'+drag.ent);ghost.textContent=en?String(en.text).split('\n')[0]:'';
-    var se=lpScroll.querySelector('.stop[data-stop="'+drag.stop+'"] .ent[data-ent="'+drag.ent+'"]');if(se)se.classList.add('dragsrc');
+    var eb=entsBox(),se=eb&&eb.querySelector('.ent[data-ent="'+drag.ent+'"]');if(se)se.classList.add('dragsrc');
     return;
   }
   ghost.textContent=p.name;
@@ -936,20 +946,20 @@ function moveDrag(e){
   ghost.style.transform='translate('+(e.clientX+14)+'px,'+(e.clientY+12)+'px)';
   var el=document.elementFromPoint(e.clientX,e.clientY),dayEl=el&&el.closest&&el.closest('.day');
   clearDropUI();drag.target=null;
-  var sr=lpScroll.getBoundingClientRect();
+  var own=drag.stop===MEMO,sc=own?memoEnts:lpScroll,sr=sc.getBoundingClientRect(),edge=own?20:34;
   if(e.clientX>=sr.left&&e.clientX<=sr.right){
-    if(e.clientY<sr.top+34)lpScroll.scrollTop-=10;else if(e.clientY>sr.bottom-34)lpScroll.scrollTop+=10;
+    if(e.clientY<sr.top+edge)sc.scrollTop-=10;else if(e.clientY>sr.bottom-edge)sc.scrollTop+=10;
   }
   if(drag.ent!=null){
-    /* reorder a note or checklist item inside its own place */
-    var st=lpScroll.querySelector('.stop[data-stop="'+drag.stop+'"]');
+    /* reorder a note or checklist item inside its own place, or inside the trip's notes */
+    var st=entsBox();
     if(!st||!el||!el.closest('#lp'))return;
     var ents=st.querySelectorAll('.ent[data-ent]'),ei=ents.length,j,er,ey;
     for(j=0;j<ents.length;j++){er=ents[j].getBoundingClientRect();if(e.clientY<er.top+er.height/2){ei=j;break;}}
     if(!ents.length)return;
     ey=ei<ents.length?ents[ei].getBoundingClientRect().top-4:ents[ents.length-1].getBoundingClientRect().bottom+4;
     dropline=document.createElement('div');dropline.className='dropline sub';
-    dropline.style.top=(ey-sr.top+lpScroll.scrollTop)+'px';lpScroll.appendChild(dropline);
+    dropline.style.top=(ey-sr.top+sc.scrollTop)+'px';sc.appendChild(dropline);
     drag.target={ent:ei};
     return;
   }
@@ -988,6 +998,8 @@ function endDrag(apply){
 document.addEventListener('pointerdown',function(e){
   if(e.button!==0||ui.editing)return;
   if(e.target.closest('button,input,textarea,a,#menu'))return;
+  var own=e.target.closest('#memoents .ent[data-ent]');
+  if(own){drag={id:null,stop:MEMO,ent:+own.dataset.ent,x:e.clientX,y:e.clientY,on:false,target:null};return;}
   var el=e.target.closest('.card[data-place],.stop[data-place]');if(!el)return;
   var entEl=e.target.closest('.ent[data-ent]');
   drag={id:el.dataset.place,stop:el.dataset.stop||null,ent:entEl?+entEl.dataset.ent:null,x:e.clientX,y:e.clientY,on:false,target:null};
