@@ -509,6 +509,25 @@ with sync_playwright() as p:
     assert "show" in page.get_attribute("#toast", "class") and page.locator("#toast").inner_text() == "Added to Travel Collection"
     page.emulate_media(reduced_motion="no-preference")
 
+    # on a screen with two of its own pixels to one: the filter's drawings sit in the very middle of their rows, on
+    # the screen's pixels, and the words beside them are measured by their capitals, so their middles meet
+    fine = browser.new_context(viewport={"width": 1440, "height": 800}, device_scale_factor=2)
+    fine.route("https://maps.googleapis.com/maps/api/js*", lambda r: r.fulfill(status=200, content_type="text/javascript", body=MOCK))
+    fine.route("https://fonts.googleapis.com/**", lambda r: r.abort())
+    fine.route("https://api.geoapify.com/**", lambda r: r.abort())
+    p2 = fine.new_page()
+    p2.goto("http://127.0.0.1:8765/index.html")
+    p2.wait_for_timeout(700)
+    MID = ("(el=>{var i=el.querySelector('svg').getBoundingClientRect(),t=el.querySelector('span').getBoundingClientRect(),r=el.getBoundingClientRect(),"
+           "pb=parseFloat(getComputedStyle(el.querySelector('span')).paddingTop),m=r.top+r.height/2;"
+           "return [i.top*2%1,(i.top+i.height/2)-m,+((t.top+pb+(t.height-2*pb)/2)-m).toFixed(2),t.height-2*pb<parseFloat(getComputedStyle(el).fontSize)]})")
+    assert p2.evaluate(MID + "(document.getElementById('dayf'))") == [0, 0, 0, True], "the button"
+    p2.click("#dayf")
+    p2.wait_for_timeout(300)
+    rows = p2.evaluate("[].map.call(document.querySelectorAll('#menu button')," + MID + ")")
+    assert all(r == [0, 0, 0, True] for r in rows), rows
+    fine.close()
+
     assert not errors, errors
     browser.close()
     print("smoke test passed")

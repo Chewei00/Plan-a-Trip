@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=29';
-import {fetchRoute} from './geoapify.js?v=29';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=29';
-import {createMap} from './mapview.js?v=29';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=31';
+import {fetchRoute} from './geoapify.js?v=31';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=31';
+import {createMap} from './mapview.js?v=31';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -399,7 +399,7 @@ function renderMenu(){
      confirmation row of "Delete this trip", say) */
   var fresh=menuShown!==m.type+'|'+m.id;menuShown=m.type+'|'+m.id;
   clearTimeout(menuOut);menuOut=0;
-  menuEl.className='menu'+(m.type==='trips'?' trips':'');
+  menuEl.className='menu'+(m.type==='trips'?' trips':m.type==='dayf'?' dayfm':'');
   menuEl.innerHTML=h;menuEl.hidden=false;
   if(fresh){void menuEl.offsetWidth;menuEl.classList.add('pop');}
   var w=menuEl.offsetWidth,hh=menuEl.offsetHeight;
@@ -458,7 +458,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=29').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=31').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */

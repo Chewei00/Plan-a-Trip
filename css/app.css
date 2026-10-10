@@ -95,7 +95,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 /* in a narrow window the title and the categories keep their room and the filter's words are cut short */
 .tp-head h2,.chips{flex:none}
 .dayf{flex:0 1 auto;min-width:16px}
-.dayf span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dayf span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .more{width:22px;height:22px;flex:none;border:0;border-radius:50%;background:none;color:var(--line);display:grid;place-items:center;padding:0;opacity:0}
 .more:hover,.more.open{background:var(--fill-note);color:var(--ink)}
 .more:focus-visible,.more.open{opacity:1}
@@ -339,6 +339,15 @@ div.cnote{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;m
    little under the middle of their line (their capitals' middle is about .4 low in Noto Sans), so the drawing sits
    half a pixel low and meets them */
 .mico.m11{width:11px;height:11px;margin:1px 1px 0 0}
+/* On a screen with two or more of its own pixels to one of the page's (Chewei's), half a pixel is still a whole one
+   of the screen's, so it can be done exactly: the drawing goes in the very middle of its row, and the words beside it
+   are measured by their capitals (text-box), whose middle then is the row's middle too, whatever the word (All, Day 2,
+   Not planned). Chewei saw the one-pixel difference on "All", whose tall letters stand in the middle of the line. */
+@media (min-resolution:2dppx){
+  .mico.m11{margin:.5px 1px .5px 0}
+  .dayf span,.menu.dayfm button>span:not(.rck){text-box:trim-both cap alphabetic}
+  .dayf span{padding-block:4px;margin-block:-4px}   /* room for what hangs under the line, inside what cuts the words short */
+}
 /* the ways to move are the 16-grid drawings with air around them: shown at 14, as in the left panel, in the same
    12-wide place as the other menus' icons, so the words of every menu start in one column */
 .menu svg.i{width:14px;height:14px;margin:0 -1px}
