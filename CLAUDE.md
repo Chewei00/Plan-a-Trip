@@ -168,7 +168,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei cancelled that review and submitted 0.4.6 on 2026-10-10, which has the hop of the button, the four counts in the bar, and is on from install; the source is now 0.4.7, waiting for that review to pass: the one-row categories, the dark button going black under the pointer, the icons as single paths; an upload after that must be numbered higher still); the name SomeDay and the address /SomeDay/; the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei cancelled that review and submitted 0.4.6 on 2026-10-10, which has the hop of the button, the four counts in the bar, and is on from install; 0.4.6 passed and Chewei uploaded 0.4.7 the same day, which passed too and is what the store has: the one-row categories, the dark button going black under the pointer, the icons as single paths. But the file that went up was not the last of the five handed over that day, all named and numbered 0.4.7: the published one has no pale ground behind the trip's name. The source is 0.4.8, the same code as the last of those files with only the number changed, for Chewei to upload. **Every file handed over for the store gets a number of its own from now on**, so that what is published can be told from what is not); the name SomeDay and the address /SomeDay/; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
@@ -200,8 +200,8 @@ open (the `translate` property, so `transform` stays free for the notes' half tu
 arrows are one weight, 1.5, the tab's being 12 x 8 and the other 14 x 8). **A point of the map grows**
 (a numbered pin 1.1, a dot 1.3). The dark button goes from `ink` to black. What is chosen already does not answer
 (the open day, the category in force, a ticked box, the pin that is picked), nor do words that are edited by a
-double click. Colours change in .15s; a day's tag keeps its own .25s. In the extension (0.4.7, not uploaded yet) the
-categories and the dark button answer as on the site, and the menu rows as before; the trip's name in the bar gets
+double click. Colours change in .15s; a day's tag keeps its own .25s. In the extension (0.4.7, published) the
+categories and the dark button answer as on the site, and the menu rows as before; from 0.4.8 (not uploaded yet) the trip's name in the bar gets
 the pale ground behind the name and its arrow (26 high, 8 beyond them, also while its list is open), as the site's
 day filter does. Its arrow does not move: it turns when the list opens, and an arrow that moved the way it points
 would drift sideways while turning and then point down at a list that a press closes (Chewei chose the ground).
@@ -221,8 +221,7 @@ card have no numbers. `snapHead()`
 makes the title's width up to a whole pixel, so the piece stands on whole pixels. The track is 30 high in a 26 row
 and hangs 2 over it above and below; the cards were moved down 2 so that they are still 12 under it, and the panel is
 254 high, not 252 (above, the track is 14 from the panel's top where the pills were 16: Chewei left that). The extension's card has the same
-one-row track from 0.4.7 on (`extension/maps.js`, in the source since 2026-10-10 and **not uploaded yet**: Chewei
-uploads it once 0.4.6 has passed review). There no category is in force until Google's panel has said what kind of
+one-row track from 0.4.7 on (`extension/maps.js`; published on 2026-10-10). There no category is in force until Google's panel has said what kind of
 place it is. Meanwhile the piece stays where it was for the place before, and then does not move at all if the
 category is the same (Chewei: "steady, as if nothing changed") or slides to the new one; for that moment it lies under
 the last place's category, which Chewei accepted (a press on Add then saves what the name says, and the piece goes
