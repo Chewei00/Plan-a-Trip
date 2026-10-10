@@ -31,6 +31,7 @@
 | `favicon.svg`、`favicon-32.png`、`apple-touch-icon.png` | 網站圖示。SVG 是 Chewei 畫的原稿，另外兩張由它轉出（分頁用的 PNG、手機主畫面用的 180 × 180 方形） |
 | `js/vendor/qrcode.js` | 畫 QR code 用的外部程式（qrcode-generator 2.0.4，MIT 授權，原樣放進來），只有打開 `Send to phone` 時才載入 |
 | `m/index.html`、`m/sw.js` | 手機頁（`/SomeDay/m/`）：樣式、程式、圖示都在這一個檔案裡；`sw.js` 讓它沒有網路時也能開 |
+| `img/sample/` | 範例旅行卡片上的六張圖片，來源見下方「範例旅行的圖片」 |
 | `extension/` | Chrome 外掛：在 Google 地圖上把地點存進 SomeDay |
 | `tests/` | 不需要網路的測試：`smoke.py` 測網站，`extension.py` 載入真的外掛做端到端測試，`phone.py` 從電腦產生連結再用手機大小的瀏覽器打開 |
 
@@ -41,6 +42,19 @@
 - 樣式規範：Design System「旅行地圖」 https://claude.ai/artifact/AR8yKY8BZgEG1AsSUMd7q7
 - 規格與決策紀錄：Handoff 文件 https://claude.ai/code/artifact/8d07ba15-5e95-4e30-85b0-87c979ff000e
 - 原型 v1.0.8： https://claude.ai/artifact/2mZnkU57h2sTzAVuXTNPpe
+
+## 範例旅行的圖片
+
+範例旅行「富士山 ( 範例 )」裡六張卡片的圖片放在 `img/sample/`，都來自維基共享資源（Wikimedia Commons）。每一張都由 Chewei 裁切並縮小成 264 × 184；裁切後的檔案沿用原圖的授權。畫面上不顯示作者，來源和授權列在這裡。
+
+| 檔案 | 地點 | 原圖 | 作者 | 授權 |
+| --- | --- | --- | --- | --- |
+| `kubota.jpg` | 久保田一竹美術館 | [Itchiku Kubota Art Museum 2018c](https://commons.wikimedia.org/wiki/File:Itchiku_Kubota_Art_Museum_2018c.jpg) | 江戸村のとくぞう | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `kawaguchiko-museum.jpg` | 河口湖美術館 | [170504 Kawaguchiko Museum of Art … Japan02s3](https://commons.wikimedia.org/wiki/File:170504_Kawaguchiko_Museum_of_Art_Fujikawaguchiko_Yamanashi_pref_Japan02s3.jpg) | 663highland | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `chureito.jpg` | 新倉山淺間公園 | [Chureito Pagoda and Mount Fuji 20241022](https://commons.wikimedia.org/wiki/File:Chureito_Pagoda_and_Mount_Fuji_20241022.jpg) | Supanut Arunoprayote | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `fuji-suruga.jpg` | 富士箱根伊豆國立公園 | [Mt. Fuji from Suruga Bay in winter](https://commons.wikimedia.org/wiki/File:Mt._Fuji_from_Suruga_Bay_in_winter.jpg) | Shinichi Morita | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) |
+| `iwamotoyama.jpg` | 岩本山公園 | [Mt.Iwamoto](https://commons.wikimedia.org/wiki/File:Mt.Iwamoto.jpg) | Mocchy | 公有領域 |
+| `hoto.jpg` | 河口湖餺飥麵店 | [Houtou](https://commons.wikimedia.org/wiki/File:Houtou.jpg) | Jungle | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
 
 ## 地圖資料
 

@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=24';
-import {fetchRoute} from './geoapify.js?v=24';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=24';
-import {createMap} from './mapview.js?v=24';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=25';
+import {fetchRoute} from './geoapify.js?v=25';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=25';
+import {createMap} from './mapview.js?v=25';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -29,16 +29,18 @@ function place0(d,id){for(var i=0;i<d.places.length;i++)if(d.places[i].id===id)r
 function newTrip(title){return {id:uid(),title:title,places:[],days:[{id:uid(),stops:[]}],legs:{},memo:{open:false,plan:[]}};}
 function sample(){
   var d={id:uid(),title:'富士山 ( 範例 )',places:[],days:[],legs:{}};
-  function P(name,cat,lat,lng,note){var p=newPlace({name:name,cat:cat,lat:lat,lng:lng});p.note=note||'';d.places.push(p);return p.id;}
-  var kubota=P('久保田一竹美術館','sight',35.5252,138.7715,'非常喜歡');
+  /* a picture here is a file of the site (img/sample/, 264 x 184: twice a card), not the data a dropped picture
+     becomes; where each comes from is listed in README.md */
+  function P(name,cat,lat,lng,note,img){var p=newPlace({name:name,cat:cat,lat:lat,lng:lng});p.note=note||'';if(img)p.img='img/sample/'+img+'.jpg';d.places.push(p);return p.id;}
+  var kubota=P('久保田一竹美術館','sight',35.5252,138.7715,'非常喜歡','kubota');
   P('河口湖音樂森林美術館','sight',35.5222,138.7790);
-  var kma=P('河口湖美術館','sight',35.5212,138.7570);
-  P('新倉山淺間公園','sight',35.5010,138.8010);
+  var kma=P('河口湖美術館','sight',35.5212,138.7570,'','kawaguchiko-museum');
+  P('新倉山淺間公園','sight',35.5010,138.8010,'','chureito');
   P('山中湖花都公園','sight',35.4330,138.8560);
-  var park=P('富士箱根伊豆國立公園','sight',35.4350,138.7250);
-  var iwa=P('岩本山公園','sight',35.1830,138.6330);
+  var park=P('富士箱根伊豆國立公園','sight',35.4350,138.7250,'','fuji-suruga');
+  var iwa=P('岩本山公園','sight',35.1830,138.6330,'','iwamotoyama');
   var udon=P('富士吉田烏龍麵店','food',35.4900,138.8080);
-  P('河口湖餺飥麵店','food',35.4985,138.7720);
+  P('河口湖餺飥麵店','food',35.4985,138.7720,'','hoto');
   P('富士宮炒麵店','food',35.2230,138.6180);
   var inn=P('富士河口湖町','stay',35.5075,138.7690);
   P('河口湖站','transit',35.4983,138.7689);
@@ -431,7 +433,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=24').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=25').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */

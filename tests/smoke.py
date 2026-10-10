@@ -64,6 +64,12 @@ with sync_playwright() as p:
 
     assert page.locator(".day").count() == 2, "sample trip has two days"
     assert page.locator(".card").count() == 7, "seven sights in the default category"
+    # the sample's pictures are files of the site: five of the sights have one, shown whole in the card's frame, never stretched
+    pics = page.evaluate("[].map.call(document.querySelectorAll('.card'),c=>{var i=c.querySelector('.ph img');"
+                         "return i?[i.getAttribute('src'),i.complete&&i.naturalWidth,i.naturalHeight,getComputedStyle(i).objectFit]:null})")
+    assert [p[0] if p else None for p in pics] == ["img/sample/kubota.jpg", None, "img/sample/kawaguchiko-museum.jpg", "img/sample/chureito.jpg",
+                                                   None, "img/sample/fuji-suruga.jpg", "img/sample/iwamotoyama.jpg"], pics
+    assert all(p[1:] == [264, 184, "cover"] for p in pics if p), pics
     assert page.locator(".mk .daytag").count() == 2, "overview shows one tag per day"
     assert page.evaluate("__map.opts.isFractionalZoomEnabled && __map.opts.disableDefaultUI"), "map is created with the app's own controls"
     first = page.evaluate("__map.z")
@@ -131,7 +137,7 @@ with sync_playwright() as p:
     assert menu_of(".more[data-menu=check]") == ["Edit checklist", "Edit link", "Remove link", "Add a file", "Delete checklist"]
     assert menu_of(".more[data-menu=day]") == ["Delete day"]
     assert menu_of(".modebtn") == ["步行 *", "自行車", "汽車", "電車或公車", "船", "飛機"]
-    assert menu_of(".more[data-menu=card]") == ["景點 *", "飲食", "住宿", "交通", "Delete place"]
+    assert menu_of(".more[data-menu=card]") == ["景點 *", "飲食", "住宿", "交通", "Clear image", "Delete place"]
 
     # search: typing asks the place search once after a pause, in Traditional Chinese, biased to where the map is looking
     page.fill("#q", "ほうとう")

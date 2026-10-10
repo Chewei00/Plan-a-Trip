@@ -180,7 +180,15 @@ place). The one in force has the round tick at the right end, in every menu; the
 what they act on, without an article (`Edit checklist`, `Delete note`, `Delete day`, `Delete place`; `Add a …` keeps
 its "a"; `Delete this trip` keeps "this" because the menu lists several trips).
 
-The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
+The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it). Six of
+its cards have a picture (2026-10-10): files in `img/sample/`, 264 x 184 (twice a card), chosen and cropped by Chewei
+from Wikimedia Commons, all free to reuse. Chewei first used pictures found with a Google search; those were not put
+in, because the site and the repository are public (only the extension is unlisted). The authors are not shown on
+screen (Chewei's decision); they are listed, with sources and licences, in README.md, which is what the licences need
+at the least: **keep that table in step with the files**, and put no picture into the sample whose licence does not
+allow it. A sample picture is a file's address in `img`, a dropped one is data (`loadImage`); both show the same way
+(the card's frame is filled, what sticks out is cut off, nothing is stretched). The sample is only made for someone
+who has nothing saved, so people who already changed theirs keep what they have.
 
 Icons are drawn in a solid colour: a half-transparent one makes crossings darker (it showed in the extension's counts
 for a while, as it once did in the menu arrow). And the lines of an icon are one `<path>`, not several shapes laid over each
