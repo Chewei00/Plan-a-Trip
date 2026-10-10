@@ -201,8 +201,10 @@ arrows are one weight, 1.5, the tab's being 12 x 8 and the other 14 x 8). **A po
 (a numbered pin 1.1, a dot 1.3). The dark button goes from `ink` to black. What is chosen already does not answer
 (the open day, the category in force, a ticked box, the pin that is picked), nor do words that are edited by a
 double click. Colours change in .15s; a day's tag keeps its own .25s. In the extension (0.4.7, not uploaded yet) the
-categories and the dark button answer as on the site, and the menu rows as before; the trip's name in the bar does not
-answer yet (not discussed).
+categories and the dark button answer as on the site, and the menu rows as before; the trip's name in the bar gets
+the pale ground behind the name and its arrow (26 high, 8 beyond them, also while its list is open), as the site's
+day filter does. Its arrow does not move: it turns when the list opens, and an arrow that moved the way it points
+would drift sideways while turning and then point down at a list that a press closes (Chewei chose the ground).
 
 The categories are one control (2026-10-10, Chewei's choice on https://claude.ai/artifact/Besq6xHvDp3Q4c5YtMzssa: four
 framed pills with a grey one "looked like a wireframe", a dark one was too heavy): a pale track (`fill-track`) of four

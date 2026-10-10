@@ -53,7 +53,13 @@
     'svg{display:block;flex:none;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}',
     '.bar{position:relative;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}',
     '.trip{display:flex;align-items:center;gap:8px;width:100%;height:36px;padding:0 12px;border:0;border-radius:var(--r8);background:none;text-align:left;font:500 13px/20px var(--ui);letter-spacing:.04em}',
-    '.trip span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.trip .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    /* under the pointer, and while its list is open, a pale ground comes up behind the name and its arrow, as behind
+       the site's day filter (which also opens a list): 26 high, 8 beyond them on either side. The whole row is the
+       button; the ground is only behind what is written. It is the same whichever way the arrow points */
+    '.tn{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;height:26px}',
+    '.tn::before{content:"";position:absolute;z-index:-1;inset:0 -8px;border-radius:999px;transition:background-color .15s ease}',
+    '.trip:hover .tn::before,.trip[aria-expanded="true"] .tn::before{background:var(--fill-note)}',
     /* words beside an icon (.t) are centred on it by the words themselves, not by their line. A line keeps room under
        the letters for tails, and where the product's own font is not there (this is Google's page: the computer's own
        Chinese font is used) the characters sit lower in it still. So the box is cut down to capital height
@@ -134,7 +140,7 @@
     '.num.roll .was{animation:num-out .3s cubic-bezier(.3,0,.3,1) both}',
     '.num.roll .now{animation:num-in .3s cubic-bezier(.3,0,.3,1) both}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
-    '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr,.chips::before{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
+    '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr,.chips::before,.tn::before{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
   ].join('\n');
 
   /* ---- reading the place from the page address ----
@@ -323,7 +329,7 @@
       fresh = true;
     }
     var t = trip(), h = '';
-    h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span class="t">' + esc(t ? t.title : 'SomeDay') + '</span>' + CHEV + '</button>';
+    h += '<div class="bar' + (shownOpen ? ' open' : '') + '"><button class="trip" data-act="menu" aria-haspopup="menu" aria-expanded="' + menuOpen + '" title="要存到哪一趟旅行"><span class="tn"><span class="t">' + esc(t ? t.title : 'SomeDay') + '</span>' + CHEV + '</span></button>';
     /* pressed a moment ago: the number of the category the place went into rolls, as far along as it has got */
     var gone = cur && added && added.key === cur.key ? Date.now() - added.at : -1, going = gone >= 0 && gone < ADDING;
     h += '<div class="counts" role="group" aria-label="Travel Collection">' + CATS.map(function (c) {

@@ -108,7 +108,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     press_icon()
     maps.wait_for_timeout(600)
     assert kept("pat_on") is True and "turn off" in sw.evaluate("() => chrome.action.getTitle({})")
-    assert card.locator(".trip span").inner_text() == "東京 3 日"
+    assert card.locator(".trip .t").inner_text() == "東京 3 日"
     assert card.locator(".pend-name").inner_text() == "富士急樂園" and card.locator(".chip.on").inner_text() == "景點"
     assert card.locator(".xbtn").count() == 0 and card.locator(".dest").count() == 0, "no close button and no destination line on the card"
     # the categories are one row across the card, as on the site's save card: a pale track, a white piece under the one
@@ -212,7 +212,21 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     def turn():
         return maps.evaluate("getComputedStyle(document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.bar .chev')).transform")
     assert turn() == "none"
+    # the trip's name answers to the pointer: a pale ground behind the name and its arrow, 26 high and 8 beyond them
+    # on either side, anywhere on the row; it stays while the list is open
+    GROUND = """(() => { const r = document.getElementById('plan-a-trip-card').shadowRoot, n = r.querySelector('.tn'), b = getComputedStyle(n, '::before'), a = n.getBoundingClientRect(),
+        t = r.querySelector('.trip .t').getBoundingClientRect(), c = r.querySelector('.trip .chev').getBoundingClientRect(), bar = r.querySelector('.bar').getBoundingClientRect();
+        return [b.backgroundColor, a.height, Math.round(t.left - a.left), Math.round(a.right - c.right), parseFloat(b.left), a.left - 8 >= bar.left && a.right + 8 <= bar.right]; })()"""
+    maps.mouse.move(5, 5); maps.wait_for_timeout(250)
+    assert maps.evaluate(GROUND) == ["rgba(0, 0, 0, 0)", 26, 0, 0, -8, True], maps.evaluate(GROUND)
+    tb = card.locator(".trip").bounding_box()
+    maps.mouse.move(tb["x"] + tb["width"] - 6, tb["y"] + 4); maps.wait_for_timeout(300)
+    assert maps.evaluate(GROUND)[0] == "rgba(0, 0, 0, 0.04)", "anywhere on the row"
     card.locator(".trip").click()
+    maps.mouse.move(5, 5); maps.wait_for_timeout(300)
+    assert card.locator(".menu").count() == 1 and maps.evaluate(GROUND)[0] == "rgba(0, 0, 0, 0.04)", "and while the list is open"
+    if os.environ.get("SHOTS"):
+        maps.screenshot(path=os.environ["SHOTS"] + "/ext-bar.png", clip={"x": 1440 - 16 - 236 - 12, "y": 64 - 12, "width": 260, "height": 200})
     maps.wait_for_timeout(400)
     assert turn() == "matrix(0, 1, -1, 0, 0, 0)"
     assert card.locator(".menu button").all_inner_texts() == ["富士山 ( 範例 )", "東京 3 日", "Open SomeDay"]
@@ -233,7 +247,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert card.locator(".menu.out").count() == 1 and card.locator(".bar.open").count() == 0
     maps.wait_for_timeout(400)
     assert turn() == "none"
-    assert card.locator(".menu").count() == 0 and card.locator(".trip span").inner_text() == "富士山 ( 範例 )"
+    assert card.locator(".menu").count() == 0 and card.locator(".trip .t").inner_text() == "富士山 ( 範例 )"
     assert card.locator(".savebtn").inner_text() == "Add to Travel Collection", "not saved in this trip yet"
     # the counts are the chosen trip's, and changing trip does not roll them
     fuji = by_cat("富士山 ( 範例 )")
@@ -251,13 +265,13 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     # the choice holds when the site merely reloads, and follows the site when the trip on screen there changes
     app.reload()
     app.wait_for_timeout(1000)
-    assert card.locator(".trip span").inner_text() == "富士山 ( 範例 )"
+    assert card.locator(".trip .t").inner_text() == "富士山 ( 範例 )"
     app.hover(".title"); app.wait_for_timeout(600); app.click(".tripbtn"); app.wait_for_timeout(200)
     app.click("#menu button:has-text('富士山 ( 範例 )')"); app.wait_for_timeout(600)
     app.hover(".title"); app.wait_for_timeout(600); app.click(".tripbtn"); app.wait_for_timeout(200)
     app.click("#menu button:has-text('東京 3 日')"); app.wait_for_timeout(600)
     maps.wait_for_timeout(300)
-    assert card.locator(".trip span").inner_text() == "東京 3 日"
+    assert card.locator(".trip .t").inner_text() == "東京 3 日"
 
     # Google Maps moves between places without loading a page. Its panel is drawn a moment after the address changes:
     # the card shows the new name at once, in the same spot, and marks the category once, when the panel has caught up
@@ -373,7 +387,7 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     fresh = opened.value
     fresh.wait_for_timeout(1200)
     assert fresh.url.startswith("https://www.google.com/maps") and kept("pat_on") is True and "turn off" in sw.evaluate("() => chrome.action.getTitle({})")
-    assert fresh.locator("#plan-a-trip-card .trip span").inner_text() == "空的", "the bar is there, on the trip that was on screen"
+    assert fresh.locator("#plan-a-trip-card .trip .t").inner_text() == "空的", "the bar is there, on the trip that was on screen"
     bare = fresh.evaluate("""(() => { const r = document.getElementById('plan-a-trip-card').shadowRoot, p = [...r.querySelectorAll('.counts .pill')];
         return [p.map(x => x.textContent).join(' '), r.querySelectorAll('.pend').length]; })()""")
     assert bare == ["0 0 0 0", 0], ("with no place open the counts are there all the same", bare)
