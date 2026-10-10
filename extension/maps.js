@@ -42,7 +42,7 @@
   /* same values as css/app.css on the site */
   var CSS = [
     ':host{all:initial}',
-    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--text-3:rgba(0,0,0,.4);--line:#d2d2d2;--line-soft:#e5e5e5;--fill-note:rgba(0,0,0,.04);--fill-selected:#cdccca;--r6:6px;--r8:8px;',
+    '.wrap{--surface:#fefefe;--ink:#333;--on-ink:#fefefe;--text-2:rgba(0,0,0,.5);--text-3:rgba(0,0,0,.4);--line:#d2d2d2;--line-soft:#e5e5e5;--fill-note:rgba(0,0,0,.04);--fill-track:rgba(0,0,0,.05);--r6:6px;--r8:8px;',
     '  --float:0 4px 14px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.04);--ui:"Noto Sans","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;',
     '  position:fixed;top:64px;right:16px;z-index:2147483646;width:236px;display:flex;flex-direction:column;gap:8px;color:var(--ink);font:400 13px/20px var(--ui);-webkit-font-smoothing:antialiased;',
     '  opacity:0;transform:translateY(-6px);transition:opacity .25s ease,transform .25s ease}',
@@ -86,12 +86,21 @@
     '.pend{padding:10px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float);transition:opacity .2s ease}',
     '.pend.out{opacity:0}',
     '.pend-name{font:500 13px/20px var(--ui);letter-spacing:.04em;padding:2px 2px 0;overflow-wrap:anywhere}',
-    '.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px}',
-    '.chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;white-space:nowrap}',
-    '.chip.on{background:var(--fill-selected);border-color:var(--fill-selected)}',
+    /* the categories are one control, as on the site's own save card (0.4.7, 2026-10-10; see .chips in css/app.css):
+       a pale track across the card, four equal parts in one row, and a white piece under the one in force, which
+       slides to it. The piece is the track's ::before at --i. Until the page has said what kind of place this is no
+       category is in force (.none): the piece is not there, and comes in where it belongs. Everything is drawn afresh
+       each time, so the track is drawn as it was and then switched (see draw) */
+    '.chips{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;padding:2px;margin:12px 0 14px;border-radius:999px;background:var(--fill-track)}',
+    '.chips::before{content:"";position:absolute;left:2px;top:2px;bottom:2px;width:calc((100% - 10px)/4);border-radius:999px;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.14);transform:translateX(calc(var(--i,0)*(100% + 2px)));transition:transform .25s ease,opacity .2s ease}',
+    '.chips.none::before{opacity:0}',
+    '.chip{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;height:26px;padding:0;border:0;border-radius:999px;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;transition:background-color .15s ease}',
+    '.chip:not(.on):not([disabled]):hover{background:var(--fill-note)}',
     '.chip svg{width:12px;height:12px}',
     '.chip[disabled]{cursor:default}',
     '.savebtn{display:block;width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}',
+    '.savebtn:not([disabled]){transition:background-color .15s ease}',
+    '.savebtn:not([disabled]):hover{background:#000}',
     '.savebtn[disabled]{background:var(--line-soft);color:var(--text-3);cursor:default}',
     /* just pressed: the button turns into "Added" instead of being swapped for it. It hops (Chewei's idea, 2026-10-09;
        the numbers were chosen on a preview page): up 2px in the first quarter, fast then slowing, back down by 78%,
@@ -125,7 +134,7 @@
     '.num.roll .was{animation:num-out .3s cubic-bezier(.3,0,.3,1) both}',
     '.num.roll .now{animation:num-in .3s cubic-bezier(.3,0,.3,1) both}',
     '@supports (corner-shape:superellipse(1.4)){.wrap{--r6:7.5px;--r8:10px}.bar,.trip,.menu,.menu button,.pend,.savebtn{corner-shape:superellipse(1.4)}}',
-    '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
+    '@media (prefers-reduced-motion:reduce){.wrap,.chev,.pend,.arr,.chips::before{transition:none}.menu.pop{animation:none}.menu.out{display:none}}'
   ].join('\n');
 
   /* ---- reading the place from the page address ----
@@ -273,6 +282,10 @@
      a list that is closing is drawn once more, going out, and taken away when it has gone */
   var shownOpen = false, menuClosing = false, closeT = 0;
   var ADDING = 400, added = null, addedT = 0;
+  /* which category the card last showed in force, and for which place (-1: none), so that the white piece can be drawn
+     where it was and then sent to where it belongs */
+  var shownCat = { key: null, ix: -1 };
+  function catIx(id) { for (var i = 0; i < CATS.length; i++) if (CATS[i][0] === id) return i; return -1; }
   function calm() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function setMenu(open) {
     if (open === menuOpen) return;
@@ -320,7 +333,7 @@
       var saved = isSaved(cur);
       /* pressed a moment ago: draw the button on its way to "Added", as far along as it has got */
       h += '<div class="pend" role="group" aria-label="Add to Travel Collection"><div class="pend-name">' + esc(cur.name) + '</div>' +
-        '<div class="chips">' + CATS.map(function (c) {
+        '<div class="chips' + (shownCat.key === cur.key && shownCat.ix >= 0 ? '' : ' none') + '">' + CATS.map(function (c) {
           return '<button class="chip' + (cur.cat === c[0] ? ' on' : '') + '" data-act="cat" data-cat="' + c[0] + '" aria-pressed="' + (cur.cat === c[0]) + '"' + (saved ? ' disabled' : '') + '>' + glyph(c[0]) + '<span class="t">' + c[1] + '</span></button>';
         }).join('') + '</div>' +
         (saved && going
@@ -330,6 +343,15 @@
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
     level();
+    /* the white piece: put where it was for this place (set here, not in the markup: a page may forbid styles written
+       into tags), then switched. From nothing it comes in at its place; from another category it slides */
+    var row = cur && box.querySelector('.chips');
+    if (row) {
+      var ix = catIx(cur.cat), from = shownCat.key === cur.key ? shownCat.ix : -1;
+      row.style.setProperty('--i', String(from >= 0 ? from : Math.max(ix, 0)));
+      if (from !== ix) { void row.offsetWidth; row.classList.toggle('none', ix < 0); if (ix >= 0) row.style.setProperty('--i', String(ix)); }
+      shownCat = { key: cur.key, ix: ix };
+    }
     if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span, .num.roll span'), function (el) { el.style.animationDelay = -gone + 'ms'; });
     if (shownOpen !== menuOpen) { var bar = box.querySelector('.bar'); void bar.offsetWidth; bar.classList.toggle('open', menuOpen); shownOpen = menuOpen; }
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);

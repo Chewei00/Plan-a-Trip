@@ -165,7 +165,7 @@ Google Cloud account (Chewei's, project "My First Project"), set up 2026-10-08:
   usage of each item (10,000; request only Essentials fields from Place Details).
 - A one-off reminder is scheduled for 2026-12-21 to tell Chewei about the upgrade and the caps.
 
-Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei cancelled that review and submitted 0.4.6 on 2026-10-10, which has the hop of the button, the four counts in the bar, and is on from install; the next upload must be numbered higher than 0.4.6); the name SomeDay and the address /SomeDay/; the top panel is now called
+Also done (2026-10-09): several trips with a trip menu; trip notes at the foot of the left panel; the Chrome extension (description and toolbar hints in English, wording by Chewei; 0.4.3 was submitted to the store on 2026-10-09; Chewei cancelled that review and submitted 0.4.6 on 2026-10-10, which has the hop of the button, the four counts in the bar, and is on from install; the source is now 0.4.7, waiting for that review to pass: the one-row categories, the dark button going black under the pointer, the icons as single paths; an upload after that must be numbered higher still); the name SomeDay and the address /SomeDay/; the top panel is now called
 Travel Collection in the interface (the save button reads "Add to Travel Collection", then "Added"). The words
 stay "trip" for a trip (Chewei tried "plan" and went back).
 
@@ -197,8 +197,9 @@ open (the `translate` property, so `transform` stays free for the notes' half tu
 arrows are one weight, 1.5, the tab's being 12 x 8 and the other 14 x 8). **A point of the map grows**
 (a numbered pin 1.1, a dot 1.3). The dark button goes from `ink` to black. What is chosen already does not answer
 (the open day, the category in force, a ticked box, the pin that is picked), nor do words that are edited by a
-double click. Colours change in .15s; a day's tag keeps its own .25s. The extension has none of this yet (only its
-menu rows answer): it would go out with an upload above 0.4.6.
+double click. Colours change in .15s; a day's tag keeps its own .25s. In the extension (0.4.7, not uploaded yet) the
+categories and the dark button answer as on the site, and the menu rows as before; the trip's name in the bar does not
+answer yet (not discussed).
 
 The categories are one control (2026-10-10, Chewei's choice on https://claude.ai/artifact/Besq6xHvDp3Q4c5YtMzssa: four
 framed pills with a grey one "looked like a wireframe", a dark one was too heavy): a pale track (`fill-track`) of four
@@ -207,8 +208,12 @@ equal parts and a white piece under the one in force, which slides to it in .25s
 there when the buttons are drawn again. On the save card the same track runs the card's whole width in one row (the
 four pills took two; the card is some 30 shorter), and a press there does not draw the card again (`pend-cat` changes
 the classes in place), or the piece could not slide. In the Travel Collection each part is 64 wide and `snapHead()`
-makes the title's width up to a whole pixel, so the piece stands on whole pixels. The extension's card still has the
-framed pills: it changes with an upload above 0.4.6.
+makes the title's width up to a whole pixel, so the piece stands on whole pixels. The extension's card has the same
+one-row track from 0.4.7 on (`extension/maps.js`, in the source since 2026-10-10 and **not uploaded yet**: Chewei
+uploads it once 0.4.6 has passed review). There no category is in force until Google's panel has said what kind of
+place it is: the piece is not there (`.none`) and comes in at its place; and since the card is drawn afresh each
+time, the track is drawn as it was (`shownCat`) and then switched, with `--i` set from the script, not written into
+the tag (a page may forbid that).
 
 The left panel folds up and down in .28s, the time and ease of the Travel Collection (2026-10-10). That one slides
 away whole; this one keeps its title, so its foot rises instead. It is two things: `.lp-bg`, the white sheet with the

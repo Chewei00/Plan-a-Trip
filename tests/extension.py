@@ -111,6 +111,21 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert card.locator(".trip span").inner_text() == "東京 3 日"
     assert card.locator(".pend-name").inner_text() == "富士急樂園" and card.locator(".chip.on").inner_text() == "景點"
     assert card.locator(".xbtn").count() == 0 and card.locator(".dest").count() == 0, "no close button and no destination line on the card"
+    # the categories are one row across the card, as on the site's save card: a pale track, a white piece under the one
+    # in force, which slides when another is pressed; the card is no wider for it
+    ROW = """(() => { const c = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.chips'), k = [...c.children], b = getComputedStyle(c, '::before'), r = c.getBoundingClientRect(), on = c.querySelector('.on');
+        return { rows: new Set(k.map(e => Math.round(e.getBoundingClientRect().top))).size, w: Math.round(r.width), fits: k.every(e => e.scrollWidth <= e.clientWidth + 1), shown: b.opacity,
+                 off: on ? +(r.left + parseFloat(b.left) + new DOMMatrix(b.transform).m41 - on.getBoundingClientRect().left).toFixed(1) : null }; })()"""
+    assert maps.evaluate(ROW) == {"rows": 1, "w": 216, "fits": True, "shown": "1", "off": 0}, maps.evaluate(ROW)
+    card.locator(".chip[data-cat='food']").click()
+    maps.wait_for_timeout(100)
+    assert -52 < maps.evaluate(ROW)["off"] < -3, ("on its way", maps.evaluate(ROW))
+    maps.wait_for_timeout(350)
+    assert maps.evaluate(ROW)["off"] == 0 and card.locator(".chip.on").inner_text() == "飲食"
+    card.locator(".chip[data-cat='sight']").click()
+    maps.wait_for_timeout(400)
+    assert maps.evaluate(ROW)["off"] == 0 and card.locator(".chip.on").inner_text() == "景點"
+    maps.mouse.move(5, 5)
     # in the bar, under the trip's name: how many places the trip has in each category (none yet in the new trip), an
     # icon and a number each, all the same whatever the number and whatever the card says. Sizes from Chewei's drawing
     assert counts() == ["0 0 0 0", -1], counts()
@@ -245,9 +260,12 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     go(HOTEL)
     maps.wait_for_timeout(700)
     assert card.locator(".pend-name").inner_text() == "Hotel Mystays 富士山" and card.locator(".chip.on").count() == 0, "the panel still shows the place before"
+    assert maps.evaluate(ROW)["shown"] == "0", "no category in force yet: the white piece is not there"
     panel("Hotel Mystays 富士山", "飯店")
-    maps.wait_for_timeout(400)
+    maps.wait_for_timeout(600)
     assert card.locator(".chip.on").inner_text() == "住宿"
+    row = maps.evaluate(ROW)
+    assert row["shown"] == "1" and row["off"] == 0, ("it comes in under the one that is marked", row)
     # between two places the address names no place for a moment: the card does not go away and come back
     go("https://www.google.com/maps/@35.49,138.78,14z")
     maps.wait_for_timeout(700)
