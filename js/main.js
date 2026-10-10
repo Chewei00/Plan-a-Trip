@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=21';
-import {fetchRoute} from './geoapify.js?v=21';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=21';
-import {createMap} from './mapview.js?v=21';
+import {ICON,CATICON,catSvg} from './icons.js?v=22';
+import {fetchRoute} from './geoapify.js?v=22';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=22';
+import {createMap} from './mapview.js?v=22';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -358,10 +358,12 @@ function renderMenu(){
     var cur=db.legs[m.id]||'car';
     h=MODES.map(function(o){return mi('m-mode',m.id,ICON[o.id],o.name,cur===o.id,o.id);}).join('');
   }else if(m.type==='trips'){
-    /* every trip, the one being shown ticked; then a new one; then deleting this one, which asks once more */
+    /* every trip, the one being shown ticked; then a new one; then what is done with this one: sending it to a
+       phone, and deleting it, which asks once more */
     var short=db.title.length>12?db.title.slice(0,12)+'…':db.title;
     h=store.trips.map(function(t){return mi('m-trip',t.id,ICON.pin,esc(t.title),t.id===store.current&&'round');}).join('')+SEP+
       mi('m-trip-new','trips',ICON.plusSm,'Create a new trip')+SEP+
+      mi('m-trip-send','trips',ICON.phoneSm,'Send to phone')+
       (m.confirm?mi('m-trip-del2','trips',ICON.trashSm,'Delete “'+esc(short)+'”?'):mi('m-trip-del','trips',ICON.trashSm,'Delete this trip'));
   }
   /* it comes in when it opens, or when another one takes its place; not when the same one is drawn again (the
@@ -375,6 +377,92 @@ function renderMenu(){
   menuEl.style.left=clamp(m.x,8,window.innerWidth-w-8)+'px';
   menuEl.style.top=(m.y+hh>window.innerHeight-8?Math.max(8,m.top-hh-4):m.y)+'px';
   var btn=document.querySelector('.more[data-menu="'+m.type+'"][data-id="'+m.id+'"]');if(btn)btn.classList.add('open');
+}
+/* ================= send to phone ================= */
+/* "Send to phone" in the trip menu makes a link to the phone page (m/index.html) with this trip inside it, as it is
+   at that moment: the page needs nothing else, so there is no account and no server, and nothing leaves the browser
+   until the person sends the link somewhere. The price is that it is a copy: change the trip and the phone does not
+   know; send it again. The box shows the link as a QR code (the phone's camera reads it) and copies it.
+   What goes in is only what the phone shows: the left panel. Short names keep the link short; m/index.html reads
+   them back (trip() there) and the two must agree:
+     {v:1, id, t: title, at: when made (ms), d: [day: [stop, ...], ...], m: [entry, ...] (the trip's notes)}
+     stop  = {n: name, c: category number, g: Google's place ID | p: [lat, lng], e: [entry, ...], l: [mode number, minutes or 0]}
+     entry = "a note" | [words, 1 if ticked else 0, link, file name]
+   A place from the search goes by Google's ID, not its position: the ID may be kept for good, the position only for
+   30 days, and a link lives as long as someone keeps it. Attached files are not sent, only their names. */
+function snapshot(){
+  function ent(en){
+    if(en.k!=='c')return String(en.text||'');
+    var a=[String(en.text||''),en.done?1:0];
+    if(en.link||en.file)a.push(en.link||'');
+    if(en.file)a.push(en.file.name||'');
+    return a;
+  }
+  return {v:1,id:db.id,t:db.title,at:Date.now(),
+    d:db.days.map(function(d){var out=[];
+      d.stops.forEach(function(st,n){
+        var p=place(st.place);if(!p)return;
+        var o={n:p.name},c=CATS.map(function(x){return x.id;}).indexOf(p.cat),nx=d.stops[n+1]&&d.stops[n+1].place,np=nx&&place(nx),mins;
+        if(c>=0)o.c=c;
+        if(p.gid)o.g=p.gid;else o.p=[+p.lat.toFixed(5),+p.lng.toFixed(5)];
+        if(st.plan&&st.plan.length)o.e=st.plan.map(ent);
+        if(nx){mins=np?legMinutes(p,np):null;o.l=[MODES.indexOf(modeOf(legMode(st.place,nx))),mins==null?0:mins];}
+        out.push(o);
+      });
+      return out;}),
+    m:db.memo.plan.map(ent)};
+}
+/* the trip as text for an address: squeezed where the browser can ("1."), plain otherwise ("0.") */
+function b64url(bytes){var s='',i;for(i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function packTrip(obj){
+  var bytes=new TextEncoder().encode(JSON.stringify(obj)),plain=function(){return '0.'+b64url(bytes);};
+  if(!window.CompressionStream)return Promise.resolve(plain());
+  try{
+    return new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()
+      .then(function(b){return '1.'+b64url(new Uint8Array(b));},plain);
+  }catch(e){return Promise.resolve(plain());}
+}
+/* A QR code gets finer the more it holds; past this many characters a phone would struggle to read it off a screen,
+   and the box offers the link alone. */
+var QRMAX=1500,QRBOX=240;
+var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
+sendEl.querySelector('.xbtn').innerHTML=ICON.x;
+function loadQr(){
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=22').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  return qrLib;
+}
+/* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */
+function qrSvg(make,text){
+  var q=make(0,'L');q.addData(text,'Byte');q.make();
+  var n=q.getModuleCount(),dpr=Math.max(1,Math.round(window.devicePixelRatio||1)),px=Math.max(1,Math.floor(QRBOX*dpr/n))/dpr,d='',r,c,run;
+  for(r=0;r<n;r++)for(c=0;c<n;c++){
+    if(!q.isDark(r,c))continue;
+    run=1;while(c+run<n&&q.isDark(r,c+run))run++;
+    d+='M'+c+' '+r+'h'+run+'v1h-'+run+'z';c+=run-1;
+  }
+  return '<svg viewBox="0 0 '+n+' '+n+'" width="'+n*px+'" height="'+n*px+'" shape-rendering="crispEdges" role="img" aria-label="QR code"><path d="'+d+'"/></svg>';
+}
+function openSend(){
+  var tok=++sendTok;
+  packTrip(snapshot()).then(function(code){
+    if(tok!==sendTok)return;
+    sendUrl=new URL('m/',location.href.split(/[?#]/)[0]).href+'#'+code;
+    sendQr.innerHTML='';sendCopy.textContent='Copy link';clearTimeout(sendTm);
+    var tooLong=sendUrl.length>QRMAX,noQr=function(){if(tok===sendTok){sendQr.innerHTML='';sendHint.textContent='Copy the link and send it to your phone.';}};
+    sendHint.textContent=tooLong?'This trip is too long for a QR code. Copy the link and send it to your phone.':'Scan with your phone’s camera, or copy the link.';
+    sendEl.hidden=false;sendCopy.focus();
+    if(!tooLong)loadQr().then(function(make){if(tok===sendTok)sendQr.innerHTML=qrSvg(make,sendUrl);}).catch(noQr);
+  });
+}
+function closeSend(){if(sendEl.hidden)return;sendTok++;sendEl.hidden=true;sendQr.innerHTML='';clearTimeout(sendTm);}
+function copySend(){
+  var done=function(){sendCopy.textContent='Copied';clearTimeout(sendTm);sendTm=setTimeout(function(){sendCopy.textContent='Copy link';},2000);};
+  var old=function(){
+    var ta=document.createElement('textarea'),ok=false;ta.value=sendUrl;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;left:-999px;top:0';
+    document.body.appendChild(ta);ta.select();try{ok=document.execCommand('copy');}catch(e){}ta.remove();sendCopy.focus();
+    if(ok)done();else toast('沒辦法複製，請再試一次');
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(sendUrl).then(done,old);else old();
 }
 function entryOf(id){var a=id.split('|'),s=stopOf(a[0]);return s&&s.stop.plan?s.stop.plan[+a[1]]||null:null;}
 function closeMenu(){
@@ -909,6 +997,9 @@ var ACT={
   'm-mode':function(el){db.legs[el.dataset.id]=el.dataset.val;ui.menu=null;save();render();},
   'm-trip':function(el){if(el.dataset.id===store.current){closeMenu();return;}switchTrip(el.dataset.id);},
   'm-trip-new':function(){var t=newTrip('New trip');store.trips.push(t);switchTrip(t.id);startEdit('title','left','');},
+  'm-trip-send':function(){closeMenu();openSend();},
+  'send-close':function(){closeSend();},
+  'send-copy':function(){copySend();},
   'm-trip-del':function(){if(ui.menu){ui.menu.confirm=true;renderMenu();}},
   'm-trip-del2':function(){deleteTrip(store.current);},
   'chip':function(el){var c=el.dataset.cat;if(c===ui.cat)return;   /* one category at a time, never none */
@@ -951,8 +1042,9 @@ document.addEventListener('click',function(e){
   if(ui.menu&&!t.closest('#menu')&&!(a&&a.dataset.act==='menu'))closeMenu();
   if(ui.searchOpen&&!t.closest('.search')){ui.searchOpen=false;renderResults();}
   if(t===viewerEl){closeViewer();return;}
+  if(t===sendEl){closeSend();return;}
   if(a){if(ACT[a.dataset.act])ACT[a.dataset.act](a,e);return;}
-  if(t.closest('input,textarea,a,#viewer'))return;
+  if(t.closest('input,textarea,a,#viewer,#sendbox'))return;
   var ed=t.closest('[data-edit]'),pl=t.closest('.card[data-place],.stop[data-place]');
   if(ed){
     var where=ed.closest('.card')?'card':'left',pid=ed.closest('.memo-ents')?MEMO:pl?(where==='left'&&pl.dataset.stop)||pl.dataset.place:'',ei=ed.dataset.i||'',key=ed.dataset.edit+'|'+where+'|'+pid+'|'+ei,now=Date.now();
@@ -972,6 +1064,7 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&el===qEl){var b=resultsEl.querySelector('button');if(b)b.click();return;}
   if(e.key==='Escape'){
     if(!viewerEl.hidden){closeViewer();return;}
+    if(!sendEl.hidden){closeSend();return;}
     if(drag&&drag.on){finishPointer(false);return;}
     if(ui.menu){closeMenu();return;}
     if(ui.searchOpen){ui.searchOpen=false;renderResults();qEl.blur();return;}

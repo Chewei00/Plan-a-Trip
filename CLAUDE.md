@@ -100,13 +100,42 @@ explain in plain words, never ask them to run commands.
   hand-installed copy must be removed, or Google Maps shows two bars.
   It reads only the page being viewed, uses none of the Google quota, and is not an official Google integration.
   Chewei decided against copying Google's photos (not allowed beyond private use).
+- **The phone page** (`m/index.html`, live at `/SomeDay/m/`, 2026-10-10) shows one trip on a phone, to read and to
+  tick: the left panel's content only. `Send to phone` in the trip menu (`snapshot()`, `packTrip()`, `openSend()` in
+  `js/main.js`) makes a link with the trip inside it, after the `#`: a short-named JSON (its shape is written above
+  `snapshot()`; `trip()` in `m/index.html` reads it back, **the two must agree**), squeezed with the browser's own
+  deflate and written in base64url (`1.` squeezed, `0.` plain where the browser cannot squeeze). No account, no
+  server, nothing uploaded; the price is that the link is a copy of the trip at that moment (sending again makes a new
+  link; an old link goes on showing the old trip). The box shows the link as a QR code and copies it; over 1,500
+  characters the code would be too fine to read off a screen, and the box offers the link alone. The QR generator is
+  the one outside file in the repository, `js/vendor/qrcode.js` (qrcode-generator 2.0.4, MIT, unchanged), loaded only
+  when the box opens (Chewei agreed to it on 2026-10-10).
+  A place from the search is sent by its Google place ID, **without its position** (the ID may be kept for good, the
+  position only 30 days, and a link lives as long as someone keeps it); other places by their position. The arrow by
+  a place opens Google Maps with Google's documented address (`/maps/search/?api=1&query=…&query_place_id=…`, or
+  `query=lat,lng`): a place saved by the extension therefore opens as a pin at its position, not as the place's own
+  page (its `fid` has no documented address; open to discussion). Attached files are not sent, only their names.
+  The page is one file on purpose (styles, script, icons copied from `js/icons.js`), so the copy a phone keeps is
+  always whole: **a changed icon or token must be changed there too**. Everything in a link comes from outside: words
+  are escaped, links must be http(s), anything of the wrong shape is dropped. The phone keeps, per trip id
+  (`localStorage` `someday-phone:v1`): the link's text (so the bare address shows the trip opened last), the ticks
+  made there (an item is known by the place it is under, its words, and which one if the words repeat; with a newer
+  link the phone's own ticks stay for items that still exist, everything else is as the desktop had it), which days
+  are closed and whether the notes are open. `m/sw.js` (scope `/SomeDay/m/` only, the desktop is untouched) keeps the
+  page and the fonts it used and answers from the copy first, refreshing behind: the page opens with no network, and
+  **a new version of the page shows at the second opening after a push**. It has no `?v=` tag and needs none.
+  Not checked on a real iPhone from here: opening with no network, "Add to Home Screen" (which keeps its own storage
+  and remembers the link it was added with), and the foot of the screen under the browser's bars.
 - The repository is public: never commit secrets. Browser-side keys (Geoapify, Supabase anon key) are public by
   design and must be restricted to the site's domain in their own dashboards.
 
 ## Testing
 
 `tests/extension.py` loads the real extension into Chromium and stands in for the two sites, so the whole path
-(card on Google Maps → extension storage → place in the trip) is checked offline. Run both tests before pushing.
+(card on Google Maps → extension storage → place in the trip) is checked offline. `tests/phone.py` makes a link with
+`Send to phone` on the desktop and opens it in a phone-sized browser: what is shown, ticks, a newer link, unreadable
+links, words that try to be markup, and the network switched off (it reads the QR code back from a picture when
+OpenCV is there). Run all three tests before pushing.
 
 The cloud sandbox has no internet, so the real map cannot load there. `tests/smoke.py` swaps the Google Maps library
 for `tests/mock-googlemaps.js` (real Web-Mercator camera maths, no rendering), answers the Places and Geoapify calls
@@ -156,20 +185,21 @@ and `CATCHIP` in `js/icons.js`) and in the extension (`GLYPH` in `extension/maps
 files, which he asked for to use in his own mockups, not to redraw them.
 
 Next, in order: Supabase with Google sign-in for accounts and cloud data → confirmation before deleting a place.
-For phones Chewei is leaning towards a read-only itinerary produced from the desktop plan rather than a phone
-editing layout (see the Handoff document, 延後與未決事項).
+For phones Chewei chose a read-only itinerary produced from the desktop plan rather than a phone editing layout.
 
-The phone itinerary so far is a preview page only (https://claude.ai/artifact/7Pvae9G2PePVoC6Lr3VkDy, version 8 of
-2026-10-10, which Chewei accepted: "nothing more to change"), not in this repository; how it joins the site (what on the desktop makes the link, how the link gets to
-the phone, offline on an iPhone) is still to be discussed with Chewei before building. What is settled on the preview:
-only the left panel's content; days open at first; a day opens and closes as on the desktop (closed keeps the places'
-names, the rest folds away, the category and the arrow fade, a closed day is paler while another is open; classes are
-switched on the elements that are there, nothing is redrawn; the dot is level with the first line of the name,
-open or closed); it moves even when the phone asks for less motion (Chewei's wish; the desktop and the extension
-keep their own rule); the trip's notes are a sheet held at the foot of the screen, as on the desktop (a line and an
-arrow, drawn up in .45s, closed at first, rising at most to Day 1's label, then its entries scroll); checkbox to checkbox is 16, the same as checkbox to note (two checklist lines in a row
-sit directly together); nothing is written under the itinerary (no "SomeDay" line); a ticked item is kept on the phone; an arrow by each
-place opens Google Maps; attached files are not carried (Chewei will put Google Drive links in the checklist instead);
-no cloud. Smooth corners there cannot use `corner-shape` (no iPhone browser has it, Chrome on iPhone included): the
-same curve (|x|^n + |y|^n = 1, n = 2^1.4, radius x 1.25) is drawn as an SVG path, behind each note (redrawn when
-its size changes) and as the checkbox's own drawing.
+The phone itinerary is live (2026-10-10, see "The phone page" above): `Send to phone` in the trip menu, and the page
+at `/SomeDay/m/`. Its look was settled on a preview page (https://claude.ai/artifact/7Pvae9G2PePVoC6Lr3VkDy, version 8,
+which Chewei accepted: "nothing more to change") and `m/index.html` is that page: only the left panel's content; days
+open at first; a day opens and closes as on the desktop (closed keeps the places' names, the rest folds away, the
+category and the arrow fade, a closed day is paler while another is open; classes are switched on the elements that
+are there, nothing is redrawn; the dot is level with the first line of the name, open or closed); it moves even when
+the phone asks for less motion (Chewei's wish; the desktop and the extension keep their own rule); the trip's notes
+are a sheet held at the foot of the screen, as on the desktop (a line and an arrow, drawn up in .45s, closed at first,
+rising at most to Day 1's label, then its entries scroll); checkbox to checkbox is 16, the same as checkbox to note;
+nothing is written under the itinerary; attached files are not carried (Chewei will put Google Drive links in the
+checklist instead); no cloud. Smooth corners there cannot use `corner-shape` (no iPhone browser has it, Chrome on
+iPhone included): the same curve (|x|^n + |y|^n = 1, n = 2^1.4, radius x 1.25) is drawn as an SVG path, behind each
+note (redrawn when its size changes) and as the checkbox's own drawing. The words in the box and the menu
+(`Send to phone`, `Scan with your phone’s camera, or copy the link.`, `Copy link` / `Copied`) and the phone page's
+messages when there is nothing to show are Claude's proposals, shown to Chewei for change. When the cloud comes
+(Supabase), the phone could follow the trip by itself instead of being sent a copy.

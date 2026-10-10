@@ -24,7 +24,7 @@
 /* Figma corner smoothing 60%: radius x 1.25 on a superellipse corner */
 @supports (corner-shape:superellipse(1.4)){
   :root{--r4:5px;--r6:7.5px;--r8:10px;--r16:20px}
-  .lp,.tp,.tabdown,.search input,.results,.results button,.day,.card,.card-empty,.ph,.collect,.nb,textarea.edit.nbedit,.menu,.menu button,.pend,.savebtn,.ctrl button,.nlabel,.flabel,.ghost,.narrow,.cbox,.modebtn,.ck .more,.vbox,.vbody img,.vbody canvas{corner-shape:superellipse(1.4)}
+  .lp,.tp,.tabdown,.search input,.results,.results button,.day,.card,.card-empty,.ph,.collect,.nb,textarea.edit.nbedit,.menu,.menu button,.pend,.savebtn,.ctrl button,.nlabel,.flabel,.ghost,.narrow,.cbox,.modebtn,.ck .more,.vbox,.sendbox,.vbody img,.vbody canvas{corner-shape:superellipse(1.4)}
 }
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -287,6 +287,17 @@ div.cnote{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;m
 .collect:hover .arr,.collect:focus-visible .arr{width:16.6px}
 .dragsrc{opacity:.32}
 .ghost{position:fixed;left:0;top:0;z-index:100;pointer-events:none;max-width:220px;padding:4px 10px;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- send to phone (not in the design file) ----------
+   A small box over the page, on the file viewer's backdrop: a QR code that holds the link, one line of words, and
+   the button that copies the link. The code is drawn a whole number of the screen's pixels to a square, so it is as
+   large as fits in 240 and never blurred. */
+.sendbox{width:296px;max-width:100%;background:var(--surface);border-radius:var(--r16);overflow:hidden}
+.sendin{display:flex;flex-direction:column;align-items:center;gap:14px;padding:6px 28px 28px}
+.sendqr{display:grid;place-items:center;width:240px;height:240px;color:var(--ink)}
+.sendqr:empty{display:none}
+.sendqr svg{display:block;fill:currentColor;stroke:none}
+.sendhint{margin:0;font:400 12px/18px var(--ui);letter-spacing:.04em;color:var(--text-2);text-align:center;text-wrap:balance}
 
 /* ---------- file viewer (not in the design file) ---------- */
 .viewer{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:32px;background:rgba(0,0,0,.4)}

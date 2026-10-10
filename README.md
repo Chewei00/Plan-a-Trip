@@ -14,6 +14,7 @@
 - 從搜尋存下來的地點會記住 Google 的地點編號；座標依 Google 的規定，每次開啟時把超過 25 天的重新取得一次。
 - 可以建立好幾趟旅行：把滑鼠移到旅行名稱上，左邊會出現箭頭，點了可以切換、新增、刪除。
 - 有一個 Chrome 外掛（`extension/`），可以在 Google 地圖網站上把地點直接存進目前的旅行。安裝方式見 `extension/README.md`。
+- 可以把一趟旅行傳到手機：旅行選單裡的 `Send to phone` 會產生一個連結（和 QR code），手機打開就是左側欄的行程，可以看、可以打勾，開過一次之後沒有網路也能開。行程整份包在連結裡，不經過任何伺服器；電腦上改了行程要重新傳一次。
 - 資料存在各自的瀏覽器裡，還沒有登入和雲端同步。
 
 ## 檔案
@@ -28,8 +29,10 @@
 | `js/google.js` | 載入 Google 地圖元件、地點搜尋。金鑰在這裡 |
 | `js/geoapify.js` | 路線。只有這個檔案會呼叫 Geoapify |
 | `favicon.svg`、`favicon-32.png`、`apple-touch-icon.png` | 網站圖示。SVG 是 Chewei 畫的原稿，另外兩張由它轉出（分頁用的 PNG、手機主畫面用的 180 × 180 方形） |
+| `js/vendor/qrcode.js` | 畫 QR code 用的外部程式（qrcode-generator 2.0.4，MIT 授權，原樣放進來），只有打開 `Send to phone` 時才載入 |
+| `m/index.html`、`m/sw.js` | 手機頁（`/SomeDay/m/`）：樣式、程式、圖示都在這一個檔案裡；`sw.js` 讓它沒有網路時也能開 |
 | `extension/` | Chrome 外掛：在 Google 地圖上把地點存進 SomeDay |
-| `tests/` | 不需要網路的測試：`smoke.py` 測網站，`extension.py` 載入真的外掛做端到端測試 |
+| `tests/` | 不需要網路的測試：`smoke.py` 測網站，`extension.py` 載入真的外掛做端到端測試，`phone.py` 從電腦產生連結再用手機大小的瀏覽器打開 |
 
 沒有建置步驟：檔案改了、推上 `main`，GitHub Pages 就會更新。
 

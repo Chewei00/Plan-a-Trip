@@ -294,8 +294,8 @@ with sync_playwright() as p:
     page.wait_for_timeout(400)
     assert css(".tripbtn svg", "transform") == "matrix(0, 1, -1, 0, 0, 0)", "a quarter turn"
     assert "pop" in page.get_attribute("#menu", "class") and css("#menu", "animation-name") == "menu-in", "the menu comes in"
-    assert page.locator("#menu button").all_inner_texts() == ["富士山 ( 範例 )", "Create a new trip", "Delete this trip"]
-    assert page.locator("#menu button > svg.mico").count() == 3 and page.locator("#menu button >> nth=0 >> .rck").count() == 1
+    assert page.locator("#menu button").all_inner_texts() == ["富士山 ( 範例 )", "Create a new trip", "Send to phone", "Delete this trip"]
+    assert page.locator("#menu button > svg.mico").count() == 4 and page.locator("#menu button >> nth=0 >> .rck").count() == 1
     assert css("#menu .sep", "background-color") == "rgb(229, 229, 229)" and css("#menu .rck", "border-radius") == "50%"
     # a new one starts empty, named New trip and ready to be renamed, and the map stays put
     moves = page.evaluate("__map.moves.length")
