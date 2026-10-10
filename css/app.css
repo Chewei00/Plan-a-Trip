@@ -8,7 +8,7 @@
   --canvas:#f1efe9; --surface:#fefefe; --ink:#333333; --on-ink:#fefefe;
   --text-2:rgba(0,0,0,.5); --text-3:rgba(0,0,0,.4); --text-ph:rgba(0,0,0,.15);
   --line:#d2d2d2; --line-soft:#e5e5e5; --line-strong:rgba(0,0,0,.4);
-  --fill-note:rgba(0,0,0,.04); --fill-note-solid:#f4f4f4; --fill-selected:#cdccca;
+  --fill-note:rgba(0,0,0,.04); --fill-note-solid:#f4f4f4; --fill-selected:#cdccca; --fill-track:rgba(0,0,0,.05);
   --cat-sight:#86d7bb; --cat-food:#e3be80; --cat-stay:#9dc7fe; --cat-transit:#deb2e9;
   --shadow-card:0 4px 14px rgba(0,0,0,.08); --shadow-card-active:0 8px 14px rgba(0,0,0,.1);
   --shadow-panel:4px 4px 12px rgba(0,0,0,.08);   /* the two panels: Figma drop shadow x 4, y 4, blur 12, 8% */
@@ -24,7 +24,7 @@
 /* Figma corner smoothing 60%: radius x 1.25 on a superellipse corner */
 @supports (corner-shape:superellipse(1.4)){
   :root{--r4:5px;--r6:7.5px;--r8:10px;--r16:20px}
-  .lp,.tp,.tabdown,.search input,.results,.results button,.day,.card,.card-empty,.ph,.collect,.nb,textarea.edit.nbedit,.menu,.menu button,.pend,.savebtn,.ctrl button,.nlabel,.flabel,.ghost,.narrow,.cbox,.modebtn,.ck .more,.vbox,.sendbox,.vbody img,.vbody canvas,.sidebtn::before{corner-shape:superellipse(1.4)}
+  .lp-bg,.tp,.tabdown,.search input,.results,.results button,.day,.card,.card-empty,.ph,.collect,.nb,textarea.edit.nbedit,.menu,.menu button,.pend,.savebtn,.ctrl button,.nlabel,.flabel,.ghost,.narrow,.cbox,.modebtn,.ck .more,.vbox,.sendbox,.vbody img,.vbody canvas,.sidebtn::before{corner-shape:superellipse(1.4)}
 }
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -62,9 +62,9 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .daytag{position:absolute;transform:translate(-50%,calc(-100% - 12px));height:23px;padding:0 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font:500 11px/16px var(--ui);white-space:nowrap}
 /* a frame under the pointer goes a step darker, to the colour the search box has while it is typed in; never all the
    way to ink (Chewei, 2026-10-10: "only a little darker, not suddenly very different"). What is chosen already does
-   not answer: the open day, the category in force, a ticked box */
-.daytag,.chip,.cbox,.search input{transition:border-color .15s ease}
-.daytag:hover,.chip:not(.on):hover,.day:not(.sel) .daypill:hover,.ck:not(.done) button.cbox:hover,.search input:hover{border-color:var(--line-strong)}
+   not answer: the open day, a ticked box */
+.daytag,.cbox,.search input{transition:border-color .15s ease}
+.daytag:hover,.day:not(.sel) .daypill:hover,.ck:not(.done) button.cbox:hover,.search input:hover{border-color:var(--line-strong)}
 .npin{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border:0;border-radius:50%;padding:0;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font:500 13px/20px var(--ui)}
 .npin.focus{box-shadow:0 0 0 3px var(--surface),0 0 0 4.5px var(--ink)}
 .nlabel{position:absolute;left:20px;bottom:12px;padding:6px 10px;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;pointer-events:none}
@@ -75,7 +75,9 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .pend-name{flex:1;font:500 13px/20px var(--ui);letter-spacing:.04em;padding:2px 0 0 2px}
 .xbtn{width:24px;height:24px;border:0;border-radius:50%;background:none;color:var(--text-2);display:grid;place-items:center;padding:0;flex:none}
 .xbtn:hover{background:var(--fill-note);color:var(--ink)}
-.pend .chips{margin:10px 0 12px;flex-wrap:wrap;gap:8px}
+/* on the save card the track runs the card's whole width, one row (four framed pills took two) */
+.pend .chips{grid-auto-columns:minmax(0,1fr);margin:12px 0 14px}
+.pend .chip{padding:0}
 .savebtn{width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}
 .savebtn:not([disabled]){transition:background-color .15s ease}
 .savebtn:not([disabled]):hover{background:#000}
@@ -95,9 +97,15 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .ctrl button:hover{color:#000}
 
 /* ---------- shared bits ---------- */
-.chips{display:flex;gap:11px}
-.chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
-.chip.on{background:var(--fill-selected);border-color:var(--fill-selected)}
+/* The categories are one control (2026-10-10; Chewei chose it over four framed pills with a grey one, which read as
+   a wireframe, and over a dark one, which was too heavy): a pale track of four equal parts, and a white piece lying
+   under the one in force. The piece is the track's own ::before, so it is still there when the buttons are drawn
+   again, and it slides to --i, the place of the one in force, in .25s. The parts are 64 wide so that the piece
+   stands on whole pixels. The track is 30 high in a 26 row and overhangs it by 2 above and below. */
+.chips{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(64px,1fr);gap:2px;padding:2px;margin:-2px 0;border-radius:999px;background:var(--fill-track)}
+.chips::before{content:"";position:absolute;left:2px;top:2px;bottom:2px;width:calc((100% - 10px)/4);border-radius:999px;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.14);transform:translateX(calc(var(--i,0)*(100% + 2px)));transition:transform .25s ease}
+.chip{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;height:26px;padding:0 10px;border:0;border-radius:999px;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap;transition:background-color .15s ease}
+.chip:not(.on):not([disabled]):hover{background:var(--fill-note)}
 .chip svg{display:block;flex:none;width:12px;height:12px}
 /* the day filter at the right end of the Travel Collection's head: a small filter mark, then the words of what is
    shown; no frame, and the same whether a filter is on or not (Chewei, 2026-10-10: "C without its outline") */
@@ -123,11 +131,19 @@ body.dragging .ckmove{transform:none!important}
 .edit::placeholder{color:var(--text-ph);opacity:1}
 
 /* ---------- left panel ---------- */
-.lp{position:absolute;left:var(--gap);top:var(--gap);bottom:var(--gap);width:var(--lw);display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r16);z-index:10;box-shadow:var(--shadow-panel)}
-.app.lc .lp{bottom:auto}
-.app.lc .lp .search,.app.lc .lp-scroll,.app.lc .memo{display:none}
+/* The panel is two things, so that it can fold up without anything in it moving or being squeezed (2026-10-10; the
+   Travel Collection slides away whole, but this one keeps its title). .lp-bg is the white sheet and its shadow: its
+   foot rises to 62 in .28s, the time and ease of the Travel Collection. .lp is everything on it, always full height,
+   cut off along a line of its own that rises to 50, between the title and the search box (the collapse button's
+   pale ground reaches 45, the search box starts at 57), so nothing shows under the title once it is shut, nor on
+   the way. What is cut off cannot be pressed either. When the fold is done the parts are taken out (.lcd, set by
+   applyPanels LPMS after .lc), as they always were. */
+.lp-bg{position:absolute;left:var(--gap);top:var(--gap);width:var(--lw);height:calc(100% - var(--gap)*2);background:var(--surface);border-radius:var(--r16);z-index:10;box-shadow:var(--shadow-panel);transition:height .28s ease}
+.app.lc .lp-bg{height:62px}
+.lp{position:absolute;left:var(--gap);top:var(--gap);bottom:var(--gap);width:var(--lw);display:flex;flex-direction:column;z-index:10;clip-path:inset(-40px -40px 0 -40px);transition:clip-path .28s ease}
+.app.lc .lp{clip-path:inset(-40px -40px calc(100% - 50px) -40px)}
+.app.lcd .lp .search,.app.lcd .lp-scroll,.app.lcd .memo{display:none}
 .lp-head{flex:none;padding:20px 20px 0}
-.app.lc .lp-head{padding-bottom:20px}
 .lp-top{display:flex;align-items:center;gap:12px;height:22px}
 #titlewrap{flex:1;min-width:0;display:flex}
 .title{margin:0;min-width:0;height:22px;font:400 18px/22px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
@@ -373,6 +389,12 @@ div.cnote{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;m
   .mico.m11{margin:.5px 1px .5px 0}
   .dayf span,.menu.dayfm button>span:not(.rck){text-box:trim-both cap alphabetic}
   .dayf span{padding-block:4px;margin-block:-4px}   /* room for what hangs under the line, inside what cuts the words short */
+  /* "Day 1" in its three pills (a day's tag, the tag on the map, the label on a card) stood .57 low, measured on
+     the live site, while the arrow beside it was in the middle: the same cure */
+  .daypill span,.daytag span,.badge span{text-box:trim-both cap alphabetic}
+  .daytag{display:flex;align-items:center}
+  .badge{display:flex;align-items:center;padding-block:0}
+  .badge span{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-block:4px;margin-block:-4px}
 }
 /* the ways to move are the 16-grid drawings with air around them: shown at 14, as in the left panel, in the same
    12-wide place as the other menus' icons, so the words of every menu start in one column */

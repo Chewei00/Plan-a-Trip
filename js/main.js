@@ -1,14 +1,15 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=32';
-import {fetchRoute} from './geoapify.js?v=32';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=32';
-import {createMap} from './mapview.js?v=32';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=33';
+import {fetchRoute} from './geoapify.js?v=33';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=33';
+import {createMap} from './mapview.js?v=33';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
 var CATS=[{id:'sight',name:'景點'},{id:'food',name:'飲食'},{id:'stay',name:'住宿'},{id:'transit',name:'交通'}];
 var MODES=[{id:'walk',name:'步行',road:true},{id:'bike',name:'自行車',road:true},{id:'car',name:'汽車',road:true},{id:'train',name:'電車或公車',road:false},{id:'boat',name:'船',road:false},{id:'plane',name:'飛機',road:false}];
+function catIx(id){for(var i=0;i<CATS.length;i++)if(CATS[i].id===id)return i;return 0;}
 function catDot(id){return CATICON[id]?'<span class="cat cat-'+id+'" role="img" aria-label="'+catName(id)+'" title="'+catName(id)+'">'+catSvg(id)+'</span>':'';}
 /* ================= helpers ================= */
 function uid(){return Math.random().toString(36).slice(2,10);}
@@ -209,7 +210,7 @@ function renderLeft(){
     /* drawn in the state last shown; syncOpen() then switches classes so the change animates */
     var sel=shownOpen.indexOf(d.id)>=0,dim=shownOpen.length&&!sel;
     h+='<section class="day'+(sel?' sel':'')+(dim?' dim':'')+'" data-day="'+d.id+'"><div class="day-head">'+
-      '<button class="daypill" data-act="day" data-day="'+d.id+'" aria-expanded="'+isOpen(d.id)+'">Day '+(i+1)+ICON.right+'</button>'+moreBtn('day',d.id,'Day '+(i+1)+' 的選單')+'</div><ol class="stops">';
+      '<button class="daypill" data-act="day" data-day="'+d.id+'" aria-expanded="'+isOpen(d.id)+'"><span>Day '+(i+1)+'</span>'+ICON.right+'</button>'+moreBtn('day',d.id,'Day '+(i+1)+' 的選單')+'</div><ol class="stops">';
     d.stops.forEach(function(st,n){
       var pid=st.place,sid=st.id,p=place(pid);if(!p)return;
       var nx=d.stops[n+1]&&d.stops[n+1].place;
@@ -284,7 +285,7 @@ function cardHTML(p){
   var ds=daysOf(p.id);
   return '<article class="card'+(shownFocus===p.id?' focus':'')+'" data-place="'+p.id+'">'+
     '<div class="ph'+(p.img?' has':'')+'">'+(p.img?'<img src="'+p.img+'" alt="" draggable="false">':'')+
-    (ds.length?'<span class="badge">Day '+ds.join(', ')+'</span>':'')+'</div>'+moreBtn('card',p.id,p.name+' 的選單')+
+    (ds.length?'<span class="badge"><span>Day '+ds.join(', ')+'</span></span>':'')+'</div>'+moreBtn('card',p.id,p.name+' 的選單')+
     (isEditing('name','card',p.id)
       ?'<input class="edit cname" value="'+esc(p.name)+'" maxlength="40" aria-label="地點名稱">'
       :'<div class="cname" data-edit="name" title="點兩下修改名稱">'+esc(p.name)+'</div>')+
@@ -307,10 +308,16 @@ function dayfLabel(){
   for(var i=0;i<db.days.length;i++)if(db.days[i].id===ui.dayf)return 'Day '+(i+1);
   return 'All';
 }
+/* The words "Travel Collection" are a fraction of a pixel wide, which would leave the categories' track, and the white
+   piece on it, standing between pixels: the gap after the words makes the width up to a whole number. */
+function snapHead(){var h=document.querySelector('.tp-head h2');if(!h)return;var w=h.getBoundingClientRect().width;h.style.marginRight=(Math.ceil(w)-w)+'px';}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(snapHead);
 function renderTop(){
+  snapHead();
   if(ui.dayf!=='all'&&ui.dayf!=='none'&&!getDay(ui.dayf))ui.dayf='all';   /* its day was deleted */
   var fb=$('dayf'),fl=dayfLabel();
   fb.innerHTML=ICON.filterSm+'<span>'+fl+'</span>';fb.title='只顯示：'+fl;fb.setAttribute('aria-label','只顯示：'+fl);
+  chipsEl.style.setProperty('--i',catIx(ui.cat));   /* where the white piece lies: it slides there (.chips in app.css) */
   chipsEl.innerHTML=CATS.map(function(c){var on=ui.cat===c.id;
     return '<button class="chip'+(on?' on':'')+'" data-act="chip" data-cat="'+c.id+'" aria-pressed="'+on+'">'+catSvg(c.id,1)+c.name+'</button>';}).join('');
   var keep=cardsEl.scrollLeft;
@@ -331,8 +338,18 @@ function revealCard(pid){
   if(a<cardsEl.scrollLeft)cardsEl.scrollLeft=a;
   else if(b>cardsEl.scrollLeft+cardsEl.clientWidth)cardsEl.scrollLeft=b-cardsEl.clientWidth;
 }
+/* The left panel folds up in LPMS (.lp and .lp-bg in app.css); only then are its parts taken out (.lcd), and they are
+   put back before it unfolds. Shut, it is LPSHUT high: safeArea must not measure it, it may be on its way. */
+var LPMS=280,LPSHUT=62,lpTm=0;
 function applyPanels(){
-  app.classList.toggle('lc',!ui.leftOpen);app.classList.toggle('tc',!ui.topOpen);
+  var shut=!ui.leftOpen;
+  if(shut!==app.classList.contains('lc')){
+    clearTimeout(lpTm);
+    if(!shut)app.classList.remove('lcd');
+    else if(calm())app.classList.add('lcd');
+    else lpTm=setTimeout(function(){if(!ui.leftOpen)app.classList.add('lcd');},LPMS);
+  }
+  app.classList.toggle('lc',shut);app.classList.toggle('tc',!ui.topOpen);
   var lh=$('lh'),th=$('th'),tt=$('ttab');
   lh.innerHTML=ICON.side;
   lh.title=ui.leftOpen?'收起行程':'展開行程';lh.setAttribute('aria-label',lh.title);lh.setAttribute('aria-expanded',ui.leftOpen);
@@ -458,7 +475,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=32').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=33').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */
@@ -545,7 +562,7 @@ var mapView=null;
 /* the part of the map not covered by the two panels, in map-container pixels */
 function safeArea(){
   var W=mapEl.clientWidth,H=mapEl.clientHeight,gap=16;
-  var l=ui.leftOpen?lp.offsetWidth+gap*2+26:40,t=ui.topOpen?tp.offsetHeight+gap+34:(ui.leftOpen?56:lp.offsetHeight+gap+30);
+  var l=ui.leftOpen?lp.offsetWidth+gap*2+26:40,t=ui.topOpen?tp.offsetHeight+gap+34:(ui.leftOpen?56:LPSHUT+gap+30);
   if(l>W-160)l=40;if(t>H-160)t=40;
   return {l:l,t:t,r:W-60,b:H-64,W:W,H:H};
 }
@@ -608,7 +625,7 @@ function renderMap(){
     db.days.forEach(function(day,i){
       day.stops.forEach(function(st,n){var id=st.place,p=place(id);if(!p)return;
         mk(p.lat,p.lng,'<button class="dot" data-act="focus" data-place="'+id+'" title="'+esc(p.name)+'" aria-label="'+esc(p.name)+'"></button>'+
-          (n===0?'<button class="daytag" data-act="day" data-day="'+day.id+'">Day '+(i+1)+'</button>':''));});
+          (n===0?'<button class="daytag" data-act="day" data-day="'+day.id+'"><span>Day '+(i+1)+'</span></button>':''));});
     });
   }
   var fp=ui.focus&&place(ui.focus);
@@ -618,7 +635,7 @@ function renderMap(){
     /* pressed: the place is in, and the card stays for a moment to say so. Nothing on it can be pressed meanwhile */
     var off=c.adding?' disabled':'';
     mk(c.lat,c.lng,'<span class="fpin"></span><div class="pend" role="group" aria-label="儲存地點"><div class="pend-top"><span class="pend-name">'+esc(c.name)+'</span>'+
-      '<button class="xbtn" data-act="pend-close" aria-label="關閉"'+off+'>'+ICON.x+'</button></div><div class="chips">'+
+      '<button class="xbtn" data-act="pend-close" aria-label="關閉"'+off+'>'+ICON.x+'</button></div><div class="chips" style="--i:'+catIx(c.cat)+'">'+
       CATS.map(function(k){return '<button class="chip'+(ui.pending.cat===k.id?' on':'')+'" data-act="pend-cat" data-cat="'+k.id+'" aria-pressed="'+(ui.pending.cat===k.id)+'"'+off+'>'+catSvg(k.id,1)+k.name+'</button>';}).join('')+
       '</div>'+addBtn(c)+'</div>');}
   mapView.setRoutes(legs);
@@ -1049,7 +1066,10 @@ var ACT={
       ui.pending={name:c.name,lat:pt.lat,lng:pt.lng,cat:c.cat,gid:c.gid};ui.focus=null;render();
       if(mapView)mapView.showPoint([pt.lng,pt.lat],15,safeArea());
     },function(){if(seq===pickSeq)toast('取不到這個地點的位置，請稍後再試');});},
-  'pend-cat':function(el){if(ui.pending&&!ui.pending.adding){ui.pending.cat=el.dataset.cat;renderMap();}},
+  /* the card is not drawn again for this: its white piece has to be the same element to slide */
+  'pend-cat':function(el){if(!ui.pending||ui.pending.adding)return;
+    ui.pending.cat=el.dataset.cat;var row=el.parentNode;row.style.setProperty('--i',catIx(ui.pending.cat));
+    [].forEach.call(row.children,function(b){var on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});},
   'pend-close':function(){if(ui.pending&&ui.pending.adding)return;ui.pending=null;renderMap();},
   /* with motion, the button hops into "Added" and the card closes a moment later, unless something else has closed
      it by then; without (the system's "reduce motion"), the card closes at once and a line at the foot says so */

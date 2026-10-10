@@ -7,6 +7,7 @@ the place search and the routing service are answered with canned data, so this 
 import json
 import pathlib
 import time
+import os
 from playwright.sync_api import sync_playwright
 
 MOCK = (pathlib.Path(__file__).parent / "mock-googlemaps.js").read_text(encoding="utf-8")
@@ -201,6 +202,19 @@ with sync_playwright() as p:
     details = [u for u in calls if "/places/gid-hoto" in u]
     assert len(details) == 1 and asked[0]["sessionToken"] in details[0], "the pick closes the search session"
     assert page.locator(".pend .pend-name").inner_text() == "ほうとう不動"
+    assert page.locator(".pend .chip.on").inner_text() == "飲食"
+    # its categories are one row across the card, the white piece under the one in force; picking another slides the
+    # piece there without the card being drawn again
+    ROW = ("(()=>{var c=document.querySelector('.pend .chips'),k=[].slice.call(c.children),b=getComputedStyle(c,'::before'),on=c.querySelector('.on').getBoundingClientRect(),r=c.getBoundingClientRect();"
+           "return {rows:new Set(k.map(e=>Math.round(e.getBoundingClientRect().top))).size,w:Math.round(r.width),off:+(r.left+parseFloat(b.left)+new DOMMatrix(b.transform).m41-on.left).toFixed(1)}})()")
+    assert page.evaluate(ROW) == {"rows": 1, "w": 216, "off": 0}, page.evaluate(ROW)
+    page.evaluate("window.__pend=document.querySelector('.pend')")
+    page.click(".pend .chip[data-cat='stay']"); page.wait_for_timeout(400)
+    assert page.locator(".pend .chip.on").inner_text() == "住宿" and page.evaluate(ROW)["off"] == 0
+    assert page.evaluate("window.__pend===document.querySelector('.pend')"), "the same card"
+    if os.environ.get("SHOTS"):
+        page.locator(".pend").screenshot(path=os.environ["SHOTS"] + "/pend.png")
+    page.click(".pend .chip[data-cat='food']"); page.wait_for_timeout(400)
     assert page.locator(".pend .chip.on").inner_text() == "飲食"
     # (with the day filter on a day, to see that adding a place brings everything back: the new card must show)
     page.click("#dayf")
@@ -544,9 +558,8 @@ with sync_playwright() as p:
     assert p2.locator(".day.sel").count() == 1 and p2.locator(".day:not(.sel)").count() >= 1
     assert over(p2.locator(".day:not(.sel) .daypill").first) == STEP
     assert over(p2.locator(".day.sel .daypill")) == "rgb(51, 51, 51)", "the open day stays as it is"
-    assert over(p2.locator("#chips .chip:not(.on)").first) == STEP
-    on = p2.locator("#chips .chip.on"); was = on.evaluate("e=>getComputedStyle(e).borderTopColor")
-    assert over(on) == was, "the category in force stays as it is"
+    assert over(p2.locator("#chips .chip:not(.on)").first, "backgroundColor") == PALE
+    assert over(p2.locator("#chips .chip.on"), "backgroundColor") == "rgba(0, 0, 0, 0)", "the category in force stays as it is"
     assert over(p2.locator(".search input")) == STEP
     # a box to tick, a ticked one, and the one that only stands beside a line being written (not a button)
     p2.evaluate("document.body.insertAdjacentHTML('beforeend','<div id=\"hc\" style=\"position:fixed;left:700px;top:500px;z-index:999;display:flex;gap:30px\"><div class=\"ck\"><button class=\"cbox\"></button></div><div class=\"ck done\"><button class=\"cbox\"></button></div><div class=\"ck\"><span class=\"cbox\"></span></div></div>')")
@@ -601,6 +614,53 @@ with sync_playwright() as p:
             grew[sel] = p2.evaluate("(a=>getComputedStyle(document.elementFromPoint(a[0],a[1])).transform)", at)
             assert grew[sel] == "matrix(%s, 0, 0, %s, 0, 0)" % (by, by), grew
     assert len(grew) == 2, ("both kinds of point were tried", grew)
+
+    # the categories are one track with a white piece under the one in force; it slides when another is picked
+    rest()
+    PIECE = ("(sel=>{var t=document.querySelector(sel),b=getComputedStyle(t,'::before'),r=t.getBoundingClientRect(),o=t.querySelector('.chip.on').getBoundingClientRect(),"
+             "x=r.left+parseFloat(b.left)+new DOMMatrix(b.transform).m41;return [+(x-o.left).toFixed(2),+(parseFloat(b.width)-o.width).toFixed(2),o.width,o.left%1]})")
+    assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 64, 0], "under the one in force, on whole pixels"
+    p2.click("#chips .chip[data-cat='transit']"); p2.wait_for_timeout(110)
+    mid = p2.evaluate(PIECE + "('#chips')")
+    assert -198 < mid[0] < -5, ("on its way", mid)
+    p2.wait_for_timeout(350)
+    assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 64, 0] and p2.locator("#chips .chip.on").inner_text() == "交通"
+    p2.click("#chips .chip[data-cat='sight']"); p2.wait_for_timeout(400)
+
+    # "Day 1" stands in the middle of its pill by its capitals, in all three places (this is the 2x screen)
+    # (measured as for the filter: the words' box runs from the capitals' top to the line they stand on, and its
+    # middle is the pill's middle; with the site's own font that box is the capitals exactly, checked on the live site)
+    LOW = ("(el=>{var s=el.querySelector('span'),t=s.getBoundingClientRect(),r=el.getBoundingClientRect(),pb=parseFloat(getComputedStyle(s).paddingTop);"
+           "return [Math.abs((t.top+t.height/2)-(r.top+r.height/2)),t.height-2*pb<parseFloat(getComputedStyle(s).fontSize)]})")
+    if p2.evaluate("CSS.supports('text-box','trim-both cap alphabetic')"):
+        if p2.locator(".day.sel").count():
+            p2.locator(".day.sel .daypill").click(); p2.wait_for_timeout(500)
+        for sel in (".daypill", ".daytag", ".badge"):
+            assert p2.locator(sel).count() > 0, sel
+            off = p2.locator(sel).first.evaluate(LOW)
+            assert off[0] < 0.05 and off[1], (sel, off)
+
+    # the left panel folds up: its sheet's foot rises to 62 in .28s, nothing in it moves, nothing shows under the
+    # title on the way or after, and what is cut off cannot be pressed; then its parts are taken out
+    FOLD = ("(()=>{var bg=document.querySelector('.lp-bg').getBoundingClientRect(),lp=document.getElementById('lp').getBoundingClientRect(),"
+            "q=document.querySelector('.search').getBoundingClientRect(),c=getComputedStyle(document.getElementById('lp')).clipPath.replace('inset(-40px -40px ','').replace(/\\)$/,''),"
+            "k=c.match(/calc\\(([\\d.]+)% ([-+]) ([\\d.]+)px/),up=k?lp.height*k[1]/100+(k[2]==='-'?-1:1)*k[3]:parseFloat(c);"
+            "return {bg:Math.round(bg.height),lp:Math.round(lp.height),search:q.height?Math.round(q.top-lp.top):null,cut:Math.round(lp.height-up),lcd:document.getElementById('app').classList.contains('lcd')}})()")
+    full = p2.evaluate(FOLD)
+    assert full["bg"] == full["lp"] == 800 - 32 and full["search"] == 57 and full["cut"] == full["lp"], full
+    p2.click(".sidebtn"); p2.wait_for_timeout(120)
+    going = p2.evaluate(FOLD)
+    assert 62 < going["bg"] < full["bg"] and 50 < going["cut"] <= going["bg"] and going["lp"] == full["lp"] and going["search"] == 57 and not going["lcd"], going
+    p2.wait_for_timeout(400)
+    shut = p2.evaluate(FOLD)
+    assert shut["bg"] == 62 and shut["cut"] == 50 and shut["search"] is None and shut["lcd"], shut
+    assert p2.evaluate("(e=>!e.closest('#lp')&&!e.closest('.lp-bg'))(document.elementFromPoint(100,300))"), "the map is free under the folded panel"
+    assert p2.evaluate("document.elementFromPoint(100,40).closest('#lp')!==null"), "the title is still there"
+    p2.click(".sidebtn"); p2.wait_for_timeout(120)
+    back = p2.evaluate(FOLD)
+    assert 62 < back["bg"] < full["bg"] and back["search"] == 57 and not back["lcd"], back
+    p2.wait_for_timeout(400)
+    assert p2.evaluate(FOLD) == full
     fine.close()
 
     assert not errors, errors

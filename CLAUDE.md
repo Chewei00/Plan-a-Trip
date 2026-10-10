@@ -185,10 +185,10 @@ its "a"; `Delete this trip` keeps "this" because the menu lists several trips).
 What answers to the pointer (2026-10-10, settled on https://claude.ai/artifact/32SGdBAiHKaeudfQmTqXy5; all in
 `css/app.css`). Five ways, and a new control takes one of them rather than a sixth. **A frame goes one step darker**,
 to `line-strong`, the colour the search box has while it is typed in, and never to `ink` (Chewei: "only a little
-darker, not suddenly very different"): the search box, a closed day's tag, a category that is not the one in force, an
-unticked box, the Day tag on the map (which went to `ink` before). **A pale ground (`fill-note`) comes up behind** a
-bare button: the left panel's collapse button, the day filter (also while its menu is open), as behind "..." and the
-cross, and as the rows of a menu. **Words go darker**: `Add a day`, `Add a note`, `Add a checklist`, the map's
+darker, not suddenly very different"): the search box, a closed day's tag, an unticked box, the Day tag on the map (which
+went to `ink` before). **A pale ground (`fill-note`) comes up behind** a
+bare button: the left panel's collapse button, the day filter (also while its menu is open), a category that is not
+the one in force, as behind "..." and the cross, and as the rows of a menu. **Words go darker**: `Add a day`, `Add a note`, `Add a checklist`, the map's
 buttons; these three rows have no ground behind them (tried and turned down), and `Add a day` answers along its whole
 row and 7 above and below its words, as the other two do. **An arrow that opens or closes a panel moves 2 the way it
 points** while the pointer is anywhere on its button, in .45s, the time the empty Travel Collection's arrow takes to
@@ -199,6 +199,29 @@ arrows are one weight, 1.5, the tab's being 12 x 8 and the other 14 x 8). **A po
 (the open day, the category in force, a ticked box, the pin that is picked), nor do words that are edited by a
 double click. Colours change in .15s; a day's tag keeps its own .25s. The extension has none of this yet (only its
 menu rows answer): it would go out with an upload above 0.4.6.
+
+The categories are one control (2026-10-10, Chewei's choice on https://claude.ai/artifact/Besq6xHvDp3Q4c5YtMzssa: four
+framed pills with a grey one "looked like a wireframe", a dark one was too heavy): a pale track (`fill-track`) of four
+equal parts and a white piece under the one in force, which slides to it in .25s. The piece is the track's own
+`::before` and goes to `--i`, the place of the one in force, which `renderTop()` sets on the track; so it is still
+there when the buttons are drawn again. On the save card the same track runs the card's whole width in one row (the
+four pills took two; the card is some 30 shorter), and a press there does not draw the card again (`pend-cat` changes
+the classes in place), or the piece could not slide. In the Travel Collection each part is 64 wide and `snapHead()`
+makes the title's width up to a whole pixel, so the piece stands on whole pixels. The extension's card still has the
+framed pills: it changes with an upload above 0.4.6.
+
+The left panel folds up and down in .28s, the time and ease of the Travel Collection (2026-10-10). That one slides
+away whole; this one keeps its title, so its foot rises instead. It is two things: `.lp-bg`, the white sheet with the
+shadow, whose height goes to 62; and `.lp`, everything on it, always full height, cut off by `clip-path` along a line
+that goes to 50, between the title and the search box. Nothing in it moves or is squeezed, nothing shows under the
+title on the way or after (Chewei: "shut, there is nothing under it, as now"), and what is cut off cannot be pressed.
+When the fold is done `applyPanels()` adds `.lcd`, which takes the parts out as before; it takes it off before
+unfolding. `safeArea()` uses the number 62, not the panel's measured height, which may be on its way.
+
+"Day 1" stands in the middle of its pill by its capitals in all three places (a day's tag, the tag on the map, the
+label on a card; 2026-10-10): it was .57 low, measured on the live site, while the arrow beside it was in the middle.
+The cure is the day filter's: the words are in a `span` measured by `text-box`, on screens of two or more pixels to
+one; on others nothing changes (a whole pixel would overshoot). The phone page's day labels were not touched.
 
 The left panel's collapse button is Chewei's own drawing (2026-10-10): the panel upright with its head marked off,
 10 x 13, a 1.5 line, square ends, one path (`ICON.side`), the same whether the panel is open or closed. It can be
