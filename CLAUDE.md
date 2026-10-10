@@ -214,8 +214,11 @@ the classes in place), or the piece could not slide. In the Travel Collection ea
 makes the title's width up to a whole pixel, so the piece stands on whole pixels. The extension's card has the same
 one-row track from 0.4.7 on (`extension/maps.js`, in the source since 2026-10-10 and **not uploaded yet**: Chewei
 uploads it once 0.4.6 has passed review). There no category is in force until Google's panel has said what kind of
-place it is: the piece is not there (`.none`) and comes in at its place; and since the card is drawn afresh each
-time, the track is drawn as it was (`shownCat`) and then switched, with `--i` set from the script, not written into
+place it is. Meanwhile the piece stays where it was for the place before, and then does not move at all if the
+category is the same (Chewei: "steady, as if nothing changed") or slides to the new one; for that moment it lies under
+the last place's category, which Chewei accepted (a press on Add then saves what the name says, and the piece goes
+there). Only a card that has just come up has no piece (`.none`), and it comes in at its place. Since the card is drawn
+afresh each time, the track is drawn as it was (`shownIx`) and then switched, with `--i` set from the script, not written into
 the tag (a page may forbid that), and **before anything measures the page** (`level()` does): the first thing the
 browser sees of a new track must be the piece where it was, or it starts from the first category every time (it did,
 in the first 0.4.7 file Chewei tried; the tests now watch the piece go between two later categories).

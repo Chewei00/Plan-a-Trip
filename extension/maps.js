@@ -287,9 +287,13 @@
      a list that is closing is drawn once more, going out, and taken away when it has gone */
   var shownOpen = false, menuClosing = false, closeT = 0;
   var ADDING = 400, added = null, addedT = 0;
-  /* which category the card last showed in force, and for which place (-1: none), so that the white piece can be drawn
-     where it was and then sent to where it belongs */
-  var shownCat = { key: null, ix: -1 };
+  /* where the white piece was last drawn (-1: nowhere), so that it can be drawn there again and then sent to where it
+     belongs. It is kept from one place to the next for as long as the card stays up: while the page has not yet said
+     what kind of place the new one is, the piece stays where it was, and then either does not move at all (the same
+     category as the place before: Chewei, 2026-10-10, "steady, as if nothing changed") or slides to the new one. For
+     that moment it lies under the last place's category, not this one's; a press on Add then saves what the name
+     says, and the piece goes there. Only a card that has just come up has no piece, and it comes in */
+  var shownIx = -1;
   function catIx(id) { for (var i = 0; i < CATS.length; i++) if (CATS[i][0] === id) return i; return -1; }
   function calm() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function setMenu(open) {
@@ -300,7 +304,7 @@
     if (!open) closeT = setTimeout(function () { menuClosing = false; var m = box && box.querySelector('.menu'); if (m) m.remove(); }, 150);
   }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function hide() { if (host) { host.remove(); host = null; root = null; box = null; } clearTimeout(closeT); menuOpen = shownOpen = menuClosing = false; }
+  function hide() { if (host) { host.remove(); host = null; root = null; box = null; } clearTimeout(closeT); menuOpen = shownOpen = menuClosing = false; shownIx = -1; }
   function draw() {
     if (!state.on) { hide(); return; }
     var fresh = false;
@@ -338,7 +342,7 @@
       var saved = isSaved(cur);
       /* pressed a moment ago: draw the button on its way to "Added", as far along as it has got */
       h += '<div class="pend" role="group" aria-label="Add to Travel Collection"><div class="pend-name">' + esc(cur.name) + '</div>' +
-        '<div class="chips' + (shownCat.key === cur.key && shownCat.ix >= 0 ? '' : ' none') + '">' + CATS.map(function (c) {
+        '<div class="chips' + (shownIx >= 0 ? '' : ' none') + '">' + CATS.map(function (c) {
           return '<button class="chip' + (cur.cat === c[0] ? ' on' : '') + '" data-act="cat" data-cat="' + c[0] + '" aria-pressed="' + (cur.cat === c[0]) + '"' + (saved ? ' disabled' : '') + '>' + glyph(c[0]) + '<span class="t">' + c[1] + '</span></button>';
         }).join('') + '</div>' +
         (saved && going
@@ -347,17 +351,16 @@
     }
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
-    /* the white piece: put where it was for this place, then switched. From nothing it comes in at its place; from
-       another category it slides. Where it was is set here, not in the markup (a page may forbid styles written into
-       tags), and before anything measures the page (level does): what the browser first sees of the new track is the
-       piece where it was, or it would take the first category as the start and slide from there every time */
-    var row = cur && box.querySelector('.chips'), ix = cur ? catIx(cur.cat) : -1, from = cur && shownCat.key === cur.key ? shownCat.ix : -1;
-    if (row) row.style.setProperty('--i', String(from >= 0 ? from : Math.max(ix, 0)));
+    /* the white piece: put where it was, then switched (see shownIx). From nowhere it comes in at its place; from
+       another category it slides; with no category known yet it stays. Where it was is set here, not in the markup
+       (a page may forbid styles written into tags), and before anything measures the page (level does): what the
+       browser first sees of the new track is the piece where it was, or it would take the first category as the start
+       and slide from there every time */
+    var row = cur && box.querySelector('.chips'), ix = cur ? catIx(cur.cat) : -1, from = shownIx, to = ix >= 0 ? ix : from;
+    if (row) row.style.setProperty('--i', String(Math.max(from >= 0 ? from : to, 0)));
     level();
-    if (row) {
-      if (from !== ix) { void row.offsetWidth; row.classList.toggle('none', ix < 0); if (ix >= 0) row.style.setProperty('--i', String(ix)); }
-      shownCat = { key: cur.key, ix: ix };
-    }
+    if (row && to !== from) { void row.offsetWidth; row.classList.remove('none'); row.style.setProperty('--i', String(to)); }
+    shownIx = cur ? to : -1;   /* no card: the next one starts with no piece */
     if (cur && going) [].forEach.call(box.querySelectorAll('.savebtn.adding, .savebtn.adding span, .num.roll span'), function (el) { el.style.animationDelay = -gone + 'ms'; });
     if (shownOpen !== menuOpen) { var bar = box.querySelector('.bar'); void bar.offsetWidth; bar.classList.toggle('open', menuOpen); shownOpen = menuOpen; }
     if (fresh) setTimeout(function () { if (box) box.classList.add('in'); }, 30);

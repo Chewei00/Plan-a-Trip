@@ -268,15 +268,19 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     spot = card.locator(".pend").bounding_box()
     maps.evaluate("""() => { window.__gone = 0; const box = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.wrap');
         new MutationObserver(() => { if (!box.querySelector('.pend')) window.__gone++; }).observe(box, {childList: true, subtree: true}); }""")
+    maps.evaluate("""() => { window.__out = 0; window.__seen = new Set(); const box = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.wrap');
+        new MutationObserver(() => { const c = box.querySelector('.chips'); if (!c) return; if (c.classList.contains('none')) window.__out++; window.__seen.add(c.style.getPropertyValue('--i')); }).observe(box, {childList: true, subtree: true, attributes: true}); }""")
     go(HOTEL)
     maps.wait_for_timeout(700)
     assert card.locator(".pend-name").inner_text() == "Hotel Mystays 富士山" and card.locator(".chip.on").count() == 0, "the panel still shows the place before"
-    assert maps.evaluate(ROW)["shown"] == "0", "no category in force yet: the white piece is not there"
+    # no category is in force yet, and the white piece stays where it was for the place before (景點), steady; when
+    # the page says what this place is, it slides there. It never goes out and comes in again
+    assert maps.evaluate(ROW)["shown"] == "1" and maps.evaluate(AT) == 0, "the piece waits where it was"
     panel("Hotel Mystays 富士山", "飯店")
     maps.wait_for_timeout(600)
     assert card.locator(".chip.on").inner_text() == "住宿"
     row = maps.evaluate(ROW)
-    assert row["shown"] == "1" and row["off"] == 0, ("it comes in under the one that is marked", row)
+    assert row["shown"] == "1" and row["off"] == 0 and maps.evaluate(AT) == 107 and maps.evaluate("window.__out") == 0, ("it slides under the one that is marked", row)
     # half a second after a place is opened Google writes its address again, the last digits of its position changed
     # (seen on the real site). It is the same place: the card does not start over, its category does not go out and
     # come in again, and the position kept is the later one
@@ -285,6 +289,12 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     go(place_url("Hotel Mystays 富士山", "0x6019600000000002:0x2", 35.4901006, 138.7811991))
     maps.wait_for_timeout(1500)
     assert maps.evaluate("window.__blink") == 0 and card.locator(".chip.on").inner_text() == "住宿" and maps.evaluate(ROW)["shown"] == "1", "the same place, not a new one"
+    # another place of the same category: the piece does not move, go out or come in; it is as if nothing changed
+    maps.evaluate("() => { window.__out = 0; window.__seen = new Set(); }")
+    go(place_url("富士屋旅館", "0x6019600000000009:0x9", 35.5012, 138.7701)); panel("富士屋旅館", "日式旅館")
+    maps.wait_for_timeout(1500)
+    assert card.locator(".pend-name").inner_text() == "富士屋旅館" and card.locator(".chip.on").inner_text() == "住宿"
+    assert maps.evaluate("[window.__out, [...window.__seen].join()]") == [0, "2"] and maps.evaluate(AT) == 107, "steady"
     # between two places the address names no place for a moment: the card does not go away and come back
     go("https://www.google.com/maps/@35.49,138.78,14z")
     maps.wait_for_timeout(700)
