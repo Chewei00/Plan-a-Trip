@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=23';
-import {fetchRoute} from './geoapify.js?v=23';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=23';
-import {createMap} from './mapview.js?v=23';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=24';
+import {fetchRoute} from './geoapify.js?v=24';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=24';
+import {createMap} from './mapview.js?v=24';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -320,8 +320,9 @@ function applyPanels(){
 }
 
 /* ================= menu ================= */
+/* one row: a small icon, the words, and a round tick at the right end if it is the one in force */
 function mi(act,id,icon,label,checked,val){
-  return '<button role="menuitem" data-act="'+act+'" data-id="'+esc(id)+'"'+(val?' data-val="'+val+'"':'')+'>'+(icon||'')+'<span>'+label+'</span>'+(checked?(checked==='round'?'<span class="rck">'+ICON.tick+'</span>':'<span class="ck">'+ICON.check+'</span>'):'')+'</button>';
+  return '<button role="menuitem" data-act="'+act+'" data-id="'+esc(id)+'"'+(val?' data-val="'+val+'"':'')+'>'+(icon||'')+'<span>'+label+'</span>'+(checked?'<span class="rck">'+ICON.tick+'</span>':'')+'</button>';
 }
 var menuShown='',menuOut=0;
 /* closing: the menu goes the way it came, and is taken away when it has gone */
@@ -339,22 +340,23 @@ function renderMenu(){
   if(!m){hideMenu();return;}
   var h='',p;
   var SEP='<div class="sep"></div>';
-  if(m.type==='stop')h=mi('m-rename',m.id,'','Rename')+SEP+mi('m-addnote',m.id,'','Add a note')+mi('m-addcheck',m.id,'','Add a checklist')+SEP+mi('m-remove',m.id,'','Delete from day');
+  var PEN=ICON.penSm,PLUS=ICON.plusSm,OFF=ICON.xSm,BIN=ICON.trashSm;
+  if(m.type==='stop')h=mi('m-rename',m.id,PEN,'Rename')+SEP+mi('m-addnote',m.id,PLUS,'Add a note')+mi('m-addcheck',m.id,PLUS,'Add a checklist')+SEP+mi('m-remove',m.id,BIN,'Delete from day');
   else if(m.type==='check'){
     var en=entryOf(m.id);if(!en){ui.menu=null;menuEl.hidden=true;menuShown='';return;}
-    h=mi('m-ck-edit',m.id,'','Edit')+SEP+
-      (en.link?mi('m-ck-link',m.id,'','Edit link')+mi('m-ck-unlink',m.id,'','Remove link'):mi('m-ck-link',m.id,'','Add a link'))+
+    h=mi('m-ck-edit',m.id,PEN,'Edit checklist')+SEP+
+      (en.link?mi('m-ck-link',m.id,PEN,'Edit link')+mi('m-ck-unlink',m.id,OFF,'Remove link'):mi('m-ck-link',m.id,PLUS,'Add a link'))+
       (en.link||en.file?SEP:'')+
-      (en.file?mi('m-ck-file',m.id,'','Replace file')+mi('m-ck-unfile',m.id,'','Remove file'):mi('m-ck-file',m.id,'','Add a file'))+
-      SEP+mi('m-ck-del',m.id,'','Delete');
+      (en.file?mi('m-ck-file',m.id,PEN,'Replace file')+mi('m-ck-unfile',m.id,OFF,'Remove file'):mi('m-ck-file',m.id,PLUS,'Add a file'))+
+      SEP+mi('m-ck-del',m.id,BIN,'Delete checklist');
   }
-  else if(m.type==='note')h=mi('m-note-edit',m.id,'','Edit note')+'<div class="sep"></div>'+mi('m-note-del',m.id,'','Delete note');
-  else if(m.type==='day')h=mi('m-day-delete',m.id,'','Delete');
+  else if(m.type==='note')h=mi('m-note-edit',m.id,PEN,'Edit note')+SEP+mi('m-note-del',m.id,BIN,'Delete note');
+  else if(m.type==='day')h=mi('m-day-delete',m.id,BIN,'Delete day');
   else if(m.type==='card'){
     p=place(m.id);if(!p){ui.menu=null;menuEl.hidden=true;menuShown='';return;}
-    h=CATS.map(function(c){return mi('m-cat',m.id,'',c.name,p.cat===c.id,c.id);}).join('')+'<div class="sep"></div>'+
-      (p.img?mi('m-clear',m.id,'','Clear image')+'<div class="sep"></div>':'')+
-      mi('m-delete',m.id,'','Delete');
+    h=CATS.map(function(c){return mi('m-cat',m.id,catMico(c.id),c.name,p.cat===c.id,c.id);}).join('')+SEP+
+      (p.img?mi('m-clear',m.id,OFF,'Clear image')+SEP:'')+
+      mi('m-delete',m.id,BIN,'Delete place');
   }else if(m.type==='mode'){
     var cur=db.legs[m.id]||'car';
     h=MODES.map(function(o){return mi('m-mode',m.id,ICON[o.id],o.name,cur===o.id,o.id);}).join('');
@@ -362,7 +364,7 @@ function renderMenu(){
     /* every trip, the one being shown ticked; then a new one; then what is done with this one: sending it to a
        phone, and deleting it, which asks once more */
     var short=db.title.length>12?db.title.slice(0,12)+'…':db.title;
-    h=store.trips.map(function(t){return mi('m-trip',t.id,ICON.pin,esc(t.title),t.id===store.current&&'round');}).join('')+SEP+
+    h=store.trips.map(function(t){return mi('m-trip',t.id,ICON.pin,esc(t.title),t.id===store.current);}).join('')+SEP+
       mi('m-trip-new','trips',ICON.plusSm,'Create a new trip')+SEP+
       mi('m-trip-send','trips',ICON.phoneSm,'Send to phone')+
       (m.confirm?mi('m-trip-del2','trips',ICON.trashSm,'Delete “'+esc(short)+'”?'):mi('m-trip-del','trips',ICON.trashSm,'Delete this trip'));
@@ -429,7 +431,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=23').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=24').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */

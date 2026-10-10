@@ -316,16 +316,19 @@ div.cnote{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;m
 /* ---------- menu / toast (not in the design file) ---------- */
 .menu{position:fixed;z-index:60;min-width:150px;padding:6px;border-radius:var(--r8);background:var(--surface);box-shadow:var(--float)}
 .menu[hidden]{display:none}
-.menu button{display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:var(--r6);background:none;text-align:left;font:400 13px/20px var(--ui);color:var(--ink);white-space:nowrap}
+/* every row: a small icon, the words, and at the right end a round tick on the one in force. Icons and ticks line
+   up with the ends of the separators */
+.menu button{display:flex;align-items:center;gap:9px;width:100%;height:32px;padding:0 8px;border:0;border-radius:var(--r6);background:none;text-align:left;font:400 13px/20px var(--ui);color:var(--ink);white-space:nowrap}
 .menu button:hover,.menu button:focus-visible{background:var(--fill-note)}
-.menu .ck{margin-left:auto;padding-left:14px}
 .menu .sep{height:1px;margin:6px 8px;background:var(--line-soft)}
-/* the trip menu: a small icon in front of every row, the trip on screen marked with a round tick. Icons and tick
-   line up with the ends of the separators */
+/* the trip menu is wider, and a long name is cut short */
 .menu.trips{min-width:176px;max-width:var(--lw)}
-.menu.trips button{gap:9px;padding:0 8px}
 .menu.trips button>span:not(.rck){min-width:0;overflow:hidden;text-overflow:ellipsis}
 .mico{display:block;flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.mcat{stroke-width:1.1}
+/* the ways to move are the 16-grid drawings with air around them: shown at 14, as in the left panel, in the same
+   12-wide place as the other menus' icons, so the words of every menu start in one column */
+.menu svg.i{width:14px;height:14px;margin:0 -1px}
 .rck{flex:none;width:12px;height:12px;margin-left:auto;border-radius:50%;background:var(--ink);color:var(--on-ink)}
 .rck svg{display:block;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
 /* an arrow that grows: the shaft stretches with the width, the head keeps its size. Shaft and head overlap, so both

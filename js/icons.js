@@ -9,6 +9,8 @@ export var CATICON={
 };
 /* one glyph per category on an 18 grid; the chip uses the middle 12. The face needs an outline when it has no coloured disc behind it */
 export var CATCHIP={sight:'<circle cx="9" cy="9" r="5.45"/><circle cx="7.3" cy="7.9" r=".7" fill="currentColor" stroke="none"/><circle cx="10.7" cy="7.9" r=".7" fill="currentColor" stroke="none"/><path d="M6.9 10.3c.9 1.2 3.3 1.2 4.2 0"/>'};
+/* a category's small drawing as a menu icon (class "mico": 12 x 12) */
+export function catMico(id){return catSvg(id,1).replace('<svg ','<svg class="mico mcat" ');}
 export function catSvg(id,small){return '<svg viewBox="'+(small?'3 3 12 12':'0 0 18 18')+'" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+((small&&CATCHIP[id])||CATICON[id]||'')+'</svg>';}
 export var ICON={
   dots:svg('<circle cx="2.5" cy="8" r="1.25" '+F+'/><circle cx="8" cy="8" r="1.25" '+F+'/><circle cx="13.5" cy="8" r="1.25" '+F+'/>'),
@@ -19,7 +21,6 @@ export var ICON={
   remove:svg('<circle cx="8" cy="8" r="5.6"/><path d="M5.4 8h5.2"/>'),
   upload:svg('<path d="M8 10.4V3M5 5.8 8 3l3 2.8M3 10.6V13h10v-2.4"/>'),
   clear:svg('<rect x="2.5" y="3" width="11" height="10" rx="1.6"/><path d="M6 6.2l4 3.6M10 6.2 6 9.8"/>'),
-  check:svg('<path d="M3.4 8.6l3 3 6.2-7.2"/>'),
   plus:svg('<path d="M8 3v10M3 8h10"/>'),
   x:svg('<path d="M4 4l8 8M12 4l-8 8"/>'),
   left:svg('<path d="M10 3.5 5.5 8l4.5 4.5"/>'),
@@ -31,9 +32,13 @@ export var ICON={
   side:'<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M14.25 .75L15.12 .79L15.7 .92L16.17 1.14L16.56 1.44L16.86 1.83L17.08 2.3L17.21 2.88L17.25 3.75L17.25 8.25L17.21 9.12L17.08 9.7L16.86 10.17L16.56 10.56L16.17 10.86L15.7 11.08L15.12 11.21L14.25 11.25L3.75 11.25L2.88 11.21L2.3 11.08L1.83 10.86L1.44 10.56L1.14 10.17L.92 9.7L.79 9.12L.75 8.25L.75 3.75L.79 2.88L.92 2.3L1.14 1.83L1.44 1.44L1.83 1.14L2.3 .92L2.88 .79L3.75 .75ZM5.75 .75v10.5"/></svg>',
   chevUp:'<svg viewBox="0 0 14 8" aria-hidden="true"><path d="M1 7 7 1l6 6"/></svg>',
   tripChev:'<svg viewBox="0 0 8 13" aria-hidden="true"><path d="M1 1l6 5.5L1 12"/></svg>',
-  /* the trip menu's own small icons, on a 12 grid with a 1px line (class "mico") */
+  /* the menus' own small icons, on a 12 grid with a 1px line (class "mico"), one in front of every row: a pen
+     for what is edited or renamed (or replaced), a plus for what is added, a cross for what is taken off the thing
+     (its link, its file, its picture), a bin for the thing itself going */
   pin:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .6a3.9 3.9 0 0 1 3.9 3.9c0 2.3-2.6 5.4-3.9 6.9C4.7 9.9 2.1 6.8 2.1 4.5A3.9 3.9 0 0 1 6 .6z"/><circle cx="6" cy="4.5" r="1.55"/></svg>',
   plusSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2v8M2 6h8"/></svg>',
+  penSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.7 10.3l.6-2.5 5.6-5.6a1.35 1.35 0 0 1 1.9 1.9L4.2 9.7zM6.9 3.2l1.9 1.9"/></svg>',
+  xSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg>',
   phoneSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 .9h4a1.1 1.1 0 0 1 1.1 1.1v8A1.1 1.1 0 0 1 8 11.1H4A1.1 1.1 0 0 1 2.9 10V2A1.1 1.1 0 0 1 4 .9zM5.2 9.1h1.6"/></svg>',
   trashSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.9 3.25h8.2M2.8 3.25v6.4a.9.9 0 0 0 .9.9h4.6a.9.9 0 0 0 .9-.9v-6.4M4.2 3.25v-.9a.9.9 0 0 1 .9-.9h1.8a.9.9 0 0 1 .9.9v.9M5.1 5.55v2.75M6.9 5.55v2.75"/></svg>',
   /* an arrow whose shaft can be lengthened: the line stretches, the head keeps its size (class "arr"). Chewei's

@@ -173,6 +173,13 @@ name (Chewei chose "shown at the press" out of four timings on a preview page). 
 is no hop: the card closes at once and the line at the foot says "Added to Travel Collection". The hop's numbers live in
 two places, `css/app.css` and `extension/maps.js`: change both.
 
+Menus (2026-10-10, Chewei's rules): every row has a small icon in front (`mico`, 12 x 12, one colour): a pen for
+what is edited, renamed or replaced, a plus for what is added, a cross for what is taken off a thing (its link, its
+file, its picture), a bin for the thing itself going, a category's own drawing, a way to move (those at 14 in the same
+place). The one in force has the round tick at the right end, in every menu; there is no other tick. The words say
+what they act on, without an article (`Edit checklist`, `Delete note`, `Delete day`, `Delete place`; `Add a …` keeps
+its "a"; `Delete this trip` keeps "this" because the menu lists several trips).
+
 The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it).
 
 Icons are drawn in a solid colour: a half-transparent one makes crossings darker (it showed in the extension's counts

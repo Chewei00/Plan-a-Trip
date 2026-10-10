@@ -114,6 +114,25 @@ with sync_playwright() as p:
     page.wait_for_timeout(200)
     assert page.locator(".edit").count() == 0
 
+    # every menu: an icon in front of every row, the words say what they act on, and the one in force has a round tick
+    def menu_of(sel, n=0):
+        page.evaluate("([s,n])=>document.querySelectorAll(s)[n].click()", [sel, n])
+        page.wait_for_timeout(300)
+        rows = page.evaluate("[].map.call(document.querySelectorAll('#menu button'),b=>[b.innerText.trim(),"
+                             "b.firstElementChild.tagName.toLowerCase()==='svg'?Math.round(b.firstElementChild.getBoundingClientRect().left-b.getBoundingClientRect().left):-1,"
+                             "Math.round(b.querySelector('span').getBoundingClientRect().left-b.getBoundingClientRect().left),b.querySelectorAll('.rck').length])")
+        assert all(r[1] in (7, 8) and r[2] == 29 for r in rows), "an icon in the same place and the words in one column: %s" % rows
+        assert page.locator("#menu .ck").count() == 0, "one kind of tick only"
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(250)
+        return [r[0] + (" *" if r[3] else "") for r in rows]
+    assert menu_of(".more[data-menu=stop]", 1) == ["Rename", "Add a note", "Add a checklist", "Delete from day"]
+    assert menu_of(".more[data-menu=note]") == ["Edit note", "Delete note"]
+    assert menu_of(".more[data-menu=check]") == ["Edit checklist", "Edit link", "Remove link", "Add a file", "Delete checklist"]
+    assert menu_of(".more[data-menu=day]") == ["Delete day"]
+    assert menu_of(".modebtn") == ["步行 *", "自行車", "汽車", "電車或公車", "船", "飛機"]
+    assert menu_of(".more[data-menu=card]") == ["景點 *", "飲食", "住宿", "交通", "Delete place"]
+
     # search: typing asks the place search once after a pause, in Traditional Chinese, biased to where the map is looking
     page.fill("#q", "ほうとう")
     page.wait_for_timeout(700)
@@ -240,7 +259,7 @@ with sync_playwright() as p:
     row = page.locator("#memoents .ck").bounding_box()
     page.mouse.move(row["x"] + row["width"] - 6, row["y"] + 8); page.wait_for_timeout(600)
     page.click("#memoents .ck .more"); page.wait_for_timeout(300)
-    assert page.locator("#menu button").all_inner_texts() == ["Edit", "Add a link", "Add a file", "Delete"]
+    assert page.locator("#menu button").all_inner_texts() == ["Edit checklist", "Add a link", "Add a file", "Delete checklist"]
     page.click("#menu button:has-text('Add a link')"); page.wait_for_timeout(200)
     page.keyboard.type("visa.example.org/apply"); page.keyboard.press("Enter"); page.wait_for_timeout(300)
     assert cur()["memo"]["plan"][1]["link"] == "https://visa.example.org/apply" and page.locator("#memoents a.ckic").count() == 1
