@@ -139,6 +139,44 @@ with sync_playwright() as p:
     assert menu_of(".modebtn") == ["步行 *", "自行車", "汽車", "電車或公車", "船", "飛機"]
     assert menu_of(".more[data-menu=card]") == ["景點 *", "飲食", "住宿", "交通", "Clear image", "Delete place"]
 
+    # the day filter of the Travel Collection: all, one day, or in no day yet; together with the category
+    def names():
+        return page.locator(".card .cname").all_inner_texts()
+    def colour(sel):
+        return page.evaluate("s=>getComputedStyle(document.querySelector(s)).color", sel)
+    quiet = colour("#dayf")
+    assert page.inner_text("#dayf").strip() == "All" and page.locator("#dayf svg.mico").count() == 1 and len(names()) == 7
+    page.click("#dayf")
+    page.wait_for_timeout(300)
+    assert page.get_attribute("#dayf", "aria-expanded") == "true"
+    assert [b.strip() for b in page.locator("#menu button").all_inner_texts()] == ["All", "Day 1", "Day 2", "Not planned"]
+    assert page.locator("#menu button > svg.mico").count() == 4 and page.locator("#menu button >> nth=0 >> .rck").count() == 1
+    edge = page.evaluate("[document.getElementById('menu').getBoundingClientRect().right,document.getElementById('dayf').getBoundingClientRect().right]")
+    assert abs(edge[0] - edge[1]) < 1, "the menu hangs from the button's right end: %s" % edge
+    page.click("#menu button:has-text('Day 2')")
+    page.wait_for_timeout(300)
+    assert names() == ["富士箱根伊豆國立公園", "岩本山公園"] and page.inner_text("#dayf").strip() == "Day 2"
+    assert page.get_attribute("#dayf", "aria-expanded") == "false" and not page.locator("#menu").is_visible()
+    page.mouse.move(700, 600)
+    assert colour("#dayf") == quiet == "rgba(0, 0, 0, 0.5)", "the button looks the same with a filter on"
+    page.click(".chip >> nth=1")
+    page.wait_for_timeout(150)
+    assert names() == [] and page.locator(".card-empty").count() == 0 and page.inner_html("#cards") == "", "food on Day 2: nothing, left blank"
+    page.click(".chip >> nth=0")
+    page.click("#dayf")
+    page.wait_for_timeout(250)
+    assert page.locator("#menu button >> nth=2 >> .rck").count() == 1, "the day in force is ticked"
+    page.click("#menu button:has-text('Not planned')")
+    page.wait_for_timeout(300)
+    assert names() == ["河口湖音樂森林美術館", "新倉山淺間公園", "山中湖花都公園"] and page.inner_text("#dayf").strip() == "Not planned"
+    # picking a place whose card the filter hides brings everything back, so the card can be seen
+    page.click(".day.sel .stop:nth-child(1) .sname")
+    page.wait_for_timeout(300)
+    assert page.inner_text("#dayf").strip() == "All" and len(names()) == 7 and page.locator(".card.focus .cname").inner_text() == "久保田一竹美術館"
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(200)
+    assert page.locator(".card.focus").count() == 0
+
     # search: typing asks the place search once after a pause, in Traditional Chinese, biased to where the map is looking
     page.fill("#q", "ほうとう")
     page.wait_for_timeout(700)
@@ -159,10 +197,17 @@ with sync_playwright() as p:
     assert len(details) == 1 and asked[0]["sessionToken"] in details[0], "the pick closes the search session"
     assert page.locator(".pend .pend-name").inner_text() == "ほうとう不動"
     assert page.locator(".pend .chip.on").inner_text() == "飲食"
+    # (with the day filter on a day, to see that adding a place brings everything back: the new card must show)
+    page.click("#dayf")
+    page.wait_for_timeout(250)
+    page.click("#menu button:has-text('Day 1')")
+    page.wait_for_timeout(250)
+    assert page.inner_text("#dayf").strip() == "Day 1"
     # pressed, the place is saved and its card is there at once; meanwhile the button hops into "Added", and the save
     # card closes a moment later, leaving the place's pin and name
     page.click(".savebtn")
     page.wait_for_timeout(80)
+    assert page.inner_text("#dayf").strip() == "All" and page.locator(".card.focus .cname").inner_text() == "ほうとう不動"
     hop = page.evaluate("""(() => { const b = document.querySelector('.pend .savebtn'), s = getComputedStyle(b);
         return [b.className, b.disabled, [...b.querySelectorAll('span')].map(x => x.textContent), s.animationName, s.animationDuration,
                 s.transform !== 'none' && new DOMMatrix(s.transform).m42 < 0, document.querySelectorAll('.pend [data-act]:not([disabled])').length]; })()""")

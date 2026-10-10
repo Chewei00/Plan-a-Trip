@@ -88,6 +88,10 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
 .chip.on{background:var(--fill-selected);border-color:var(--fill-selected)}
 .chip svg{display:block;flex:none;width:12px;height:12px}
+/* the day filter at the right end of the Travel Collection's head: words and a mark, no frame, and the same whether
+   a filter is on or not (the words say which); darker only under the pointer and while its menu is open */
+.dayf{display:inline-flex;align-items:center;gap:6px;height:26px;margin-left:auto;padding:0 2px;border:0;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--text-2);white-space:nowrap}
+.dayf:hover,.dayf[aria-expanded="true"]{color:var(--ink)}
 .more{width:22px;height:22px;flex:none;border:0;border-radius:50%;background:none;color:var(--line);display:grid;place-items:center;padding:0;opacity:0}
 .more:hover,.more.open{background:var(--fill-note);color:var(--ink)}
 .more:focus-visible,.more.open{opacity:1}

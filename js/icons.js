@@ -39,6 +39,12 @@ export var ICON={
   plusSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2v8M2 6h8"/></svg>',
   penSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.7 10.3l.6-2.5 5.6-5.6a1.35 1.35 0 0 1 1.9 1.9L4.2 9.7zM6.9 3.2l1.9 1.9"/></svg>',
   xSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg>',
+  /* the Travel Collection's day filter: its own mark, and its menu's rows (everything, one day, in no day yet: a
+     dashed ring, like the dashed frame of a card without a picture) */
+  filterSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.8 3.2h8.4M3.4 6h5.2M5 8.8h2"/></svg>',
+  allSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 2.2h3v3h-3zM6.8 2.2h3v3h-3zM2.2 6.8h3v3h-3zM6.8 6.8h3v3h-3z"/></svg>',
+  daySm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.6 2.7h6.8a.9.9 0 0 1 .9.9v5.6a.9.9 0 0 1-.9.9H2.6a.9.9 0 0 1-.9-.9V3.6a.9.9 0 0 1 .9-.9zM1.7 5.2h8.6M4 1.5v2.2M8 1.5v2.2"/></svg>',
+  noneSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.2" stroke-dasharray="1.6 1.7"/></svg>',
   phoneSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 .9h4a1.1 1.1 0 0 1 1.1 1.1v8A1.1 1.1 0 0 1 8 11.1H4A1.1 1.1 0 0 1 2.9 10V2A1.1 1.1 0 0 1 4 .9zM5.2 9.1h1.6"/></svg>',
   trashSm:'<svg class="mico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.9 3.25h8.2M2.8 3.25v6.4a.9.9 0 0 0 .9.9h4.6a.9.9 0 0 0 .9-.9v-6.4M4.2 3.25v-.9a.9.9 0 0 1 .9-.9h1.8a.9.9 0 0 1 .9.9v.9M5.1 5.55v2.75M6.9 5.55v2.75"/></svg>',
   /* an arrow whose shaft can be lengthened: the line stretches, the head keeps its size (class "arr"). Chewei's

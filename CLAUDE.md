@@ -134,8 +134,10 @@ explain in plain words, never ask them to run commands.
 `tests/extension.py` loads the real extension into Chromium and stands in for the two sites, so the whole path
 (card on Google Maps → extension storage → place in the trip) is checked offline. `tests/phone.py` makes a link with
 `Send to phone` on the desktop and opens it in a phone-sized browser: what is shown, ticks, a newer link, unreadable
-links, words that try to be markup, and the network switched off (it reads the QR code back from a picture when
-OpenCV is there). Run all three tests before pushing.
+links, words that try to be markup, and the network switched off. It reads the QR code back from a picture when
+OpenCV is there and manages to: OpenCV's reader gives up on about a third of valid codes of this size, so the test
+only fails on a wrong reading, and says in its last line whether it read the code (the same codes read 40 out of 40
+with the browser's own `BarcodeDetector` on the live site, 2026-10-10). Run all three tests before pushing.
 
 The cloud sandbox has no internet, so the real map cannot load there. `tests/smoke.py` swaps the Google Maps library
 for `tests/mock-googlemaps.js` (real Web-Mercator camera maths, no rendering), answers the Places and Geoapify calls
@@ -179,6 +181,15 @@ file, its picture), a bin for the thing itself going, a category's own drawing, 
 place). The one in force has the round tick at the right end, in every menu; there is no other tick. The words say
 what they act on, without an article (`Edit checklist`, `Delete note`, `Delete day`, `Delete place`; `Add a …` keeps
 its "a"; `Delete this trip` keeps "this" because the menu lists several trips).
+
+The Travel Collection has a day filter (2026-10-10; `ui.dayf`, `dayfOk()` in `js/main.js`): at the right end of its
+head, the words of what is shown (`All`, `Day 2`, `Not planned`) and a small filter mark, with no frame, the same
+colour whether a filter is on or not (Chewei: look B with C's mark where B's arrow was, and no darker when on; chosen
+on https://claude.ai/artifact/HpkjDvGLstNtVeGFvTiNaT). Its menu hangs from its right end. One choice at a time; a card
+shows when it is of the category AND passes the filter; nothing left is left blank, with no words. It is not saved
+(All after a reload and in another trip). It gives way so a place can be seen: adding a place sets All, and picking
+a place whose card it hides sets All; a deleted day sets All. Planning a card while `Not planned` is on makes it leave
+the list at once, which is the point (the list empties as the trip gets planned).
 
 The sample trip new visitors see is called 富士山 ( 範例 ) (half-width brackets with spaces: Chewei's spelling, keep it). Six of
 its cards have a picture (2026-10-10): files in `img/sample/`, 264 x 184 (twice a card), chosen and cropped by Chewei

@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=25';
-import {fetchRoute} from './geoapify.js?v=25';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=25';
-import {createMap} from './mapview.js?v=25';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=26';
+import {fetchRoute} from './geoapify.js?v=26';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=26';
+import {createMap} from './mapview.js?v=26';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -157,7 +157,7 @@ function dropFilesOf(st){(st.plan||[]).forEach(function(en){if(en.file)fileDel(e
 function fmtMin(m){if(m<60)return m+'\u00a0m';var h=Math.floor(m/60),r=m%60;return h+'\u00a0h'+(r?'\u00a0\u00a0'+r+'\u00a0m':'');}
 
 /* open: the expanded days, oldest first; day: the one the map shows (the last one opened or clicked) */
-var ui={day:null,open:[],focus:null,cat:'sight',leftOpen:true,topOpen:true,menu:null,editing:null,q:'',searchOpen:false,pending:null,};
+var ui={day:null,open:[],focus:null,cat:'sight',dayf:'all',leftOpen:true,topOpen:true,menu:null,editing:null,q:'',searchOpen:false,pending:null,};
 var $=function(id){return document.getElementById(id);};
 var app=$('app'),mapEl=$('map'),lp=$('lp'),tp=$('tp'),
     titleWrap=$('titlewrap'),lpScroll=$('lpscroll'),memoEl=$('memo'),memoEnts=$('memoents'),chipsEl=$('chips'),cardsEl=$('cards'),menuEl=$('menu'),
@@ -293,14 +293,33 @@ function cardHTML(p){
       :'<div class="cnote'+(p.note?'':' empty')+'" data-edit="note" title="點兩下修改備註">'+(p.note?esc(p.note):'備註')+'</div>')+
     '</article>';
 }
+/* The day filter beside the categories: 'all', a day's id, or 'none' (in no day yet). A card shows when it is of the
+   category AND passes this. It is not saved: a reload, and another trip, start at All. It gives way so that a place
+   that is added or picked can always be seen (addShow, focusPlace); a card planned while "Not planned" is on simply
+   leaves the list. */
+function dayfOk(p){
+  if(ui.dayf==='all')return true;
+  if(ui.dayf==='none')return !db.days.some(function(d){return d.stops.some(function(x){return x.place===p.id;});});
+  var d=getDay(ui.dayf);return !!d&&d.stops.some(function(x){return x.place===p.id;});
+}
+function dayfLabel(){
+  if(ui.dayf==='none')return 'Not planned';
+  for(var i=0;i<db.days.length;i++)if(db.days[i].id===ui.dayf)return 'Day '+(i+1);
+  return 'All';
+}
 function renderTop(){
+  if(ui.dayf!=='all'&&ui.dayf!=='none'&&!getDay(ui.dayf))ui.dayf='all';   /* its day was deleted */
+  var fb=$('dayf'),fl=dayfLabel();
+  fb.innerHTML='<span>'+fl+'</span>'+ICON.filterSm;fb.title='只顯示：'+fl;fb.setAttribute('aria-label','只顯示：'+fl);
   chipsEl.innerHTML=CATS.map(function(c){var on=ui.cat===c.id;
     return '<button class="chip'+(on?' on':'')+'" data-act="chip" data-cat="'+c.id+'" aria-pressed="'+on+'">'+catSvg(c.id,1)+c.name+'</button>';}).join('');
   var keep=cardsEl.scrollLeft;
-  var list=db.places.filter(function(p){return p.cat===ui.cat;});
+  var list=db.places.filter(function(p){return p.cat===ui.cat&&dayfOk(p);});
   /* a trip with no places at all invites collecting some on Google Maps (see "browser extension"); a category with
-     none, in a trip that has places, just says so */
+     none, in a trip that has places, just says so; nothing left by the day filter is left blank (the filter's own
+     words say why) */
   cardsEl.innerHTML=list.length?list.map(cardHTML).join(''):
+    db.places.length&&ui.dayf!=='all'?'':
     !db.places.length?'<button class="collect" data-act="collect"><span class="collect-t">Your travel collection starts here</span>'+
       '<span class="collect-s">Add your favorite spots from Google Maps here, then start planning your trip'+ICON.arrow+'</span></button>':
     '<div class="card-empty" role="img" aria-label="這個分類還沒有地點"></div>';
@@ -339,6 +358,7 @@ function renderMenu(){
   var m=ui.menu,open=document.querySelectorAll('.more.open'),i,tz=titleWrap.querySelector('.tzone');
   for(i=0;i<open.length;i++)open[i].classList.remove('open');
   if(tz)tz.classList.toggle('on',!!m&&m.type==='trips');
+  $('dayf').setAttribute('aria-expanded',String(!!m&&m.type==='dayf'));
   if(!m){hideMenu();return;}
   var h='',p;
   var SEP='<div class="sep"></div>';
@@ -362,6 +382,10 @@ function renderMenu(){
   }else if(m.type==='mode'){
     var cur=db.legs[m.id]||'car';
     h=MODES.map(function(o){return mi('m-mode',m.id,ICON[o.id],o.name,cur===o.id,o.id);}).join('');
+  }else if(m.type==='dayf'){
+    h=mi('m-dayf','dayf',ICON.allSm,'All',ui.dayf==='all','all')+SEP+
+      db.days.map(function(d,i){return mi('m-dayf','dayf',ICON.daySm,'Day '+(i+1),ui.dayf===d.id,d.id);}).join('')+
+      (db.days.length?SEP:'')+mi('m-dayf','dayf',ICON.noneSm,'Not planned',ui.dayf==='none','none');
   }else if(m.type==='trips'){
     /* every trip, the one being shown ticked; then a new one; then what is done with this one: sending it to a
        phone, and deleting it, which asks once more */
@@ -379,7 +403,7 @@ function renderMenu(){
   menuEl.innerHTML=h;menuEl.hidden=false;
   if(fresh){void menuEl.offsetWidth;menuEl.classList.add('pop');}
   var w=menuEl.offsetWidth,hh=menuEl.offsetHeight;
-  menuEl.style.left=clamp(m.x,8,window.innerWidth-w-8)+'px';
+  menuEl.style.left=clamp(m.type==='dayf'?m.right-w:m.x,8,window.innerWidth-w-8)+'px';   /* the filter's menu hangs from its right end */
   menuEl.style.top=(m.y+hh>window.innerHeight-8?Math.max(8,m.top-hh-4):m.y)+'px';
   var btn=document.querySelector('.more[data-menu="'+m.type+'"][data-id="'+m.id+'"]');if(btn)btn.classList.add('open');
 }
@@ -433,7 +457,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=25').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=26').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */
@@ -558,7 +582,7 @@ function addBtn(c){
 }
 /* the place that was just added: its category on top, its card selected and in view */
 function addShow(p){
-  ui.cat=p.cat;ui.focus=p.id;render();
+  ui.cat=p.cat;ui.dayf='all';ui.focus=p.id;render();
   if(!ui.topOpen){ui.topOpen=true;applyPanels();}
   revealCard(p.id);
 }
@@ -678,7 +702,7 @@ function render(){
 function autosize(t){t.style.height='auto';t.style.height=(t.scrollHeight+3)+'px';}
 function focusPlace(id){
   var p=place(id);if(!p)return;
-  ui.focus=id;ui.pending=null;ui.cat=p.cat;render();ensureVisible(p.lat,p.lng);revealCard(id);
+  ui.focus=id;ui.pending=null;ui.cat=p.cat;if(!dayfOk(p))ui.dayf='all';render();ensureVisible(p.lat,p.lng);revealCard(id);
 }
 
 /* ================= trips ================= */
@@ -687,7 +711,7 @@ function focusPlace(id){
 function switchTrip(id){
   var t=tripOf(id);if(!t)return;
   store.current=id;db=t;
-  ui.day=null;ui.open=[];ui.focus=null;ui.pending=null;ui.menu=null;ui.editing=null;ui.cat='sight';
+  ui.day=null;ui.open=[];ui.focus=null;ui.pending=null;ui.menu=null;ui.editing=null;ui.cat='sight';ui.dayf='all';
   shownFocus=null;shownOpen=[];   /* so the new trip is drawn as it is, not animated from the old one's state */
   clearSearch();save();render();
   lpScroll.scrollTop=0;cardsEl.scrollLeft=0;
@@ -742,7 +766,7 @@ function takeInbox(items){
   if(!added)return;
   save();
   /* something being typed is left alone; the new place shows at the next redraw */
-  if(last&&!ui.editing){if(!ui.topOpen){ui.topOpen=true;applyPanels();}focusPlace(last.id);}
+  if(last&&!ui.editing){if(!ui.topOpen){ui.topOpen=true;applyPanels();}ui.dayf='all';focusPlace(last.id);}
   toast('從 Google 地圖加入了 '+added+' 個地點');
 }
 window.addEventListener('message',function(e){
@@ -972,7 +996,7 @@ var ACT={
   'menu':function(el,ev){
     var type=el.dataset.menu,id=el.dataset.id;
     if(ui.menu&&ui.menu.type===type&&ui.menu.id===id){closeMenu();return;}
-    var r=el.getBoundingClientRect();ui.menu={type:type,id:id,x:r.left,y:r.bottom+4,top:r.top,kb:!!(ev&&ev.detail===0)};renderMenu();
+    var r=el.getBoundingClientRect();ui.menu={type:type,id:id,x:r.left,right:r.right,y:r.bottom+4,top:r.top,kb:!!(ev&&ev.detail===0)};renderMenu();
   },
   'm-rename':function(el){startEdit('name','left',el.dataset.id);},
   'm-addnote':function(el){var id=el.dataset.id,so=stopOf(id),d=so&&so.day,changed=d&&ui.day!==d.id;if(d)openDay(d.id);startEdit('plan','left',id,'new');if(changed)fitCurrent();},
@@ -1007,6 +1031,7 @@ var ACT={
   'send-copy':function(){copySend();},
   'm-trip-del':function(){if(ui.menu){ui.menu.confirm=true;renderMenu();}},
   'm-trip-del2':function(){deleteTrip(store.current);},
+  'm-dayf':function(el){ui.dayf=el.dataset.val;cardsEl.scrollLeft=0;closeMenu();renderTop();},
   'chip':function(el){var c=el.dataset.cat;if(c===ui.cat)return;   /* one category at a time, never none */
     ui.cat=c;cardsEl.scrollLeft=0;renderTop();},
   'toggle-left':function(){ui.leftOpen=!ui.leftOpen;applyPanels();},
