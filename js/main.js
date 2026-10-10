@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg} from './icons.js?v=22';
-import {fetchRoute} from './geoapify.js?v=22';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=22';
-import {createMap} from './mapview.js?v=22';
+import {ICON,CATICON,catSvg} from './icons.js?v=23';
+import {fetchRoute} from './geoapify.js?v=23';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=23';
+import {createMap} from './mapview.js?v=23';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -266,7 +266,8 @@ function applyMemo(){
   var full=inn.offsetHeight;
   if(on){
     var adds=$('memoadds'),ci=getComputedStyle(inn);
-    full=Math.min(parseFloat(ci.paddingTop)+memoEnts.scrollHeight+parseFloat(getComputedStyle(adds).marginTop)+adds.offsetHeight+parseFloat(ci.paddingBottom),
+    var ce=getComputedStyle(memoEnts);   /* the entries' own room for an edit box (css) is taken back by their margins */
+    full=Math.min(parseFloat(ci.paddingTop)+memoEnts.scrollHeight+parseFloat(ce.marginTop)+parseFloat(ce.marginBottom)+parseFloat(getComputedStyle(adds).marginTop)+adds.offsetHeight+parseFloat(ci.paddingBottom),
       lp.clientHeight-129-hd.offsetHeight);
   }
   clearTimeout(memoT);
@@ -428,7 +429,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=22').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=23').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */

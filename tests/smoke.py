@@ -105,6 +105,15 @@ with sync_playwright() as p:
     assert page.evaluate("__map.lines.length") == 6, "three legs of the open day, each a casing and a line"
     assert page.locator(".day.sel .legtime").all_inner_texts() == ["20 m", "20 m", "20 m"]
 
+    # editing the last checklist line of a place: the whole edit box shows (its lower edge used to be cut away)
+    WHOLE = "(()=>{var t=document.querySelector('textarea.ckedit'),b=t.getBoundingClientRect(),c=t.closest('.entsin,.memo-ents').getBoundingClientRect();return b.height===26&&b.top>=c.top&&b.bottom<=c.bottom})()"
+    page.dblclick(".day.sel .stop:nth-child(2) .ck [data-edit]")
+    page.wait_for_timeout(300)
+    assert page.evaluate(WHOLE), "the edit box is not cut off"
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(200)
+    assert page.locator(".edit").count() == 0
+
     # search: typing asks the place search once after a pause, in Traditional Chinese, biased to where the map is looking
     page.fill("#q", "ほうとう")
     page.wait_for_timeout(700)
@@ -217,6 +226,7 @@ with sync_playwright() as p:
     assert page.evaluate("document.activeElement.className") == "edit nbedit"
     page.keyboard.type("行前準備事情事情事情事情事情事情事情事情事情事情"); page.keyboard.press("Enter"); page.wait_for_timeout(300)
     page.click(".memoadd >> nth=1"); page.wait_for_timeout(200)
+    assert page.evaluate(WHOLE), "nor is it in the trip's notes"
     page.keyboard.type("辦簽證"); page.keyboard.press("Enter"); page.wait_for_timeout(300)
     if page.locator(".edit").count():
         page.keyboard.press("Escape"); page.wait_for_timeout(200)

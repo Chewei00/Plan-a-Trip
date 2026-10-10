@@ -174,7 +174,9 @@ input.edit.title{height:30px;margin:-4px 0;overflow:visible;text-overflow:clip}
 .srow .edit{flex:1;height:26px;font:500 13px/20px var(--ui);letter-spacing:.04em}
 .ents{display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .25s ease,visibility 0s .25s}
 .day.sel .ents{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .25s ease}
-.entsin{min-height:0;overflow:hidden}
+/* what is cut off reaches 5 below the last entry: a checklist line being edited is a box 5 taller than its line on
+   each side (.ckedit), and as the last entry its lower edge used to be cut away. Nothing moves: the 5 is taken back. */
+.entsin{min-height:0;overflow:hidden;padding-bottom:5px;margin-bottom:-5px}
 .ent{position:relative;margin-top:8px}
 .nb{position:relative;padding:6px 10px;border-radius:var(--r6);background:var(--fill-note);font:400 12px/20px var(--ui);letter-spacing:.04em;color:var(--text-2);white-space:pre-wrap;overflow-wrap:anywhere}
 .nb .more{position:absolute;right:4px;top:5px}
@@ -211,7 +213,8 @@ textarea.edit.nbedit::placeholder{color:var(--text-ph);opacity:1}
 .memo.still,.memo.still *{transition:none!important}
 .memo-clip{min-height:0;overflow:hidden;display:flex;flex-direction:column}
 .memo-in{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;padding:6px 20px 14px}
-.memo-ents{flex:0 1 auto;min-height:0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+/* the same 5 of room, above and below, for the edit box of the first and the last entry (see .entsin) */
+.memo-ents{flex:0 1 auto;min-height:0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;padding-block:5px;margin-block:-5px}
 .memo-ents::-webkit-scrollbar{display:none}
 .memo-ents .ent:first-child{margin-top:0}
 .memo-adds{flex:none;margin-top:22px}
