@@ -277,6 +277,14 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert card.locator(".chip.on").inner_text() == "住宿"
     row = maps.evaluate(ROW)
     assert row["shown"] == "1" and row["off"] == 0, ("it comes in under the one that is marked", row)
+    # half a second after a place is opened Google writes its address again, the last digits of its position changed
+    # (seen on the real site). It is the same place: the card does not start over, its category does not go out and
+    # come in again, and the position kept is the later one
+    maps.evaluate("""() => { window.__blink = 0; const box = document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.wrap');
+        new MutationObserver(() => { const c = box.querySelector('.chips'); if (!c || c.classList.contains('none') || !c.querySelector('.on')) window.__blink++; }).observe(box, {childList: true, subtree: true, attributes: true}); }""")
+    go(place_url("Hotel Mystays 富士山", "0x6019600000000002:0x2", 35.4901006, 138.7811991))
+    maps.wait_for_timeout(1500)
+    assert maps.evaluate("window.__blink") == 0 and card.locator(".chip.on").inner_text() == "住宿" and maps.evaluate(ROW)["shown"] == "1", "the same place, not a new one"
     # between two places the address names no place for a moment: the card does not go away and come back
     go("https://www.google.com/maps/@35.49,138.78,14z")
     maps.wait_for_timeout(700)

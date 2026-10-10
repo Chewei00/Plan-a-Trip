@@ -87,7 +87,10 @@ explain in plain words, never ask them to run commands.
   The place is read from the page address (`/maps/place/<name>/@…/data=…!1s<fid>…!3d<lat>!4d<lng>`, checked against the
   real site on 2026-10-09). The data part is a flattened tree and can describe two places (what was searched or opened
   first, then the one that is open): `parse` in `maps.js` reads the open one by its position in the tree (group 3
-  inside group 4), never "the first match". Between two places the address briefly names none; the card stays put for
+  inside group 4), never "the first match". A place is known by Google's identifier (`key` in `parse`), not by its
+  position: about half a second after a place is opened Google writes the address again with the last digits of the
+  position changed (seen on the real site, 2026-10-10), and a key with the position in it made the card start over,
+  its category going out and coming in again (0.4.6 has this; fixed in 0.4.7). Between two places the address briefly names none; the card stays put for
   a second before it goes. The category is marked once Google's panel shows the new place (its `h1` is the name).
   `maps.js` draws everything afresh on each change, so what moves is drawn in its earlier state and then switched (the
   bar's arrow), or is a CSS animation told how far along it is (the button turning into "Added"). `site.js` hands saved places to the page and learns the trips from it; page and extension

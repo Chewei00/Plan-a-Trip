@@ -191,7 +191,12 @@
     var o = name ? placeIn(m[2]) : null, lat = o ? +o.lat : NaN, lng = o ? +o.lng : NaN;
     if (!o || !(Math.abs(lat) <= 90) || !(Math.abs(lng) <= 180)) return null;
     var fid = o.fid.toLowerCase();
-    return { key: (fid || name) + '|' + o.lat + ',' + o.lng, name: name, lat: lat, lng: lng, fid: fid };
+    /* What makes two addresses the same place: Google's identifier when there is one. The position cannot be part of
+       it: half a second after a place is opened Google writes its address again with the last digits of the position
+       changed (seen on the real site, 2026-10-10: !3d25.0351702!4d121.5628678, then !3d25.0351708!4d121.5628669), and
+       the card would take that for another place and start over, its category going out and coming in again. With no
+       identifier, the name and the position to five places (about a metre) */
+    return { key: fid || name + '|' + lat.toFixed(5) + ',' + lng.toFixed(5), name: name, lat: lat, lng: lng, fid: fid };
   }
   /* The kind of place Google shows under the name ("主題公園", "拉麵店"). The panel is drawn a moment after the address
      changes and until then still shows the place before, so it is read only once the panel's heading is this place.
@@ -420,6 +425,7 @@
     var leaving = goneT;
     clearTimeout(goneT); goneT = 0;
     if (cur && cur.key === p.key) {
+      cur.lat = p.lat; cur.lng = p.lng;   /* the same place, its position as the address now gives it */
       if (cur.name !== p.name || leaving) { cur.name = p.name; draw(); }
       return;
     }
