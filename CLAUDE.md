@@ -189,7 +189,12 @@ https://claude.ai/artifact/HpkjDvGLstNtVeGFvTiNaT). The menu's `All` and `Day` i
 11 grid, a 1px line, every line on a whole pixel. Such icons carry the class `m11` and are shown at 11, one to one,
 never scaled, with the spare pixel of the 12-wide place above them: Latin words stand a little under the middle of
 their line (measured with the site's font: capitals about .4 low, words with y or p look lower still), so a drawing
-half a pixel low meets them, and one half a pixel high (as it first was) looks plainly too high. Menus are placed on
+half a pixel low meets them, and one half a pixel high (as it first was) looks plainly too high. That is what a
+screen with one pixel to one gets. On a sharper screen (two or more of its pixels to one, Chewei's) half a pixel can
+be done exactly, so there the drawing sits in the very middle of its row and the words beside it are measured by
+their capitals (`text-box: trim-both cap alphabetic`), whose middle is then the row's middle whatever the word; Chewei
+had seen the one screen pixel that "All" was off (measured on the live site: drawing and capitals both at 0 from the
+middle). The filter mark's three lines are 8, 5 and 2 long: at 1 the shortest read as a dot. Menus are placed on
 whole pixels for the same sharpness. Its menu hangs from its right end. One choice at a time; a card
 shows when it is of the category AND passes the filter; nothing left is left blank, with no words. It is not saved
 (All after a reload and in another trip). It gives way so a place can be seen: adding a place sets All, and picking
