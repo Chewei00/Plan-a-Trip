@@ -635,6 +635,8 @@ with sync_playwright() as p:
     assert -198 < mid[0] < -5, ("on its way", mid)
     p2.wait_for_timeout(350)
     assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 64, 0] and p2.locator("#chips .chip.on").inner_text() == "交通"
+    # the cards are 12 under the track's foot, as they were under the framed pills; the panel is 254 high for it
+    assert p2.evaluate("(()=>{var t=document.getElementById('chips').getBoundingClientRect(),c=document.querySelector('#cards .card').getBoundingClientRect(),p=document.getElementById('tp').getBoundingClientRect();return [c.top-t.bottom,p.height,t.top-p.top]})()") == [12, 254, 14]
     # between two later ones it goes straight from one to the other
     AT2 = "Math.round(new DOMMatrix(getComputedStyle(document.getElementById('chips'),'::before').transform).m41)"
     p2.click("#chips .chip[data-cat='stay']"); p2.wait_for_timeout(450)

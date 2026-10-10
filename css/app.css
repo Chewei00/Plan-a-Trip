@@ -308,7 +308,9 @@ input.edit.lkedit{height:26px;margin-top:6px;font:400 12px/16px var(--ui);color:
 .tp-head{display:flex;align-items:center;gap:24px;height:42px;padding:16px 20px 0}
 .tp-head h2{margin:0;font:400 14px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
 @media (max-width:800px){.tp-head{gap:12px}}   /* room for the day filter's mark in the narrowest windows */
-.cards{display:flex;gap:10px;min-height:210px;overflow-x:auto;padding:12px 20px 20px;scrollbar-width:none;-ms-overflow-style:none}
+/* 14 above the cards, not 12: the categories' track hangs 2 below its row, and the cards keep the 12 they had under
+   the framed pills, measured from the track's foot (Chewei, 2026-10-10). The panel is 254 high for it, not 252 */
+.cards{display:flex;gap:10px;min-height:212px;overflow-x:auto;padding:14px 20px 20px;scrollbar-width:none;-ms-overflow-style:none}
 .cards::-webkit-scrollbar{display:none}
 .card{position:relative;flex:none;width:152px;height:178px;padding:10px 10px 12px;border-radius:var(--r6);background:var(--surface);box-shadow:var(--shadow-card);cursor:grab;user-select:none;-webkit-user-select:none;transition:transform .15s ease,box-shadow .15s ease}
 .card.focus{transform:translateY(-4px);box-shadow:var(--shadow-card-active)}
