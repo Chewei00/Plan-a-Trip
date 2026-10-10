@@ -212,7 +212,12 @@ equal parts and a white piece under the one in force, which slides to it in .25s
 `::before` and goes to `--i`, the place of the one in force, which `renderTop()` sets on the track; so it is still
 there when the buttons are drawn again. On the save card the same track runs the card's whole width in one row (the
 four pills took two; the card is some 30 shorter), and a press there does not draw the card again (`pend-cat` changes
-the classes in place), or the piece could not slide. In the Travel Collection each part is 64 wide and `snapHead()`
+the classes in place), or the piece could not slide. In the Travel Collection each category has its number after it (2026-10-10): how many of its places the day filter
+lets through, that is, the cards a press on it shows; with the filter on `All` it is the trip's count, as in the
+extension's bar. The number is in the name's own colour and weight (Chewei chose that over a paler one), a 0 is
+shown, and it simply changes (no rolling, for now). Each part is 80 wide for it; in a window of 940 or less the
+numbers are left out and the parts are 64, so that the filter's words stay whole. The save card and the extension's
+card have no numbers. `snapHead()`
 makes the title's width up to a whole pixel, so the piece stands on whole pixels. The track is 30 high in a 26 row
 and hangs 2 over it above and below; the cards were moved down 2 so that they are still 12 under it, and the panel is
 254 high, not 252 (above, the track is 14 from the panel's top where the pills were 16: Chewei left that). The extension's card has the same

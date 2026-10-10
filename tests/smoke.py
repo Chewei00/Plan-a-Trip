@@ -672,12 +672,28 @@ with sync_playwright() as p:
     rest()
     PIECE = ("(sel=>{var t=document.querySelector(sel),b=getComputedStyle(t,'::before'),r=t.getBoundingClientRect(),o=t.querySelector('.chip.on').getBoundingClientRect(),"
              "x=r.left+parseFloat(b.left)+new DOMMatrix(b.transform).m41;return [+(x-o.left).toFixed(2),+(parseFloat(b.width)-o.width).toFixed(2),o.width,o.left%1]})")
-    assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 64, 0], "under the one in force, on whole pixels"
+    assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 80, 0], "under the one in force, on whole pixels"
+    # each category has its number after it, in the same colour and weight as its name: how many of its places the
+    # day filter lets through (the cards a press on it shows). The save card's categories have none
+    NUMS = "[].map.call(document.querySelectorAll('#chips .chip'),e=>e.innerText.replace(/\\s+/g,' ').trim())"
+    assert p2.evaluate(NUMS) == ["景點 7", "飲食 3", "住宿 1", "交通 2"], p2.evaluate(NUMS)
+    assert p2.evaluate("(e=>{var a=getComputedStyle(e),b=getComputedStyle(e.querySelector('.n'));return a.color===b.color&&a.fontWeight===b.fontWeight})(document.querySelector('#chips .chip'))")
+    p2.click("#dayf"); p2.wait_for_timeout(250); p2.click("#menu button:has-text('Not planned')"); p2.wait_for_timeout(250)
+    assert p2.evaluate(NUMS) == ["景點 3", "飲食 2", "住宿 0", "交通 2"] and p2.locator("#cards .card").count() == 3, p2.evaluate(NUMS)
+    p2.click("#dayf"); p2.wait_for_timeout(250); p2.click("#menu button:has-text('Day 1')"); p2.wait_for_timeout(250)
+    assert p2.evaluate(NUMS) == ["景點 2", "飲食 1", "住宿 1", "交通 0"], p2.evaluate(NUMS)
+    p2.click("#dayf"); p2.wait_for_timeout(250); p2.click("#menu button:has-text('All')"); p2.wait_for_timeout(250)
+    assert p2.evaluate(NUMS) == ["景點 7", "飲食 3", "住宿 1", "交通 2"]
+    # in a window too narrow for so long a track beside the filter's words, the numbers are left out
+    p2.set_viewport_size({"width": 930, "height": 800}); p2.wait_for_timeout(250)
+    assert p2.evaluate("[getComputedStyle(document.querySelector('#chips .n')).display,document.querySelector('#chips .chip').getBoundingClientRect().width]") == ["none", 64]
+    p2.set_viewport_size({"width": 1440, "height": 800}); p2.wait_for_timeout(250)
+    assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 80, 0]
     p2.click("#chips .chip[data-cat='transit']"); p2.wait_for_timeout(110)
     mid = p2.evaluate(PIECE + "('#chips')")
-    assert -198 < mid[0] < -5, ("on its way", mid)
+    assert -246 < mid[0] < -5, ("on its way", mid)
     p2.wait_for_timeout(350)
-    assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 64, 0] and p2.locator("#chips .chip.on").inner_text() == "交通"
+    assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 80, 0] and p2.locator("#chips .chip.on").inner_text().split()[0] == "交通"
     # the cards are 12 under the track's foot, as they were under the framed pills; the panel is 254 high for it
     assert p2.evaluate("(()=>{var t=document.getElementById('chips').getBoundingClientRect(),c=document.querySelector('#cards .card').getBoundingClientRect(),p=document.getElementById('tp').getBoundingClientRect();return [c.top-t.bottom,p.height,t.top-p.top]})()") == [12, 254, 14]
     # between two later ones it goes straight from one to the other
@@ -689,7 +705,7 @@ with sync_playwright() as p:
     for _ in range(5):
         p2.wait_for_timeout(40); seen.append(p2.evaluate(AT2))
     p2.wait_for_timeout(300)
-    assert was == 132 and p2.evaluate(AT2) == 198 and all(was <= x <= 198 for x in seen) and seen[0] < 198, (was, seen)
+    assert was == 164 and p2.evaluate(AT2) == 246 and all(was <= x <= 246 for x in seen) and seen[0] < 246, (was, seen)
     p2.click("#chips .chip[data-cat='sight']"); p2.wait_for_timeout(400)
 
     # "Day 1" stands in the middle of its pill by its capitals, in all three places (this is the 2x screen)

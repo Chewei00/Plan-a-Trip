@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=36';
-import {fetchRoute} from './geoapify.js?v=36';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=36';
-import {createMap} from './mapview.js?v=36';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=37';
+import {fetchRoute} from './geoapify.js?v=37';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=37';
+import {createMap} from './mapview.js?v=37';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -325,8 +325,10 @@ function renderTop(){
   var fb=$('dayf'),fl=dayfLabel();
   fb.innerHTML=ICON.filterSm+'<span>'+fl+'</span>';fb.title='只顯示：'+fl;fb.setAttribute('aria-label','只顯示：'+fl);
   chipsEl.style.setProperty('--i',catIx(ui.cat));   /* where the white piece lies: it slides there (.chips in app.css) */
-  chipsEl.innerHTML=CATS.map(function(c){var on=ui.cat===c.id;
-    return '<button class="chip'+(on?' on':'')+'" data-act="chip" data-cat="'+c.id+'" aria-pressed="'+on+'">'+catSvg(c.id,1)+c.name+'</button>';}).join('');
+  /* after each category, how many of its places the day filter lets through: the number of cards a press on it shows
+     (Chewei, 2026-10-10). With the filter on All that is the trip's count, as in the extension's bar */
+  chipsEl.innerHTML=CATS.map(function(c){var on=ui.cat===c.id,n=db.places.filter(function(p){return p.cat===c.id&&dayfOk(p);}).length;
+    return '<button class="chip'+(on?' on':'')+'" data-act="chip" data-cat="'+c.id+'" aria-pressed="'+on+'">'+catSvg(c.id,1)+c.name+'<span class="n">'+n+'</span></button>';}).join('');
   var keep=cardsEl.scrollLeft;
   var list=db.places.filter(function(p){return p.cat===ui.cat&&dayfOk(p);});
   /* a trip with no places at all invites collecting some on Google Maps (see "browser extension"); a category with
@@ -482,7 +484,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=36').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=37').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */
