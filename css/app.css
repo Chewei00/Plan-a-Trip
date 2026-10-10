@@ -96,7 +96,6 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .tp-head h2,.chips{flex:none}
 .dayf{flex:0 1 auto;min-width:16px}
 .dayf span{min-width:0;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:800px){.tp-head{gap:12px}}
 .more{width:22px;height:22px;flex:none;border:0;border-radius:50%;background:none;color:var(--line);display:grid;place-items:center;padding:0;opacity:0}
 .more:hover,.more.open{background:var(--fill-note);color:var(--ink)}
 .more:focus-visible,.more.open{opacity:1}
@@ -266,6 +265,7 @@ input.edit.lkedit{height:26px;margin-top:6px;font:400 12px/16px var(--ui);color:
 .app.tc .tabdown{opacity:1;pointer-events:auto}
 .tp-head{display:flex;align-items:center;gap:24px;height:42px;padding:16px 20px 0}
 .tp-head h2{margin:0;font:400 14px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
+@media (max-width:800px){.tp-head{gap:12px}}   /* room for the day filter's mark in the narrowest windows */
 .cards{display:flex;gap:10px;min-height:210px;overflow-x:auto;padding:12px 20px 20px;scrollbar-width:none;-ms-overflow-style:none}
 .cards::-webkit-scrollbar{display:none}
 .card{position:relative;flex:none;width:152px;height:178px;padding:10px 10px 12px;border-radius:var(--r6);background:var(--surface);box-shadow:var(--shadow-card);cursor:grab;user-select:none;-webkit-user-select:none;transition:transform .15s ease,box-shadow .15s ease}
