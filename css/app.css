@@ -24,7 +24,7 @@
 /* Figma corner smoothing 60%: radius x 1.25 on a superellipse corner */
 @supports (corner-shape:superellipse(1.4)){
   :root{--r4:5px;--r6:7.5px;--r8:10px;--r16:20px}
-  .lp,.tp,.tabdown,.search input,.results,.results button,.day,.card,.card-empty,.ph,.collect,.nb,textarea.edit.nbedit,.menu,.menu button,.pend,.savebtn,.ctrl button,.nlabel,.flabel,.ghost,.narrow,.cbox,.modebtn,.ck .more,.vbox,.sendbox,.vbody img,.vbody canvas{corner-shape:superellipse(1.4)}
+  .lp,.tp,.tabdown,.search input,.results,.results button,.day,.card,.card-empty,.ph,.collect,.nb,textarea.edit.nbedit,.menu,.menu button,.pend,.savebtn,.ctrl button,.nlabel,.flabel,.ghost,.narrow,.cbox,.modebtn,.ck .more,.vbox,.sendbox,.vbody img,.vbody canvas,.sidebtn::before{corner-shape:superellipse(1.4)}
 }
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -54,8 +54,17 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .dot{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border:0;border-radius:50%;padding:0;background:var(--ink);box-shadow:0 0 0 2px var(--surface)}
 .dot::after{content:"";position:absolute;inset:-7px;border-radius:50%}
 .dot.un{background:var(--surface);box-shadow:0 0 0 1.5px var(--ink)}
+/* a point of the map has no frame and no words to darken: it grows a little under the pointer (the one that is
+   picked already does not) */
+.dot,.npin{transition:transform .15s ease}
+.dot:hover{transform:scale(1.3)}
+.npin:not(.focus):hover{transform:scale(1.1)}
 .daytag{position:absolute;transform:translate(-50%,calc(-100% - 12px));height:23px;padding:0 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font:500 11px/16px var(--ui);white-space:nowrap}
-.daytag:hover{border-color:var(--ink)}
+/* a frame under the pointer goes a step darker, to the colour the search box has while it is typed in; never all the
+   way to ink (Chewei, 2026-10-10: "only a little darker, not suddenly very different"). What is chosen already does
+   not answer: the open day, the category in force, a ticked box */
+.daytag,.chip,.cbox,.search input{transition:border-color .15s ease}
+.daytag:hover,.chip:not(.on):hover,.day:not(.sel) .daypill:hover,.ck:not(.done) button.cbox:hover,.search input:hover{border-color:var(--line-strong)}
 .npin{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border:0;border-radius:50%;padding:0;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font:500 13px/20px var(--ui)}
 .npin.focus{box-shadow:0 0 0 3px var(--surface),0 0 0 4.5px var(--ink)}
 .nlabel{position:absolute;left:20px;bottom:12px;padding:6px 10px;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;pointer-events:none}
@@ -68,6 +77,8 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .xbtn:hover{background:var(--fill-note);color:var(--ink)}
 .pend .chips{margin:10px 0 12px;flex-wrap:wrap;gap:8px}
 .savebtn{width:100%;height:32px;border:0;border-radius:var(--r6);background:var(--ink);color:var(--on-ink);font:500 12px/20px var(--ui);letter-spacing:.04em}
+.savebtn:not([disabled]){transition:background-color .15s ease}
+.savebtn:not([disabled]):hover{background:#000}
 .savebtn[disabled]{background:var(--line-soft);color:var(--text-3);cursor:default}
 /* just pressed: the button hops into "Added" (values chosen by Chewei, 2026-10-09; the same as on the extension's
    card). Up 2px in the first quarter, back down by 78% sinking half a pixel past where it rests, then settling; .4s in
@@ -90,7 +101,10 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .chip svg{display:block;flex:none;width:12px;height:12px}
 /* the day filter at the right end of the Travel Collection's head: a small filter mark, then the words of what is
    shown; no frame, and the same whether a filter is on or not (Chewei, 2026-10-10: "C without its outline") */
-.dayf{display:inline-flex;align-items:center;gap:5px;height:26px;margin-left:auto;padding:0 2px;border:0;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
+.dayf{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:5px;height:26px;margin-left:auto;padding:0 2px;border:0;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
+/* under the pointer, and while its menu is open, a pale ground comes up behind it, as behind "..." */
+.dayf::before{content:"";position:absolute;z-index:-1;inset:0 -8px;border-radius:999px;transition:background-color .15s ease}
+.dayf:hover::before,.dayf[aria-expanded="true"]::before{background:var(--fill-note)}
 .dayf .mico.m11{margin-right:0}
 /* in a narrow window the title and the categories keep their room and the filter's words are cut short */
 .tp-head h2,.chips{flex:none}
@@ -130,9 +144,13 @@ body.dragging .ckmove{transform:none!important}
 .sidebtn{transition:opacity .25s ease}
 .lp-top:has(.tzone:hover) .sidebtn,.lp-top:has(.tzone.on) .sidebtn{opacity:0;pointer-events:none}
 input.edit.title{height:30px;margin:-4px 0;overflow:visible;text-overflow:clip}
-.sidebtn{position:relative;flex:none;width:18px;height:12px;border:0;padding:0;background:none;color:var(--ink);display:block}
-.sidebtn::after{content:"";position:absolute;inset:-9px -8px}
-.sidebtn svg{display:block;width:18px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5}
+/* Chewei's drawing (2026-10-10): the panel upright with its head marked off, 10 x 13, the same open and closed.
+   ::after is what can be pressed (34 x 31), ::before the pale ground that comes up under the pointer (26 x 27) */
+.sidebtn{position:relative;isolation:isolate;flex:none;width:10px;height:13px;border:0;padding:0;background:none;color:var(--ink);display:block}
+.sidebtn::before{content:"";position:absolute;z-index:-1;inset:-7px -8px;border-radius:var(--r6);transition:background-color .15s ease}
+.sidebtn:hover::before{background:var(--fill-note)}
+.sidebtn::after{content:"";position:absolute;inset:-9px -12px}
+.sidebtn svg{display:block;width:10px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter}
 .search{position:relative;margin-top:15px}
 .search input{display:block;width:100%;height:40px;padding:0 16.5px;border:1.5px solid var(--line);border-radius:var(--r8);background:var(--surface);font:400 13px/20px var(--ui);color:var(--ink);outline:0;-webkit-appearance:none;appearance:none}
 .search input::placeholder{color:var(--text-2);opacity:1}
@@ -200,7 +218,9 @@ textarea.edit.nbedit::placeholder{color:var(--text-ph);opacity:1}
 .modebtn:hover{color:var(--ink)}
 .modebtn:hover svg{opacity:1}
 .day.over .modebtn{background:color-mix(in srgb,#000 4%,var(--surface))}
-.addday{display:flex;align-items:center;gap:10px;height:16px;margin-top:24px;padding:0 0 0 2px;border:0;background:none;color:var(--text-3);font:500 12px/16px var(--ui)}
+/* it answers along its whole row and 7 above and below its words (30 in all), as "Add a note" does; nothing moves */
+.addday{position:relative;display:flex;align-items:center;gap:10px;width:100%;height:16px;margin-top:24px;padding:0 0 0 2px;border:0;background:none;color:var(--text-3);font:500 12px/16px var(--ui);text-align:left}
+.addday::after{content:"";position:absolute;inset:-7px 0}
 .addday svg{display:block;flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1}
 .addday:hover{color:var(--ink)}
 /* ---- the trip's own notes, at the foot of the left panel (Figma: left side, four states) ----
@@ -210,8 +230,13 @@ textarea.edit.nbedit::placeholder{color:var(--text-ph);opacity:1}
 .memo{flex:none;display:flex;flex-direction:column;min-height:24px;max-height:calc(100% - 129px)}
 .memo-handle{position:relative;flex:none;display:block;width:100%;height:24px;margin:0;border:0;padding:0;background:none;color:var(--ink)}
 .memo-handle::before{content:"";position:absolute;left:20px;right:20px;top:0;height:1px;border-radius:1px;background:var(--ink)}
-.memo-handle svg{position:absolute;left:50%;top:9px;width:10px;height:6px;margin-left:-5px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s ease}
+.memo-handle svg{position:absolute;left:50%;top:9px;width:10px;height:6px;margin-left:-5px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s ease,translate .45s ease}
 .memo.open .memo-handle svg{transform:rotate(180deg)}
+/* An arrow that opens or closes a panel moves 2 the way it points while the pointer is anywhere on its button, in
+   the time the empty Travel Collection's arrow takes to grow (.45s; Chewei, 2026-10-10). "translate" is its own
+   property, so it leaves "transform" to the half turn the notes' arrow makes */
+.memo:not(.open) .memo-handle:hover svg,.tclose:hover svg{translate:0 -2px}
+.memo.open .memo-handle:hover svg,.tabdown:hover svg{translate:0 2px}
 .memo-handle:focus-visible{outline-offset:-2px}
 /* The space the notes take runs from nothing to their height in 0.45s (a grid row, as for a day's entries). What is
    inside does not fade or squeeze meanwhile: applyMemo holds it at full height, so it rides up behind the line as one
@@ -258,8 +283,9 @@ input.edit.lkedit{height:26px;margin-top:6px;font:400 12px/16px var(--ui);color:
 /* put away, the panel sits just above the top edge: its shadow would show as a band along the top, so the tab that hangs down carries it instead */
 .app.tc .tp{transform:translateY(calc(-100% - var(--gap)));box-shadow:none}
 .tclose{position:absolute;top:2px;left:50%;transform:translateX(-50%);width:40px;height:26px;border:0;background:none;color:var(--ink);display:grid;place-items:center;padding:0}
-.tclose svg,.tabdown svg{display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.tclose svg{width:14px;height:8px;stroke-width:1.5}
+/* the two arrows are one weight (the tab's was 1.8 until 2026-10-10); their sizes differ */
+.tclose svg,.tabdown svg{display:block;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:translate .45s ease}
+.tclose svg{width:14px;height:8px}
 .tabdown{position:absolute;top:100%;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;height:32px;padding:0 16px 2px 20px;border:0;border-radius:0 0 var(--r16) var(--r16);background:var(--surface);color:var(--ink);font:400 14px/20px var(--ui);letter-spacing:.04em;white-space:nowrap;box-shadow:var(--shadow-panel);opacity:0;pointer-events:none;transition:opacity .2s}
 .tabdown svg{width:12px;height:8px}
 .app.tc .tabdown{opacity:1;pointer-events:auto}

@@ -27,9 +27,8 @@ export var ICON={
   right:svg('<path d="M6 3.5 10.5 8 6 12.5"/>'),
   up:svg('<path d="M3.5 10 8 5.5l4.5 4.5"/>'),
   down:svg('<path d="M3.5 6 8 10.5 12.5 6"/>'),
-  /* the outline is a rounded rectangle with smoothed corners (Figma: radius 3, corner smoothing 60%), drawn as a path
-     because an SVG rect can only have circular corners */
-  side:'<svg viewBox="0 0 18 12" aria-hidden="true"><path d="M14.25 .75L15.12 .79L15.7 .92L16.17 1.14L16.56 1.44L16.86 1.83L17.08 2.3L17.21 2.88L17.25 3.75L17.25 8.25L17.21 9.12L17.08 9.7L16.86 10.17L16.56 10.56L16.17 10.86L15.7 11.08L15.12 11.21L14.25 11.25L3.75 11.25L2.88 11.21L2.3 11.08L1.83 10.86L1.44 10.56L1.14 10.17L.92 9.7L.79 9.12L.75 8.25L.75 3.75L.79 2.88L.92 2.3L1.14 1.83L1.44 1.44L1.83 1.14L2.3 .92L2.88 .79L3.75 .75ZM5.75 .75v10.5"/></svg>',
+  /* Chewei's drawing, as one path: the panel upright, its head marked off */
+  side:'<svg viewBox="0 0 10 13" aria-hidden="true"><path d="M1.5 .75h7a.75.75 0 0 1 .75.75v10a.75.75 0 0 1-.75.75h-7a.75.75 0 0 1-.75-.75v-10a.75.75 0 0 1 .75-.75zM.75 4.75h8.5"/></svg>',
   chevUp:'<svg viewBox="0 0 14 8" aria-hidden="true"><path d="M1 7 7 1l6 6"/></svg>',
   tripChev:'<svg viewBox="0 0 8 13" aria-hidden="true"><path d="M1 1l6 5.5L1 12"/></svg>',
   /* the menus' own small icons, on a 12 grid with a 1px line (class "mico"), one in front of every row: a pen

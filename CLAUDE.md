@@ -182,6 +182,28 @@ place). The one in force has the round tick at the right end, in every menu; the
 what they act on, without an article (`Edit checklist`, `Delete note`, `Delete day`, `Delete place`; `Add a …` keeps
 its "a"; `Delete this trip` keeps "this" because the menu lists several trips).
 
+What answers to the pointer (2026-10-10, settled on https://claude.ai/artifact/32SGdBAiHKaeudfQmTqXy5; all in
+`css/app.css`). Five ways, and a new control takes one of them rather than a sixth. **A frame goes one step darker**,
+to `line-strong`, the colour the search box has while it is typed in, and never to `ink` (Chewei: "only a little
+darker, not suddenly very different"): the search box, a closed day's tag, a category that is not the one in force, an
+unticked box, the Day tag on the map (which went to `ink` before). **A pale ground (`fill-note`) comes up behind** a
+bare button: the left panel's collapse button, the day filter (also while its menu is open), as behind "..." and the
+cross, and as the rows of a menu. **Words go darker**: `Add a day`, `Add a note`, `Add a checklist`, the map's
+buttons; these three rows have no ground behind them (tried and turned down), and `Add a day` answers along its whole
+row and 7 above and below its words, as the other two do. **An arrow that opens or closes a panel moves 2 the way it
+points** while the pointer is anywhere on its button, in .45s, the time the empty Travel Collection's arrow takes to
+grow: the Travel Collection's arrow up, its tab's arrow down, the notes' arrow up when they are closed and down when
+open (the `translate` property, so `transform` stays free for the notes' half turn; the Travel Collection's two
+arrows are one weight, 1.5, the tab's being 12 x 8 and the other 14 x 8). **A point of the map grows**
+(a numbered pin 1.1, a dot 1.3). The dark button goes from `ink` to black. What is chosen already does not answer
+(the open day, the category in force, a ticked box, the pin that is picked), nor do words that are edited by a
+double click. Colours change in .15s; a day's tag keeps its own .25s. The extension has none of this yet (only its
+menu rows answer): it would go out with an upload above 0.4.6.
+
+The left panel's collapse button is Chewei's own drawing (2026-10-10): the panel upright with its head marked off,
+10 x 13, a 1.5 line, square ends, one path (`ICON.side`), the same whether the panel is open or closed. It can be
+pressed 12 to either side and 9 above and below; the pale ground under the pointer is 26 x 27.
+
 The Travel Collection has a day filter (2026-10-10; `ui.dayf`, `dayfOk()` in `js/main.js`): at the right end of its
 head, a small filter mark and then the words of what is shown (`All`, `Day 2`, `Not planned`), in `ink`, with no
 frame, and the same whether a filter is on or not (Chewei's drawing: "C without its outline"; settled on

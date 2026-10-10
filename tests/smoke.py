@@ -526,6 +526,81 @@ with sync_playwright() as p:
     p2.wait_for_timeout(300)
     rows = p2.evaluate("[].map.call(document.querySelectorAll('#menu button')," + MID + ")")
     assert all(r == [0, 0, 0, True] for r in rows), rows
+
+    # what answers to the pointer (2026-10-10). A frame goes one step darker, never to ink, and what is chosen already
+    # does not answer; a pale ground comes up behind the two bare buttons; the arrows that open and close a panel move
+    # 2 the way they point; a point of the map grows; "Add a day" answers along its whole row
+    p2.mouse.click(900, 600)
+    p2.wait_for_timeout(300)
+    assert p2.locator("#menu button").count() == 0 or not p2.locator("#menu").is_visible()
+    STEP, PALE = "rgba(0, 0, 0, 0.4)", "rgba(0, 0, 0, 0.04)"
+    def rest():
+        p2.mouse.move(900, 600); p2.wait_for_timeout(250)
+    def over(loc, prop="borderTopColor", pseudo=None, wait=300, **kw):
+        rest(); loc.hover(**kw); p2.wait_for_timeout(wait)
+        return loc.evaluate("(e,a)=>getComputedStyle(a[1]?e:e,a[1]||null)[a[0]]", [prop, pseudo])
+    if p2.locator(".day.sel").count() == 0:
+        p2.locator(".daypill").first.click(); p2.wait_for_timeout(500)
+    assert p2.locator(".day.sel").count() == 1 and p2.locator(".day:not(.sel)").count() >= 1
+    assert over(p2.locator(".day:not(.sel) .daypill").first) == STEP
+    assert over(p2.locator(".day.sel .daypill")) == "rgb(51, 51, 51)", "the open day stays as it is"
+    assert over(p2.locator("#chips .chip:not(.on)").first) == STEP
+    on = p2.locator("#chips .chip.on"); was = on.evaluate("e=>getComputedStyle(e).borderTopColor")
+    assert over(on) == was, "the category in force stays as it is"
+    assert over(p2.locator(".search input")) == STEP
+    # a box to tick, a ticked one, and the one that only stands beside a line being written (not a button)
+    p2.evaluate("document.body.insertAdjacentHTML('beforeend','<div id=\"hc\" style=\"position:fixed;left:700px;top:500px;z-index:999;display:flex;gap:30px\"><div class=\"ck\"><button class=\"cbox\"></button></div><div class=\"ck done\"><button class=\"cbox\"></button></div><div class=\"ck\"><span class=\"cbox\"></span></div></div>')")
+    assert over(p2.locator("#hc .cbox").nth(0)) == STEP
+    assert over(p2.locator("#hc .cbox").nth(1)) == "rgb(51, 51, 51)"
+    assert over(p2.locator("#hc .cbox").nth(2)) == "rgb(210, 210, 210)"
+    p2.evaluate("document.getElementById('hc').remove()")
+    assert p2.evaluate("getComputedStyle(document.getElementById('dayf'),'::before').backgroundColor") == "rgba(0, 0, 0, 0)"
+    assert over(p2.locator("#dayf"), "backgroundColor", "::before") == PALE
+    side = p2.locator(".sidebtn")
+    assert side.evaluate("e=>{var r=e.querySelector('svg').getBoundingClientRect();return [r.width,r.height]}") == [10, 13]
+    assert over(side, "backgroundColor", "::before") == PALE
+    # the arrows
+    MOVE = "e=>getComputedStyle(e.querySelector('svg')).translate"
+    def arrow(sel):
+        rest(); p2.wait_for_timeout(500)
+        assert p2.locator(sel).evaluate(MOVE) in ("none", "0px"), sel
+        p2.locator(sel).hover(position={"x": 3, "y": 3}); p2.wait_for_timeout(600)
+        return p2.locator(sel).evaluate(MOVE)
+    assert arrow(".tclose") == "0px -2px"
+    assert arrow("#memoh") == "0px -2px", "the notes are closed: their arrow points up"
+    p2.click("#memoh"); p2.wait_for_timeout(700)
+    assert arrow("#memoh") == "0px 2px", "open, it points down"
+    p2.click("#memoh"); p2.wait_for_timeout(700)
+    p2.click(".tclose"); p2.wait_for_timeout(500)
+    assert arrow(".tabdown") == "0px 2px"
+    assert p2.evaluate("['.tabdown','.tclose'].map(s=>getComputedStyle(document.querySelector(s+' svg')).strokeWidth)") == ["1.5px", "1.5px"], "one weight"
+    assert p2.evaluate("(r=>[r.width,r.height])(document.querySelector('.tabdown svg').getBoundingClientRect())") == [12, 8]
+    p2.click(".tabdown"); p2.wait_for_timeout(500)
+    # Add a day: the far end of its row, a little above its words
+    box = p2.locator(".addday").bounding_box(); room = p2.evaluate("(e=>e.clientWidth-40)(document.getElementById('lpscroll'))")
+    assert box["width"] == room and box["height"] == 16, (box, room)
+    p2.locator(".addday").scroll_into_view_if_needed(); box = p2.locator(".addday").bounding_box()
+    n_days = p2.locator(".day").count()
+    rest(); p2.mouse.move(box["x"] + box["width"] - 3, box["y"] - 5); p2.wait_for_timeout(100)
+    assert p2.locator(".addday").evaluate("e=>getComputedStyle(e).color") == "rgb(51, 51, 51)"
+    p2.mouse.click(box["x"] + box["width"] - 3, box["y"] - 5); p2.wait_for_timeout(300)
+    assert p2.locator(".day").count() == n_days + 1, "and a press there adds the day"
+    # the dark button, and one that is done with
+    p2.evaluate("document.body.insertAdjacentHTML('beforeend','<div id=\"hv\" style=\"position:fixed;left:700px;top:500px;width:160px;z-index:999\"><button class=\"savebtn\">x</button><button class=\"savebtn\" disabled>y</button></div>')")
+    assert over(p2.locator("#hv .savebtn").first, "backgroundColor") == "rgb(0, 0, 0)"
+    gone = p2.locator("#hv .savebtn[disabled]"); was = gone.evaluate("e=>getComputedStyle(e).backgroundColor")
+    assert over(gone, "backgroundColor", force=True) == was
+    p2.evaluate("document.getElementById('hv').remove()")
+    # the map's points: one that nothing covers
+    FREE = "(sel=>{var l=[].filter.call(document.querySelectorAll(sel),function(e){var r=e.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)===e});return l.length?[l[0].getBoundingClientRect().left+l[0].getBoundingClientRect().width/2,l[0].getBoundingClientRect().top+l[0].getBoundingClientRect().height/2]:null})"
+    grew = {}
+    for sel, by in ((".npin:not(.focus)", 1.1), (".dot", 1.3)):
+        at = p2.evaluate(FREE + "(" + repr(sel) + ")")
+        if at:
+            rest(); p2.mouse.move(at[0], at[1]); p2.wait_for_timeout(300)
+            grew[sel] = p2.evaluate("(a=>getComputedStyle(document.elementFromPoint(a[0],a[1])).transform)", at)
+            assert grew[sel] == "matrix(%s, 0, 0, %s, 0, 0)" % (by, by), grew
+    assert len(grew) == 2, ("both kinds of point were tried", grew)
     fine.close()
 
     assert not errors, errors
