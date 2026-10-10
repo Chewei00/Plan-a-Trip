@@ -122,6 +122,17 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     assert -52 < maps.evaluate(ROW)["off"] < -3, ("on its way", maps.evaluate(ROW))
     maps.wait_for_timeout(350)
     assert maps.evaluate(ROW)["off"] == 0 and card.locator(".chip.on").inner_text() == "飲食"
+    # and it starts from where it was, not from the first one each time
+    AT = "(() => Math.round(new DOMMatrix(getComputedStyle(document.getElementById('plan-a-trip-card').shadowRoot.querySelector('.chips'), '::before').transform).m41))()"
+    card.locator(".chip[data-cat='stay']").click()
+    maps.wait_for_timeout(450)
+    was = maps.evaluate(AT)
+    card.locator(".chip[data-cat='transit']").click()
+    seen = []
+    for _ in range(5):
+        maps.wait_for_timeout(40); seen.append(maps.evaluate(AT))
+    maps.wait_for_timeout(300)
+    assert was == 107 and maps.evaluate(AT) == 161 and all(was <= x <= 161 for x in seen) and seen[0] < 161, ("from 住宿 to 交通, never back towards 景點", was, seen)
     card.locator(".chip[data-cat='sight']").click()
     maps.wait_for_timeout(400)
     assert maps.evaluate(ROW)["off"] == 0 and card.locator(".chip.on").inner_text() == "景點"

@@ -212,6 +212,16 @@ with sync_playwright() as p:
     page.click(".pend .chip[data-cat='stay']"); page.wait_for_timeout(400)
     assert page.locator(".pend .chip.on").inner_text() == "住宿" and page.evaluate(ROW)["off"] == 0
     assert page.evaluate("window.__pend===document.querySelector('.pend')"), "the same card"
+    # and from there to the next it starts where it was, never from the first one again
+    AT = "Math.round(new DOMMatrix(getComputedStyle(document.querySelector('.pend .chips'),'::before').transform).m41)"
+    was = page.evaluate(AT)
+    page.click(".pend .chip[data-cat='transit']")
+    seen = []
+    for _ in range(5):
+        page.wait_for_timeout(40); seen.append(page.evaluate(AT))
+    page.wait_for_timeout(300)
+    assert was == 107 and page.evaluate(AT) == 161 and all(was <= x <= 161 for x in seen) and seen[0] < 161, (was, seen)
+    page.click(".pend .chip[data-cat='stay']"); page.wait_for_timeout(400)
     if os.environ.get("SHOTS"):
         page.locator(".pend").screenshot(path=os.environ["SHOTS"] + "/pend.png")
     page.click(".pend .chip[data-cat='food']"); page.wait_for_timeout(400)
@@ -625,6 +635,16 @@ with sync_playwright() as p:
     assert -198 < mid[0] < -5, ("on its way", mid)
     p2.wait_for_timeout(350)
     assert p2.evaluate(PIECE + "('#chips')") == [0, 0, 64, 0] and p2.locator("#chips .chip.on").inner_text() == "交通"
+    # between two later ones it goes straight from one to the other
+    AT2 = "Math.round(new DOMMatrix(getComputedStyle(document.getElementById('chips'),'::before').transform).m41)"
+    p2.click("#chips .chip[data-cat='stay']"); p2.wait_for_timeout(450)
+    was = p2.evaluate(AT2)
+    p2.click("#chips .chip[data-cat='transit']")
+    seen = []
+    for _ in range(5):
+        p2.wait_for_timeout(40); seen.append(p2.evaluate(AT2))
+    p2.wait_for_timeout(300)
+    assert was == 132 and p2.evaluate(AT2) == 198 and all(was <= x <= 198 for x in seen) and seen[0] < 198, (was, seen)
     p2.click("#chips .chip[data-cat='sight']"); p2.wait_for_timeout(400)
 
     # "Day 1" stands in the middle of its pill by its capitals, in all three places (this is the 2x screen)

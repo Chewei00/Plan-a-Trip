@@ -213,7 +213,9 @@ one-row track from 0.4.7 on (`extension/maps.js`, in the source since 2026-10-10
 uploads it once 0.4.6 has passed review). There no category is in force until Google's panel has said what kind of
 place it is: the piece is not there (`.none`) and comes in at its place; and since the card is drawn afresh each
 time, the track is drawn as it was (`shownCat`) and then switched, with `--i` set from the script, not written into
-the tag (a page may forbid that).
+the tag (a page may forbid that), and **before anything measures the page** (`level()` does): the first thing the
+browser sees of a new track must be the piece where it was, or it starts from the first category every time (it did,
+in the first 0.4.7 file Chewei tried; the tests now watch the piece go between two later categories).
 
 The left panel folds up and down in .28s, the time and ease of the Travel Collection (2026-10-10). That one slides
 away whole; this one keeps its title, so its foot rises instead. It is two things: `.lp-bg`, the white sheet with the

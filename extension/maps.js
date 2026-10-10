@@ -342,13 +342,14 @@
     }
     popMenu = false;   /* the menu comes in when it opens, not each time the page is drawn again */
     box.innerHTML = h;
+    /* the white piece: put where it was for this place, then switched. From nothing it comes in at its place; from
+       another category it slides. Where it was is set here, not in the markup (a page may forbid styles written into
+       tags), and before anything measures the page (level does): what the browser first sees of the new track is the
+       piece where it was, or it would take the first category as the start and slide from there every time */
+    var row = cur && box.querySelector('.chips'), ix = cur ? catIx(cur.cat) : -1, from = cur && shownCat.key === cur.key ? shownCat.ix : -1;
+    if (row) row.style.setProperty('--i', String(from >= 0 ? from : Math.max(ix, 0)));
     level();
-    /* the white piece: put where it was for this place (set here, not in the markup: a page may forbid styles written
-       into tags), then switched. From nothing it comes in at its place; from another category it slides */
-    var row = cur && box.querySelector('.chips');
     if (row) {
-      var ix = catIx(cur.cat), from = shownCat.key === cur.key ? shownCat.ix : -1;
-      row.style.setProperty('--i', String(from >= 0 ? from : Math.max(ix, 0)));
       if (from !== ix) { void row.offsetWidth; row.classList.toggle('none', ix < 0); if (ix >= 0) row.style.setProperty('--i', String(ix)); }
       shownCat = { key: cur.key, ix: ix };
     }
