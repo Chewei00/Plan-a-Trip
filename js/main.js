@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=35';
-import {fetchRoute} from './geoapify.js?v=35';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=35';
-import {createMap} from './mapview.js?v=35';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=36';
+import {fetchRoute} from './geoapify.js?v=36';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=36';
+import {createMap} from './mapview.js?v=36';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -53,8 +53,9 @@ function sample(){
     newStop(inn,[{k:'c',text:'付了訂金，500 元，現場需再繳 1000 元',done:true,link:'',file:null}])]});
   d.days.push({id:uid(),stops:[newStop(park),newStop(iwa)]});
   d.legs[kubota+'>'+kma]='walk';d.legs[kma+'>'+udon]='walk';d.legs[udon+'>'+inn]='walk';
-  /* the trip's own notes, open, as Chewei wrote them (2026-10-10; the words, brackets and spaces are his) */
-  d.memo={open:true,plan:[
+  /* the trip's own notes, as Chewei wrote them (2026-10-10; the words, brackets and spaces are his). They start
+     closed: the handle at the panel's foot opens them */
+  d.memo={open:false,plan:[
     {k:'n',text:'雨備景點 : 富士山世界遺產中心'},
     {k:'c',text:'毛帽 ( 需遮住耳朵 )',done:true,link:'',file:null},
     {k:'c',text:'圍巾 ( 或防風頸套 )',done:true,link:'',file:null},
@@ -481,7 +482,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=35').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=36').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */

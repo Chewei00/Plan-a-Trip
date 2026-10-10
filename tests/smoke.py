@@ -304,11 +304,12 @@ with sync_playwright() as p:
     def cur():
         d = stored()
         return [t for t in d["trips"] if t["id"] == d["current"]][0]
-    # the sample comes with notes of its own, open: a note first, then three things to bring, two of them ticked
+    # the sample comes with notes of its own, closed at first: a note, then three things to bring, two of them ticked
     WORDS = ["雨備景點 : 富士山世界遺產中心", "毛帽 ( 需遮住耳朵 )", "圍巾 ( 或防風頸套 )", "駕照日文譯本"]
     def notes():
         return page.evaluate("[].map.call(document.querySelectorAll('#memoents > .ent'),e=>[e.classList.contains('n')?'n':'c',(e.querySelector('.nb,.cktext')||e).innerText.trim(),!!e.querySelector('.ck.done')])")
-    page.click("#memoh"); page.wait_for_timeout(700); page.click("#memoh"); page.wait_for_timeout(700)   # (a press, so that the trip is saved as it came)
+    assert "open" not in page.get_attribute("#memo", "class") and not page.locator("#memoents > .ent").first.is_visible()
+    page.click("#memoh"); page.wait_for_timeout(700)
     assert "open" in page.get_attribute("#memo", "class") and cur()["memo"]["open"] is True
     assert notes() == [["n", WORDS[0], False], ["c", WORDS[1], True], ["c", WORDS[2], True], ["c", WORDS[3], False]], notes()
     # they are put in order by dragging, as the entries under a place are: a line shows where the one in hand will land
@@ -592,8 +593,7 @@ with sync_playwright() as p:
     rows = p2.evaluate("[].map.call(document.querySelectorAll('#menu button')," + MID + ")")
     assert all(r == [0, 0, 0, True] for r in rows), rows
 
-    assert "open" in p2.get_attribute("#memo", "class") and p2.locator("#memoents > .ent").count() == 4, "a new visitor sees the sample's notes, open"
-    p2.click("#memoh"); p2.wait_for_timeout(700)
+    assert "open" not in p2.get_attribute("#memo", "class") and p2.locator("#memoents > .ent").count() == 4, "a new visitor's sample has its notes, closed"
     # what answers to the pointer (2026-10-10). A frame goes one step darker, never to ink, and what is chosen already
     # does not answer; a pale ground comes up behind the two bare buttons; the arrows that open and close a panel move
     # 2 the way they point; a point of the map grows; "Add a day" answers along its whole row

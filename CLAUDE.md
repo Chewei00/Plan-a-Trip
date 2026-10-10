@@ -272,7 +272,7 @@ at the least: **keep that table in step with the files**, and put no picture int
 allow it. A sample picture is a file's address in `img`, a dropped one is data (`loadImage`); both show the same way
 (the card's frame is filled, what sticks out is cut off, nothing is stretched). The sample is only made for someone
 who has nothing saved, so people who already changed theirs keep what they have. It also comes with notes of its own,
-open (2026-10-10, Chewei's words and order): the note 雨備景點 : 富士山世界遺產中心, then three things to bring,
+closed at first (2026-10-10, Chewei's words and order; they were open for half an hour, a misreading of mine): the note 雨備景點 : 富士山世界遺產中心, then three things to bring,
 毛帽 ( 需遮住耳朵 ) and 圍巾 ( 或防風頸套 ) ticked and 駕照日文譯本 not.
 
 The trip's notes are put in order by dragging, as the entries under a place are (2026-10-10; it had been left out):
