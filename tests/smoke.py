@@ -146,6 +146,7 @@ with sync_playwright() as p:
         return page.evaluate("s=>getComputedStyle(document.querySelector(s)).color", sel)
     quiet = colour("#dayf")
     assert page.inner_text("#dayf").strip() == "All" and page.locator("#dayf svg.mico").count() == 1 and len(names()) == 7
+    assert page.evaluate("document.getElementById('dayf').firstElementChild.tagName.toLowerCase()") == "svg", "the mark comes first, then the words"
     page.click("#dayf")
     page.wait_for_timeout(300)
     assert page.get_attribute("#dayf", "aria-expanded") == "true"
@@ -153,12 +154,16 @@ with sync_playwright() as p:
     assert page.locator("#menu button > svg.mico").count() == 4 and page.locator("#menu button >> nth=0 >> .rck").count() == 1
     edge = page.evaluate("[document.getElementById('menu').getBoundingClientRect().right,document.getElementById('dayf').getBoundingClientRect().right]")
     assert abs(edge[0] - edge[1]) < 1, "the menu hangs from the button's right end: %s" % edge
+    # its icons are drawn on the pixel grid: shown at 11, one to one, on whole pixels, half a pixel under the row's middle
+    sharp = page.evaluate("[].map.call(document.querySelectorAll('#menu button'),b=>{var i=b.querySelector('svg').getBoundingClientRect(),r=b.getBoundingClientRect();"
+                          "return [i.width,i.height,i.left%1,i.top%1,(i.top+i.height/2)-(r.top+r.height/2)]})")
+    assert all(s == [11, 11, 0, 0, 0.5] for s in sharp), sharp
     page.click("#menu button:has-text('Day 2')")
     page.wait_for_timeout(300)
     assert names() == ["富士箱根伊豆國立公園", "岩本山公園"] and page.inner_text("#dayf").strip() == "Day 2"
     assert page.get_attribute("#dayf", "aria-expanded") == "false" and not page.locator("#menu").is_visible()
     page.mouse.move(700, 600)
-    assert colour("#dayf") == quiet == "rgba(0, 0, 0, 0.5)", "the button looks the same with a filter on"
+    assert colour("#dayf") == quiet == "rgb(51, 51, 51)", "the button looks the same with a filter on"
     page.click(".chip >> nth=1")
     page.wait_for_timeout(150)
     assert names() == [] and page.locator(".card-empty").count() == 0 and page.inner_html("#cards") == "", "food on Day 2: nothing, left blank"

@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=28';
-import {fetchRoute} from './geoapify.js?v=28';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=28';
-import {createMap} from './mapview.js?v=28';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=29';
+import {fetchRoute} from './geoapify.js?v=29';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=29';
+import {createMap} from './mapview.js?v=29';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -310,7 +310,7 @@ function dayfLabel(){
 function renderTop(){
   if(ui.dayf!=='all'&&ui.dayf!=='none'&&!getDay(ui.dayf))ui.dayf='all';   /* its day was deleted */
   var fb=$('dayf'),fl=dayfLabel();
-  fb.innerHTML='<span>'+fl+'</span>'+ICON.filterSm;fb.title='只顯示：'+fl;fb.setAttribute('aria-label','只顯示：'+fl);
+  fb.innerHTML=ICON.filterSm+'<span>'+fl+'</span>';fb.title='只顯示：'+fl;fb.setAttribute('aria-label','只顯示：'+fl);
   chipsEl.innerHTML=CATS.map(function(c){var on=ui.cat===c.id;
     return '<button class="chip'+(on?' on':'')+'" data-act="chip" data-cat="'+c.id+'" aria-pressed="'+on+'">'+catSvg(c.id,1)+c.name+'</button>';}).join('');
   var keep=cardsEl.scrollLeft;
@@ -403,8 +403,9 @@ function renderMenu(){
   menuEl.innerHTML=h;menuEl.hidden=false;
   if(fresh){void menuEl.offsetWidth;menuEl.classList.add('pop');}
   var w=menuEl.offsetWidth,hh=menuEl.offsetHeight;
-  menuEl.style.left=clamp(m.type==='dayf'?m.right-w:m.x,8,window.innerWidth-w-8)+'px';   /* the filter's menu hangs from its right end */
-  menuEl.style.top=(m.y+hh>window.innerHeight-8?Math.max(8,m.top-hh-4):m.y)+'px';
+  /* the filter's menu hangs from its right end. Whole pixels, so that icons drawn on the pixel grid stay sharp */
+  menuEl.style.left=Math.round(clamp(m.type==='dayf'?m.right-w:m.x,8,window.innerWidth-w-8))+'px';
+  menuEl.style.top=Math.round(m.y+hh>window.innerHeight-8?Math.max(8,m.top-hh-4):m.y)+'px';
   var btn=document.querySelector('.more[data-menu="'+m.type+'"][data-id="'+m.id+'"]');if(btn)btn.classList.add('open');
 }
 /* ================= send to phone ================= */
@@ -457,7 +458,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=28').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=29').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */

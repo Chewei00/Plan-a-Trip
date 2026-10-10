@@ -183,9 +183,14 @@ what they act on, without an article (`Edit checklist`, `Delete note`, `Delete d
 its "a"; `Delete this trip` keeps "this" because the menu lists several trips).
 
 The Travel Collection has a day filter (2026-10-10; `ui.dayf`, `dayfOk()` in `js/main.js`): at the right end of its
-head, the words of what is shown (`All`, `Day 2`, `Not planned`) and a small filter mark, with no frame, the same
-colour whether a filter is on or not (Chewei: look B with C's mark where B's arrow was, and no darker when on; chosen
-on https://claude.ai/artifact/HpkjDvGLstNtVeGFvTiNaT). Its menu hangs from its right end. One choice at a time; a card
+head, a small filter mark and then the words of what is shown (`All`, `Day 2`, `Not planned`), in `ink`, with no
+frame, and the same whether a filter is on or not (Chewei's drawing: "C without its outline"; settled on
+https://claude.ai/artifact/HpkjDvGLstNtVeGFvTiNaT). The menu's `All` and `Day` icons are Chewei's own drawings: an
+11 grid, a 1px line, every line on a whole pixel. Such icons carry the class `m11` and are shown at 11, one to one,
+never scaled, with the spare pixel of the 12-wide place above them: Latin words stand a little under the middle of
+their line (measured with the site's font: capitals about .4 low, words with y or p look lower still), so a drawing
+half a pixel low meets them, and one half a pixel high (as it first was) looks plainly too high. Menus are placed on
+whole pixels for the same sharpness. Its menu hangs from its right end. One choice at a time; a card
 shows when it is of the category AND passes the filter; nothing left is left blank, with no words. It is not saved
 (All after a reload and in another trip). It gives way so a place can be seen: adding a place sets All, and picking
 a place whose card it hides sets All; a deleted day sets All. Planning a card while `Not planned` is on makes it leave

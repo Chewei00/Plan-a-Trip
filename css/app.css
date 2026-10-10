@@ -88,10 +88,10 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
 .chip.on{background:var(--fill-selected);border-color:var(--fill-selected)}
 .chip svg{display:block;flex:none;width:12px;height:12px}
-/* the day filter at the right end of the Travel Collection's head: words and a mark, no frame, and the same whether
-   a filter is on or not (the words say which); darker only under the pointer and while its menu is open */
-.dayf{display:inline-flex;align-items:center;gap:6px;height:26px;margin-left:auto;padding:0 2px;border:0;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--text-2);white-space:nowrap}
-.dayf:hover,.dayf[aria-expanded="true"]{color:var(--ink)}
+/* the day filter at the right end of the Travel Collection's head: a small filter mark, then the words of what is
+   shown; no frame, and the same whether a filter is on or not (Chewei, 2026-10-10: "C without its outline") */
+.dayf{display:inline-flex;align-items:center;gap:5px;height:26px;margin-left:auto;padding:0 2px;border:0;background:none;font:500 12px/20px var(--ui);letter-spacing:.04em;color:var(--ink);white-space:nowrap}
+.dayf .mico.m11{margin-right:0}
 /* in a narrow window the title and the categories keep their room and the filter's words are cut short */
 .tp-head h2,.chips{flex:none}
 .dayf{flex:0 1 auto;min-width:16px}
@@ -335,6 +335,10 @@ div.cnote{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;m
 .menu.trips button>span:not(.rck){min-width:0;overflow:hidden;text-overflow:ellipsis}
 .mico{display:block;flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
 .mcat{stroke-width:1.1}
+/* drawings on an 11 grid are shown at 11, in the 12 place. The spare pixel is above, not below: Latin words stand a
+   little under the middle of their line (their capitals' middle is about .4 low in Noto Sans), so the drawing sits
+   half a pixel low and meets them */
+.mico.m11{width:11px;height:11px;margin:1px 1px 0 0}
 /* the ways to move are the 16-grid drawings with air around them: shown at 14, as in the left panel, in the same
    12-wide place as the other menus' icons, so the words of every menu start in one column */
 .menu svg.i{width:14px;height:14px;margin:0 -1px}
