@@ -337,6 +337,15 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     maps.wait_for_timeout(900)
     assert card.locator(".pend-name").inner_text() == "Hotel Mystays 富士山" and card.locator(".chip.on").inner_text() == "住宿"
 
+    # (the site is left on one trip and the bar put on the other, to see below that "Open SomeDay" shows the bar's)
+    app.bring_to_front()
+    app.hover(".title"); app.wait_for_timeout(600); app.click(".tripbtn"); app.wait_for_timeout(200)
+    app.click("#menu button:has-text('富士山 ( 範例 )')"); app.wait_for_timeout(500)
+    assert app.locator(".title").inner_text() == "富士山 ( 範例 )"
+    maps.bring_to_front()
+    card.locator(".trip").click(); maps.wait_for_timeout(250)
+    card.locator(".menu button:has-text('東京 3 日')").click(); maps.wait_for_timeout(300)
+    assert card.locator(".trip .t").inner_text() == "東京 3 日" and card.locator(".savebtn").inner_text() == "Add to Travel Collection"
     # with the site closed, a saved place waits in the extension and is there the next time the site is opened
     app.close()
     card.locator(".savebtn").click()
@@ -354,16 +363,31 @@ with sync_playwright() as p, tempfile.TemporaryDirectory() as profile:
     app.goto(SITE)
     app.wait_for_timeout(1500)
     assert places(app, "東京 3 日")[-1] == "Hotel Mystays 富士山" and kept("pat_inbox") == []
+    # ...on the trip the bar is on, not the one the site was left on; so the place just saved is there, picked
+    assert app.locator(".title").inner_text() == "東京 3 日" and trips(app)["current"] == [t["id"] for t in trips(app)["trips"] if t["title"] == "東京 3 日"][0]
+    assert app.locator(".card.focus .cname").inner_text() == "Hotel Mystays 富士山" and kept("pat_show") is None
+    assert card.locator(".trip .t").inner_text() == "東京 3 日", "and the bar stays on it"
     n = sum(len(t["places"]) for t in trips(app)["trips"])
     app.reload()
     app.wait_for_timeout(1000)
     assert sum(len(t["places"]) for t in trips(app)["trips"]) == n, "nothing is added twice after a reload"
-    # ...and goes to its tab, without opening another, when it is
+    # ...and goes to its tab, without opening another, when it is; there too the site shows the bar's trip
     maps.bring_to_front()
+    card.locator(".trip").click(); maps.wait_for_timeout(250)
+    card.locator(".menu button:has-text('富士山 ( 範例 )')").click(); maps.wait_for_timeout(300)
+    assert app.locator(".title").inner_text() == "東京 3 日", "choosing in the bar does not move the site by itself"
     card.locator(".trip").click(); maps.wait_for_timeout(200)
     card.locator(".menu button:has-text('Open SomeDay')").click()
-    maps.wait_for_timeout(600)
+    maps.wait_for_timeout(800)
     assert len(ctx.pages) == before + 1
+    assert app.locator(".title").inner_text() == "富士山 ( 範例 )" and card.locator(".trip .t").inner_text() == "富士山 ( 範例 )"
+    # pressed again with the site already on that trip: nothing there is touched (a day that was opened stays open)
+    app.locator(".daypill").first.click(); app.wait_for_timeout(500)
+    assert app.locator(".day.sel").count() == 1
+    card.locator(".trip").click(); maps.wait_for_timeout(200)
+    card.locator(".menu button:has-text('Open SomeDay')").click()
+    maps.wait_for_timeout(800)
+    assert app.locator(".title").inner_text() == "富士山 ( 範例 )" and app.locator(".day.sel").count() == 1
     assert sw.evaluate("() => chrome.tabs.query({active: true}).then(ts => ts.some(t => (t.url || '').includes('/SomeDay/')))")
 
     # on is remembered across a reload; pressing the button again turns everything off, and that is remembered too

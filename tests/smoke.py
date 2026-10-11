@@ -721,6 +721,27 @@ with sync_playwright() as p:
             off = p2.locator(sel).first.evaluate(LOW)
             assert off[0] < 0.05 and off[1], (sel, off)
 
+    # "Open SomeDay" on Google Maps asks the page for a trip ('show'): what is being typed is kept and the trip is
+    # shown; the trip already on screen is left exactly as it is; an id that is no trip is ignored
+    SHOW = "id=>window.postMessage({from:'plan-a-trip-ext',type:'show',id:id},location.origin)"
+    ST = "JSON.parse(localStorage.getItem('plan-a-trip:v1'))"
+    p2.hover(".title"); p2.wait_for_timeout(600); p2.click(".tripbtn"); p2.wait_for_timeout(250)
+    p2.click("#menu button:has-text('Create a new trip')"); p2.wait_for_timeout(300)
+    p2.keyboard.type("第二趟"); p2.keyboard.press("Enter"); p2.wait_for_timeout(400)
+    st = p2.evaluate(ST); ids = {t["title"]: t["id"] for t in st["trips"]}
+    assert p2.locator(".title").inner_text() == "第二趟" and len(ids) == 2
+    p2.click(".memoadd >> nth=0") if "open" in p2.get_attribute("#memo", "class") else (p2.click("#memoh"), p2.wait_for_timeout(700), p2.click(".memoadd >> nth=0"))
+    p2.wait_for_timeout(200); p2.keyboard.type("打到一半")
+    p2.evaluate(SHOW, ids["富士山 ( 範例 )"]); p2.wait_for_timeout(400)
+    st = p2.evaluate(ST)
+    assert p2.locator(".title").inner_text() == "富士山 ( 範例 )" and st["current"] == ids["富士山 ( 範例 )"]
+    assert [e["text"] for t in st["trips"] if t["title"] == "第二趟" for e in t["memo"]["plan"]] == ["打到一半"], "what was being typed is kept"
+    p2.locator(".daypill").first.click(); p2.wait_for_timeout(500)
+    assert p2.locator(".day.sel").count() == 1
+    p2.evaluate(SHOW, ids["富士山 ( 範例 )"]); p2.evaluate(SHOW, "no-such-trip"); p2.evaluate(SHOW, None); p2.wait_for_timeout(300)
+    assert p2.locator(".title").inner_text() == "富士山 ( 範例 )" and p2.locator(".day.sel").count() == 1, "already there: nothing is touched"
+    p2.locator(".day.sel .daypill").click(); p2.wait_for_timeout(500)
+
     # the left panel folds up: its sheet's foot rises to 62 in .28s, nothing in it moves, nothing shows under the
     # title on the way or after, and what is cut off cannot be pressed; then its parts are taken out
     FOLD = ("(()=>{var bg=document.querySelector('.lp-bg').getBoundingClientRect(),lp=document.getElementById('lp').getBoundingClientRect(),"

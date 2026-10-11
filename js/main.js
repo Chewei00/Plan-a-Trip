@@ -1,9 +1,9 @@
 /* SomeDay — app entry. State, rendering and interactions for the two panels; the map itself lives in mapview.js.
    Behaviour is specified in the handoff document and the 旅行地圖 design system (see README). */
-import {ICON,CATICON,catSvg,catMico} from './icons.js?v=37';
-import {fetchRoute} from './geoapify.js?v=37';
-import {loadMaps,searchPlaces,placePoint} from './google.js?v=37';
-import {createMap} from './mapview.js?v=37';
+import {ICON,CATICON,catSvg,catMico} from './icons.js?v=38';
+import {fetchRoute} from './geoapify.js?v=38';
+import {loadMaps,searchPlaces,placePoint} from './google.js?v=38';
+import {createMap} from './mapview.js?v=38';
 
 /* ================= constants ================= */
 var KEY='plan-a-trip:v1';
@@ -484,7 +484,7 @@ var QRMAX=1500,QRBOX=240;
 var sendEl=$('sendbox'),sendQr=$('sendqr'),sendHint=$('sendhint'),sendCopy=$('sendcopy'),sendUrl='',sendTok=0,sendTm=0,qrLib=null;
 sendEl.querySelector('.xbtn').innerHTML=ICON.x;
 function loadQr(){
-  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=37').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
+  if(!qrLib){qrLib=import('./vendor/qrcode.js?v=38').then(function(m){return m.default;});qrLib.catch(function(){qrLib=null;});}
   return qrLib;
 }
 /* one path for all the dark squares (runs along each row), one whole number of the screen's own pixels to a square */
@@ -765,6 +765,10 @@ function deleteTrip(id){
      extension -> page   {from:'plan-a-trip-ext', type:'inbox', items:[{id,tripId,name,lat,lng,cat,fid}]}
      page -> extension   {from:'plan-a-trip', type:'took', ids:[...]}                  so the extension can forget them
      page -> extension   {from:'plan-a-trip', type:'switch-on'}                        turn the card on Google Maps on
+     extension -> page   {from:'plan-a-trip-ext', type:'show', id}                    "Open SomeDay" was pressed in the bar on
+                                      Google Maps: show the trip the bar is on (2026-10-11). What is being typed
+                                      is kept first, as a click elsewhere keeps it; a trip already on screen is left
+                                      exactly as it is; an id that is no trip of this browser is ignored
    fid is Google Maps' own identifier for a place, taken from the address of its page; it tells the extension and
    this page that a place is already saved. Without the extension these messages go nowhere. */
 var seenInbox={};
@@ -801,6 +805,11 @@ window.addEventListener('message',function(e){
   var m=e.data;if(!m||m.from!=='plan-a-trip-ext')return;
   if(m.type==='hello')announce();
   else if(m.type==='inbox'&&Array.isArray(m.items))takeInbox(m.items);
+  else if(m.type==='show'&&typeof m.id==='string'&&m.id!==db.id&&tripOf(m.id)){
+    if(ui.editing)commitEdit(false);
+    closeViewer();closeSend();   /* what they show belongs to the trip being left */
+    switchTrip(m.id);
+  }
 });
 
 /* ================= inline editing ================= */

@@ -379,7 +379,7 @@
     if (act === 'menu') { setMenu(!menuOpen); draw(); return; }
     if (!alive()) { a.textContent = '請重新整理這個分頁'; return; }
     if (act === 'pick') { state.target = a.getAttribute('data-id'); setMenu(false); S.set({ pat_target: state.target }); draw(); }
-    else if (act === 'open') { setMenu(false); draw(); chrome.runtime.sendMessage({ type: 'open-site' }); }
+    else if (act === 'open') { setMenu(false); draw(); var here = trip(); chrome.runtime.sendMessage({ type: 'open-site', trip: here ? here.id : null }); }   /* the site shows the trip the bar is on (0.4.9) */
     else if (act === 'cat' && cur) { cur.cat = a.getAttribute('data-cat'); touched = true; setMenu(false); draw(); }
     else if (act === 'save' && cur) {
       var t = trip();

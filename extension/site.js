@@ -4,7 +4,8 @@
        bar on Google Maps can list the trips and the card can say whether a place is already saved), and how many
        places each trip has in each category (for the four counts in the bar). The page tells of every place by
        name; only the counts are kept
-     - to the page: the places saved on Google Maps since the site was last open (the "inbox")
+     - to the page: the places saved on Google Maps since the site was last open (the "inbox"), and, when "Open
+       SomeDay" was pressed in the bar on Google Maps, which trip the bar is on, for the page to show ('show')
    The page and this script can only talk through window messages; see "browser extension" in js/main.js.
 
    Which trip a place is saved to (pat_target) is whichever was chosen last: picked in the bar on Google Maps, or
@@ -36,11 +37,19 @@
       if (m.saved && typeof m.saved === 'object') trips.forEach(function (t) { if (Array.isArray(m.saved[t.id])) saved[t.id] = m.saved[t.id].slice(0, 5000); });
       var counts = {};
       if (m.places && typeof m.places === 'object') trips.forEach(function (t) { if (Array.isArray(m.places[t.id])) counts[t.id] = tally(m.places[t.id].slice(0, 5000)); });
-      S.get(['pat_site_trip', 'pat_target'], function (r) {
+      S.get(['pat_site_trip', 'pat_target', 'pat_show'], function (r) {
         r = r || {};
         var set = { pat_trips: trips, pat_saved: saved, pat_counts: counts, pat_site_trip: trip ? trip.id : null };
         var known = trips.some(function (t) { return t.id === r.pat_target; });
         if (trip && (!known || trip.id !== r.pat_site_trip)) set.pat_target = trip.id;
+        /* this tab was opened by "Open SomeDay" a moment ago: ask the page for the trip the bar is on, before it is
+           handed what was saved, so that a place just saved is on screen when it arrives. The wish is used once, and
+           one left over from a tab that never opened is forgotten */
+        var w = r.pat_show;
+        if (w) {
+          S.remove('pat_show');
+          if (typeof w.id === 'string' && Date.now() - w.at < 60000 && trips.some(function (t) { return t.id === w.id; }) && !(trip && trip.id === w.id)) show(w.id);
+        }
         S.set(set, deliver);
         S.remove('pat_places');   /* 0.4.5, never released, kept the names here */
       });
@@ -54,6 +63,9 @@
       });
     }
   });
+  /* "Open SomeDay" with this tab already open: the background tells it which trip the bar is on */
+  function show(id) { window.postMessage({ from: 'plan-a-trip-ext', type: 'show', id: id }, location.origin); }
+  chrome.runtime.onMessage.addListener(function (m) { if (m && m.type === 'show' && typeof m.id === 'string' && alive()) show(m.id); });
   /* a place saved on Google Maps while this tab is open shows up here straight away */
   chrome.storage.onChanged.addListener(function (changes, area) {
     if (area === 'local' && changes.pat_inbox && (changes.pat_inbox.newValue || []).length) deliver();

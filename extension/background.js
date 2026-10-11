@@ -35,14 +35,19 @@ chrome.action.onClicked.addListener(function (tab) {
     paint(on);
   });
 });
-/* "Open SomeDay" in the bar on Google Maps: go to the tab that already has it, or open one */
+/* "Open SomeDay" in the bar on Google Maps: go to the tab that already has it, or open one. The site is asked to show
+   the trip the bar is on (0.4.9): a tab that is there is told at once (site.js passes it on to the page); a new tab
+   finds the wish waiting in the storage (pat_show) when its page first says which trip it has. */
 chrome.runtime.onMessage.addListener(function (m) {
   if (!m || m.type !== 'open-site') return;
+  var id = typeof m.trip === 'string' && m.trip ? m.trip : null;
   chrome.tabs.query({ url: SITE + '*' }, function (tabs) {
     if (tabs && tabs.length) {
+      if (id) chrome.tabs.sendMessage(tabs[0].id, { type: 'show', id: id }, function () { void chrome.runtime.lastError; });
       chrome.tabs.update(tabs[0].id, { active: true });
       chrome.windows.update(tabs[0].windowId, { focused: true });
-    } else chrome.tabs.create({ url: SITE });
+    } else if (id) chrome.storage.local.set({ pat_show: { id: id, at: Date.now() } }, function () { chrome.tabs.create({ url: SITE }); });
+    else chrome.tabs.create({ url: SITE });
   });
 });
 sync();
